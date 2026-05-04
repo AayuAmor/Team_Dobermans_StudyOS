@@ -11,6 +11,6 @@ val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
 
 val StudyPurple     = Color(0xFF5B4FD4)
-val StudyPurpleDeep = Color(0xFF4A3EB8)
+val StudyPurpleDeep = Color(0xFF493FAD)
 val StudyPurpleLight= Color(0xFFEEEBFF)
-val StudyCardBg     = Color(0xFFF5F3FF)
+val StudyCardBg     = Color(0xFFDFDFE8)
