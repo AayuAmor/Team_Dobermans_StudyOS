@@ -3,24 +3,43 @@ package com.teamdobermans.studyos
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-
-import androidx.compose.material3.*
-
-import androidx.compose.runtime.*
-
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -30,19 +49,22 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-import androidx.compose.ui.tooling.preview.Preview
-
-import com.teamdobermans.studyos.ui.theme.*
+import com.teamdobermans.studyos.ui.theme.StudyCardBg
+import com.teamdobermans.studyos.ui.theme.StudyOSTheme
+import com.teamdobermans.studyos.ui.theme.StudyPurple
+import com.teamdobermans.studyos.ui.theme.StudyPurpleDeep
 
 class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            LoginBody()
+            StudyOSTheme {
+                LoginBody()
+            }
         }
     }
 }
@@ -391,9 +413,9 @@ private fun LoginBodyPreview() {
                     singleLine = true,
                     colors = TextFieldDefaults.colors(
                         unfocusedContainerColor = Color.White,
-                        focusedContainerColor = Color.White,
+                        focusedContainerColor   = Color.White,
                         unfocusedIndicatorColor = Color.Transparent,
-                        focusedIndicatorColor = StudyPurple,
+                        focusedIndicatorColor   = StudyPurple,
                     )
                 )
 
@@ -426,9 +448,9 @@ private fun LoginBodyPreview() {
                     },
                     colors = TextFieldDefaults.colors(
                         unfocusedContainerColor = Color.White,
-                        focusedContainerColor = Color.White,
+                        focusedContainerColor   = Color.White,
                         unfocusedIndicatorColor = Color.Transparent,
-                        focusedIndicatorColor = StudyPurple,
+                        focusedIndicatorColor   = StudyPurple,
                     )
                 )
 
@@ -500,15 +522,67 @@ private fun LoginBodyPreview() {
                         color = Color.Gray.copy(alpha = 0.3f)
                     )
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedButton(
+                    onClick = {},
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                        .shadow(6.dp, RoundedCornerShape(25.dp)),
+                    shape = RoundedCornerShape(25.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.White
+                    )
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.google),
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        "Continue with Google",
+                        color = Color.DarkGray,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 15.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        "Don't have an account? ",
+                        color = Color.Gray,
+                        fontSize = 14.sp
+                    )
+                    Text(
+                        "Sign up",
+                        color = StudyPurple,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                }
+
             }
         }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
     }
 }
 
 @Preview
 @Composable
-fun LoginBodyPreview() {
-    LoginBody()
+fun LoginPreview() {
+    StudyOSTheme {
+        LoginBodyPreview()
+    }
 }
 
 
