@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">StudyOS</string>
+    <string name="title_activity_welcome_page">WelcomePage</string>
 </resources>
