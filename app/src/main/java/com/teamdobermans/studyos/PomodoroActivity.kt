@@ -33,6 +33,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -116,15 +118,10 @@ fun PomodoroBody() {
 
     Column(modifier = Modifier.fillMaxSize().background(StudyPurple)) {
 
-        Column(
-            modifier = Modifier.fillMaxWidth().statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-        ) {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = Color.White.copy(alpha = 0.25f),
-                modifier = Modifier.clickable { activity?.finish() }
-            ) {
+        Column(modifier = Modifier.fillMaxWidth().statusBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.25f),
+                modifier = Modifier.clickable { activity?.finish() }) {
                 Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically) {
                     Icon(painter = painterResource(R.drawable.baseline_arrow_back_24),
@@ -149,7 +146,6 @@ fun PomodoroBody() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // Tab Row (Commit 1 — unchanged)
             Surface(shape = RoundedCornerShape(50.dp), color = Color.White,
                 modifier = Modifier.fillMaxWidth()) {
                 Row(modifier = Modifier.fillMaxWidth().padding(4.dp)) {
@@ -158,8 +154,7 @@ fun PomodoroBody() {
                         Surface(shape = RoundedCornerShape(50.dp),
                             color = if (isSelected) StudyPurple else Color.Transparent,
                             modifier = Modifier.weight(1f).clickable {
-                                selectedTab = tab; isRunning = false
-                            }) {
+                                selectedTab = tab; isRunning = false }) {
                             Text(
                                 text = when (tab) {
                                     PomodoroTab.FOCUS       -> "Focus"
@@ -179,70 +174,121 @@ fun PomodoroBody() {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // ── NEW: Timer Card ───────────────────────────────────────────────
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
 
-                    // Circular arc timer
+            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                Column(modifier = Modifier.fillMaxWidth().padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.size(200.dp)) {
                         Canvas(modifier = Modifier.fillMaxSize()) {
-                            drawCircle(
-                                color = Color(0xFFEEEBFF),
-                                style = Stroke(width = 14.dp.toPx())
-                            )
-                            drawArc(
-                                color = StudyPurple,
-                                startAngle = -90f,
-                                sweepAngle = 360f * progress,
-                                useCenter = false,
-                                style = Stroke(width = 14.dp.toPx(), cap = StrokeCap.Round)
-                            )
+                            drawCircle(color = Color(0xFFEEEBFF), style = Stroke(width = 14.dp.toPx()))
+                            drawArc(color = StudyPurple, startAngle = -90f,
+                                sweepAngle = 360f * progress, useCenter = false,
+                                style = Stroke(width = 14.dp.toPx(), cap = StrokeCap.Round))
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                timeLabel,
-                                style = TextStyle(color = Color(0xFF1A1A2E), fontSize = 40.sp,
-                                    fontWeight = FontWeight.Bold)
-                            )
+                            Text(timeLabel, style = TextStyle(color = Color(0xFF1A1A2E),
+                                fontSize = 40.sp, fontWeight = FontWeight.Bold))
                             Text(modeLabel, color = Color.Gray, fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium)
                         }
                     }
-
                     Spacer(modifier = Modifier.height(24.dp))
-
-                    // Start / Reset buttons
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Button(
-                            onClick = { isRunning = !isRunning },
+                        Button(onClick = { isRunning = !isRunning },
                             modifier = Modifier.weight(1f).height(46.dp),
                             shape = RoundedCornerShape(23.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)
-                        ) {
+                            colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)) {
                             Text(if (isRunning) "Pause" else "Start",
                                 color = Color.White, fontWeight = FontWeight.SemiBold)
                         }
-                        Button(
-                            onClick = { isRunning = false; timeRemaining = totalSeconds },
+                        Button(onClick = { isRunning = false; timeRemaining = totalSeconds },
                             modifier = Modifier.weight(1f).height(46.dp),
                             shape = RoundedCornerShape(23.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFEBEB))
-                        ) {
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFEBEB))) {
                             Text("Reset", color = Color(0xFFE53935), fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Customize durations", fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp, color = Color(0xFF1A1A2E))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    DurationSlider(
+                        label = "Focus", value = focusMinutes, range = 5f..60f,
+                        onValueChange = {
+                            focusMinutes = it
+                            if (selectedTab == PomodoroTab.FOCUS && !isRunning)
+                                timeRemaining = it.toInt() * 60
+                        }
+                    )
+                    DurationSlider(
+                        label = "Short", value = shortMinutes, range = 1f..15f,
+                        onValueChange = {
+                            shortMinutes = it
+                            if (selectedTab == PomodoroTab.SHORT_BREAK && !isRunning)
+                                timeRemaining = it.toInt() * 60
+                        }
+                    )
+                    DurationSlider(
+                        label = "Long", value = longMinutes, range = 10f..30f,
+                        onValueChange = {
+                            longMinutes = it
+                            if (selectedTab == PomodoroTab.LONG_BREAK && !isRunning)
+                                timeRemaining = it.toInt() * 60
+                        }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                Column(modifier = Modifier.fillMaxWidth().padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Sessions today", color = Color.Gray, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("$sessionsToday", color = StudyPurple, fontSize = 36.sp,
+                        fontWeight = FontWeight.Bold)
+                }
+            }
+
             Spacer(modifier = Modifier.height(80.dp))
         }
+    }
+
+}
+
+
+@Composable
+fun DurationSlider(
+    label: String,
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    range: ClosedFloatingPointRange<Float>
+) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, modifier = Modifier.width(44.dp), fontSize = 13.sp, color = Color.DarkGray)
+        Slider(
+            value = value,
+            onValueChange = onValueChange,
+            valueRange = range,
+            modifier = Modifier.weight(1f),
+            colors = SliderDefaults.colors(
+                thumbColor = StudyPurple,
+                activeTrackColor = StudyPurple,
+                inactiveTrackColor = Color(0xFFD0CBFF)
+            )
+        )
+        Text("${value.toInt()}m", modifier = Modifier.width(36.dp), fontSize = 13.sp,
+            color = StudyPurple, fontWeight = FontWeight.Bold)
     }
 }
 
