@@ -27,16 +27,21 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -53,6 +58,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -60,6 +66,8 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 
 private enum class PomodoroTab { FOCUS, SHORT_BREAK, LONG_BREAK }
+
+private enum class EditingSlider { FOCUS, SHORT, LONG, NONE }
 
 class PomodoroActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -82,10 +90,13 @@ fun PomodoroBody() {
     var isRunning     by remember { mutableStateOf(false) }
     var sessionsToday by remember { mutableStateOf(0) }
 
+    var editingSlider by remember { mutableStateOf(EditingSlider.NONE) }
+    var dialogInput   by remember { mutableStateOf("") }
+
     val totalSeconds: Int = when (selectedTab) {
-        PomodoroTab.FOCUS       -> focusMinutes.toInt()  * 60
-        PomodoroTab.SHORT_BREAK -> shortMinutes.toInt()  * 60
-        PomodoroTab.LONG_BREAK  -> longMinutes.toInt()   * 60
+        PomodoroTab.FOCUS       -> focusMinutes.toInt() * 60
+        PomodoroTab.SHORT_BREAK -> shortMinutes.toInt() * 60
+        PomodoroTab.LONG_BREAK  -> longMinutes.toInt()  * 60
     }
 
     var timeRemaining by remember(selectedTab, focusMinutes, shortMinutes, longMinutes) {
@@ -114,6 +125,111 @@ fun PomodoroBody() {
         PomodoroTab.FOCUS       -> "FOCUS"
         PomodoroTab.SHORT_BREAK -> "SHORT BREAK"
         PomodoroTab.LONG_BREAK  -> "LONG BREAK"
+    }
+
+    if (editingSlider != EditingSlider.NONE) {
+
+        val dialogTitle = when (editingSlider) {
+            EditingSlider.FOCUS -> "Focus duration"
+            EditingSlider.SHORT -> "Short break duration"
+            EditingSlider.LONG  -> "Long break duration"
+            EditingSlider.NONE  -> ""
+        }
+        val dialogRange = when (editingSlider) {
+            EditingSlider.FOCUS -> 5..60
+            EditingSlider.SHORT -> 1..15
+            EditingSlider.LONG  -> 10..30
+            EditingSlider.NONE  -> 1..120
+        }
+
+        val parsedInput = dialogInput.toIntOrNull()
+        val isValid     = parsedInput != null && parsedInput in dialogRange
+
+        AlertDialog(
+            onDismissRequest = { editingSlider = EditingSlider.NONE },
+            title = {
+                Text(
+                    dialogTitle,
+                    color = Color(0xFF1A1A2E),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        "${dialogRange.first}–${dialogRange.last} minutes",
+                        color = Color.Gray,
+                        fontSize = 13.sp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = dialogInput,
+                        onValueChange = { raw ->
+                            val filtered = raw.filter { it.isDigit() }.take(3)
+                            dialogInput = filtered
+                            val live = filtered.toIntOrNull()
+                            if (live != null) {
+                                val clamped = live.coerceIn(dialogRange.first, dialogRange.last).toFloat()
+                                when (editingSlider) {
+                                    EditingSlider.FOCUS -> {
+                                        focusMinutes = clamped
+                                        if (selectedTab == PomodoroTab.FOCUS && !isRunning)
+                                            timeRemaining = clamped.toInt() * 60
+                                    }
+                                    EditingSlider.SHORT -> {
+                                        shortMinutes = clamped
+                                        if (selectedTab == PomodoroTab.SHORT_BREAK && !isRunning)
+                                            timeRemaining = clamped.toInt() * 60
+                                    }
+                                    EditingSlider.LONG -> {
+                                        longMinutes = clamped
+                                        if (selectedTab == PomodoroTab.LONG_BREAK && !isRunning)
+                                            timeRemaining = clamped.toInt() * 60
+                                    }
+                                    EditingSlider.NONE -> {}
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        isError = dialogInput.isNotEmpty() && !isValid,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        placeholder = {
+                            Text(when (editingSlider) {
+                                EditingSlider.FOCUS -> "e.g. 25"
+                                EditingSlider.SHORT -> "e.g. 5"
+                                EditingSlider.LONG  -> "e.g. 15"
+                                EditingSlider.NONE  -> ""
+                            })
+                        },
+                        colors = TextFieldDefaults.colors(
+                            unfocusedContainerColor = Color(0xFFF5F3FF),
+                            focusedContainerColor   = Color(0xFFF5F3FF),
+                            unfocusedIndicatorColor = Color.Transparent,
+                            focusedIndicatorColor   = StudyPurple,
+                        )
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { editingSlider = EditingSlider.NONE },
+                    enabled = isValid,
+                    colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)
+                ) {
+                    Text("Set", color = Color.White, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { editingSlider = EditingSlider.NONE }) {
+                    Text("Cancel", color = Color.Gray)
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(20.dp)
+        )
     }
 
     Column(modifier = Modifier.fillMaxSize().background(StudyPurple)) {
@@ -174,7 +290,6 @@ fun PomodoroBody() {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Column(modifier = Modifier.fillMaxWidth().padding(24.dp),
@@ -221,27 +336,45 @@ fun PomodoroBody() {
                         fontSize = 15.sp, color = Color(0xFF1A1A2E))
                     Spacer(modifier = Modifier.height(8.dp))
                     DurationSlider(
-                        label = "Focus", value = focusMinutes, range = 5f..60f,
+                        label = "Focus",
+                        value = focusMinutes,
+                        range = 5f..60f,
                         onValueChange = {
                             focusMinutes = it
                             if (selectedTab == PomodoroTab.FOCUS && !isRunning)
                                 timeRemaining = it.toInt() * 60
+                        },
+                        onValueTap = {
+                            dialogInput   = focusMinutes.toInt().toString()
+                            editingSlider = EditingSlider.FOCUS
                         }
                     )
                     DurationSlider(
-                        label = "Short", value = shortMinutes, range = 1f..15f,
+                        label = "Short",
+                        value = shortMinutes,
+                        range = 1f..15f,
                         onValueChange = {
                             shortMinutes = it
                             if (selectedTab == PomodoroTab.SHORT_BREAK && !isRunning)
                                 timeRemaining = it.toInt() * 60
+                        },
+                        onValueTap = {
+                            dialogInput   = shortMinutes.toInt().toString()
+                            editingSlider = EditingSlider.SHORT
                         }
                     )
                     DurationSlider(
-                        label = "Long", value = longMinutes, range = 10f..30f,
+                        label = "Long",
+                        value = longMinutes,
+                        range = 10f..30f,
                         onValueChange = {
                             longMinutes = it
                             if (selectedTab == PomodoroTab.LONG_BREAK && !isRunning)
                                 timeRemaining = it.toInt() * 60
+                        },
+                        onValueTap = {
+                            dialogInput   = longMinutes.toInt().toString()
+                            editingSlider = EditingSlider.LONG
                         }
                     )
                 }
@@ -263,16 +396,15 @@ fun PomodoroBody() {
             Spacer(modifier = Modifier.height(80.dp))
         }
     }
-
 }
-
 
 @Composable
 fun DurationSlider(
     label: String,
     value: Float,
     onValueChange: (Float) -> Unit,
-    range: ClosedFloatingPointRange<Float>
+    range: ClosedFloatingPointRange<Float>,
+    onValueTap: () -> Unit
 ) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(label, modifier = Modifier.width(44.dp), fontSize = 13.sp, color = Color.DarkGray)
@@ -287,8 +419,20 @@ fun DurationSlider(
                 inactiveTrackColor = Color(0xFFD0CBFF)
             )
         )
-        Text("${value.toInt()}m", modifier = Modifier.width(36.dp), fontSize = 13.sp,
-            color = StudyPurple, fontWeight = FontWeight.Bold)
+        Surface(
+            shape = RoundedCornerShape(6.dp),
+            color = Color(0xFFF0EEFF),
+            modifier = Modifier.width(36.dp).clickable { onValueTap() }
+        ) {
+            Text(
+                "${value.toInt()}m",
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+                fontSize = 13.sp,
+                color = StudyPurple,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
 
