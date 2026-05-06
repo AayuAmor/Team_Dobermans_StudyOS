@@ -49,7 +49,10 @@ import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 
+private enum class Difficulty { EASY, MEDIUM, HARD }
 
 class MockTestActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,6 +77,8 @@ fun MockTestBody() {
 
     val questionSteps   = listOf(5, 15, 25, 35, 50)
     var questionIndex   by remember { mutableStateOf(1) }
+
+    var difficulty      by remember { mutableStateOf(Difficulty.MEDIUM) }
 
     Column(modifier = Modifier.fillMaxSize().background(StudyPurple)) {
 
@@ -118,8 +123,7 @@ fun MockTestBody() {
                                     fontWeight = FontWeight.Medium, fontSize = 14.sp)
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Icon(painter = painterResource(R.drawable.baseline_more_horiz_24),
-                                    contentDescription = null, tint = Color.White,
-                                    modifier = Modifier.size(16.dp))
+                                    contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                             }
                         }
                         DropdownMenu(expanded = subjectDropdown,
@@ -135,6 +139,7 @@ fun MockTestBody() {
 
             Spacer(modifier = Modifier.height(12.dp))
 
+
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -146,23 +151,14 @@ fun MockTestBody() {
                         Text("min", color = Color.Gray, fontSize = 14.sp,
                             modifier = Modifier.padding(bottom = 4.dp, start = 4.dp))
                     }
-                    Slider(
-                        value = durationIndex.toFloat(),
+                    Slider(value = durationIndex.toFloat(),
                         onValueChange = { durationIndex = it.toInt() },
-                        valueRange = 0f..4f,
-                        steps = 3,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = SliderDefaults.colors(
-                            thumbColor = StudyPurple,
-                            activeTrackColor = StudyPurple,
-                            inactiveTrackColor = Color(0xFFD0CBFF)
-                        )
-                    )
+                        valueRange = 0f..4f, steps = 3, modifier = Modifier.fillMaxWidth(),
+                        colors = SliderDefaults.colors(thumbColor = StudyPurple,
+                            activeTrackColor = StudyPurple, inactiveTrackColor = Color(0xFFD0CBFF)))
                     Row(modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween) {
-                        durationSteps.forEach { step ->
-                            Text("${step}min", fontSize = 11.sp, color = Color.Gray)
-                        }
+                        durationSteps.forEach { step -> Text("${step}min", fontSize = 11.sp, color = Color.Gray) }
                     }
                 }
             }
@@ -180,34 +176,92 @@ fun MockTestBody() {
                         Text("questions", color = Color.Gray, fontSize = 14.sp,
                             modifier = Modifier.padding(bottom = 4.dp, start = 4.dp))
                     }
-                    Slider(
-                        value = questionIndex.toFloat(),
+                    Slider(value = questionIndex.toFloat(),
                         onValueChange = { questionIndex = it.toInt() },
-                        valueRange = 0f..4f,
-                        steps = 3,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = SliderDefaults.colors(
-                            thumbColor = StudyPurple,
-                            activeTrackColor = StudyPurple,
-                            inactiveTrackColor = Color(0xFFD0CBFF)
-                        )
-                    )
+                        valueRange = 0f..4f, steps = 3, modifier = Modifier.fillMaxWidth(),
+                        colors = SliderDefaults.colors(thumbColor = StudyPurple,
+                            activeTrackColor = StudyPurple, inactiveTrackColor = Color(0xFFD0CBFF)))
                     Row(modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween) {
-                        questionSteps.forEach { step ->
-                            Text("$step", fontSize = 11.sp, color = Color.Gray)
-                        }
+                        questionSteps.forEach { step -> Text("$step", fontSize = 11.sp, color = Color.Gray) }
                     }
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text("DIFFICULTY", color = StudyPurple, fontWeight = FontWeight.Bold,
+                fontSize = 13.sp, letterSpacing = 1.sp)
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                DifficultyChip(
+                    label = "Easy", selected = difficulty == Difficulty.EASY,
+                    selectedColor = Color(0xFF4CAF50), bgColor = Color(0xFFE8F5E9),
+                    modifier = Modifier.weight(1f)
+                ) { difficulty = Difficulty.EASY }
+                DifficultyChip(
+                    label = "Medium", selected = difficulty == Difficulty.MEDIUM,
+                    selectedColor = Color(0xFFFFC107), bgColor = Color(0xFFFFF8E1),
+                    modifier = Modifier.weight(1f)
+                ) { difficulty = Difficulty.MEDIUM }
+                DifficultyChip(
+                    label = "Hard", selected = difficulty == Difficulty.HARD,
+                    selectedColor = Color(0xFFE53935), bgColor = Color(0xFFFFEBEB),
+                    modifier = Modifier.weight(1f)
+                ) { difficulty = Difficulty.HARD }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = { /* TODO: navigate to test screen */ },
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)
+            ) {
+                Text("Start Test", color = Color.White, fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold)
+            }
+
             Spacer(modifier = Modifier.height(80.dp))
+        }
+    }
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+//        StudyBottomNav(selected = 0)
+    }
+}
+
+@Composable
+fun DifficultyChip(
+    label: String,
+    selected: Boolean,
+    selectedColor: Color,
+    bgColor: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(50.dp),
+        color = bgColor,
+        modifier = modifier.clickable { onClick() }
+    ) {
+        Box(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                label,
+                color = if (selected) selectedColor else Color.Gray,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                fontSize = 14.sp
+            )
         }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun MockTestPreview() {
-    MockTestBody()
-}
+fun MockTestPreview() { MockTestBody() }
