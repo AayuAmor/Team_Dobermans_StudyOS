@@ -46,6 +46,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.teamdobermans.studyos.ui.theme.StudyPurple
 import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+
 
 class MockTestActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -65,6 +69,12 @@ fun MockTestBody() {
     var selectedSubject by remember { mutableStateOf("All Subjects") }
     var subjectDropdown by remember { mutableStateOf(false) }
 
+    val durationSteps   = listOf(10, 30, 60, 90, 120)
+    var durationIndex   by remember { mutableStateOf(1) }
+
+    val questionSteps   = listOf(5, 15, 25, 35, 50)
+    var questionIndex   by remember { mutableStateOf(1) }
+
     Column(modifier = Modifier.fillMaxSize().background(StudyPurple)) {
 
         Column(modifier = Modifier.fillMaxWidth().statusBarsPadding()
@@ -75,19 +85,15 @@ fun MockTestBody() {
                 Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically) {
                     Icon(painter = painterResource(R.drawable.baseline_arrow_back_24),
-                        contentDescription = "Back", tint = Color.White,
-                        modifier = Modifier.size(18.dp))
+                        contentDescription = "Back", tint = Color.White, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Back", color = Color.White, fontSize = 14.sp)
                 }
             }
-
             Spacer(modifier = Modifier.height(12.dp))
-
             Text("Mock Test",
                 style = TextStyle(color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold))
-            Text("Timed exam simulation",
-                color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp)
+            Text("Timed exam simulation", color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp)
         }
 
         Column(
@@ -101,10 +107,8 @@ fun MockTestBody() {
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Mock Test", color = StudyPurple,
-                        fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Text("Mock Test", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(10.dp))
-
                     Box {
                         Surface(shape = RoundedCornerShape(10.dp), color = StudyPurple,
                             modifier = Modifier.clickable { subjectDropdown = true }) {
@@ -121,11 +125,77 @@ fun MockTestBody() {
                         DropdownMenu(expanded = subjectDropdown,
                             onDismissRequest = { subjectDropdown = false }) {
                             subjects.forEach { subject ->
-                                DropdownMenuItem(
-                                    text = { Text(subject) },
-                                    onClick = { selectedSubject = subject; subjectDropdown = false }
-                                )
+                                DropdownMenuItem(text = { Text(subject) },
+                                    onClick = { selectedSubject = subject; subjectDropdown = false })
                             }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Duration", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text("${durationSteps[durationIndex]}", color = Color(0xFF1A1A2E),
+                            fontSize = 30.sp, fontWeight = FontWeight.Bold)
+                        Text("min", color = Color.Gray, fontSize = 14.sp,
+                            modifier = Modifier.padding(bottom = 4.dp, start = 4.dp))
+                    }
+                    Slider(
+                        value = durationIndex.toFloat(),
+                        onValueChange = { durationIndex = it.toInt() },
+                        valueRange = 0f..4f,
+                        steps = 3,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = SliderDefaults.colors(
+                            thumbColor = StudyPurple,
+                            activeTrackColor = StudyPurple,
+                            inactiveTrackColor = Color(0xFFD0CBFF)
+                        )
+                    )
+                    Row(modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween) {
+                        durationSteps.forEach { step ->
+                            Text("${step}min", fontSize = 11.sp, color = Color.Gray)
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Questions", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text("${questionSteps[questionIndex]}", color = Color(0xFF1A1A2E),
+                            fontSize = 30.sp, fontWeight = FontWeight.Bold)
+                        Text("questions", color = Color.Gray, fontSize = 14.sp,
+                            modifier = Modifier.padding(bottom = 4.dp, start = 4.dp))
+                    }
+                    Slider(
+                        value = questionIndex.toFloat(),
+                        onValueChange = { questionIndex = it.toInt() },
+                        valueRange = 0f..4f,
+                        steps = 3,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = SliderDefaults.colors(
+                            thumbColor = StudyPurple,
+                            activeTrackColor = StudyPurple,
+                            inactiveTrackColor = Color(0xFFD0CBFF)
+                        )
+                    )
+                    Row(modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween) {
+                        questionSteps.forEach { step ->
+                            Text("$step", fontSize = 11.sp, color = Color.Gray)
                         }
                     }
                 }
