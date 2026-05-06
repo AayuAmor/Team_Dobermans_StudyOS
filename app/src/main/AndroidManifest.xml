@@ -12,6 +12,28 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.StudyOS">
         <activity
+            android:name=".MockTestActivity"
+            android:exported="true"
+            android:label="@string/title_activity_mock_test"
+            android:theme="@style/Theme.StudyOS">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".OnboardingActivity_worksOffline"
+            android:exported="true"
+            android:label="@string/title_activity_onboarding_works_offline"
+            android:theme="@style/Theme.StudyOS">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".PomodoroActivity"
             android:exported="true"
             android:label="@string/title_activity_pomodoro"

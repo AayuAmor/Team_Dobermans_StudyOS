@@ -2,4 +2,6 @@
     <string name="app_name">StudyOS</string>
     <string name="title_activity_sign_up">SignUpActivity</string>
     <string name="title_activity_pomodoro">PomodoroActivity</string>
+    <string name="title_activity_onboarding_works_offline">OnboardingActivity_worksOffline</string>
+    <string name="title_activity_mock_test">MockTestActivity</string>
 </resources>
