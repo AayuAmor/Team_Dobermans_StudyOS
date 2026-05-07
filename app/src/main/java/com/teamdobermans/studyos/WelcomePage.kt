@@ -31,7 +31,7 @@ class WelcomePage : ComponentActivity() {
             Surface(modifier = Modifier.fillMaxSize()) {
                 WelcomeScreen(
                     onGetStartedClick = { },
-                    onSkipIntroClick = { /* Handle navigation here */ }
+                    onSkipIntroClick = { }
                 )
             }
         }
