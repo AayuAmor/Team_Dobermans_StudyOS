@@ -67,7 +67,7 @@ private fun HeaderSection(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(Color(0xFF5E5CE6)) // BrandPurple
+            .background(Color(0xFF5E5CE6))
             .padding(top = 16.dp, bottom = 24.dp, start = 20.dp, end = 20.dp)
     ) {
         Button(
