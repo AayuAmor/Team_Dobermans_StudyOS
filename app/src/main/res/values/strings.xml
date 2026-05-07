@@ -3,4 +3,5 @@
     <string name="title_activity_login">LoginActivity</string>
     <string name="title_activity_onboarding_worksoffline">OnboardingActivityWorksoffline</string>
     <string name="title_activity_onboarding_works_offline">OnboardingActivity_worksOffline</string>
+    <string name="title_activity_profile">ProfileActivity</string>
 </resources>

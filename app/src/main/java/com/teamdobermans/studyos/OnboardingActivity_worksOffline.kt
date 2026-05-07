@@ -1,11 +1,13 @@
 package com.teamdobermans.studyos
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +20,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -26,7 +30,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -36,7 +42,7 @@ import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 import com.teamdobermans.studyos.ui.theme.StudyPurple
 import com.teamdobermans.studyos.ui.theme.StudyPurpleDeep
 
-class OnboardingActivity : ComponentActivity() {
+class OnboardingActivityWorksOffline : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -48,6 +54,8 @@ class OnboardingActivity : ComponentActivity() {
 
 @Composable
 fun OnboardingBody() {
+
+    val context  = LocalContext.current
 
     val features = listOf(
         "Study anywhere, anytime",
@@ -118,7 +126,7 @@ fun OnboardingBody() {
                         Icon(
                             painter = painterResource(R.drawable.baseline_check_24),
                             contentDescription = null,
-                            tint = Color.Black,
+                            tint = StudyPurple,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(12.dp))
@@ -133,14 +141,56 @@ fun OnboardingBody() {
             }
         }
 
-    }
-}
+        Spacer(modifier = Modifier.height(32.dp))
 
-@Preview(showBackground = true)
-@Composable
-fun OnboardingPreview() {
-    StudyOSTheme {
-        OnboardingBodyPreview()
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color.White.copy(alpha = 0.4f))
+            )
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color.White.copy(alpha = 0.4f))
+            )
+            Box(
+                modifier = Modifier
+                    .height(8.dp)
+                    .width(24.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color.White)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        Button(
+            onClick = {
+//                val intent = Intent(context, SignUpActivity::class.java)
+//                context.startActivity(intent)
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.White.copy(alpha = 0.2f)
+            )
+        ) {
+            Text(
+                "Create Account",
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
     }
 }
 
@@ -207,7 +257,7 @@ private fun OnboardingBodyPreview() {
                             painter = painterResource(R.drawable.baseline_check_24),
                             contentDescription = null,
                             tint = Color.Black,
-                            modifier = Modifier.size(25.dp)
+                            modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
@@ -221,5 +271,60 @@ private fun OnboardingBodyPreview() {
             }
         }
 
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color.White.copy(alpha = 0.4f))
+            )
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color.White.copy(alpha = 0.4f))
+            )
+            Box(
+                modifier = Modifier
+                    .height(8.dp)
+                    .width(24.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color.White)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        Button(
+            onClick = {},
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.White.copy(alpha = 0.2f)
+            )
+        ) {
+            Text(
+                "Create Account",
+                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun OnboardingPreview() {
+    StudyOSTheme {
+        OnboardingBodyPreview()
     }
 }
