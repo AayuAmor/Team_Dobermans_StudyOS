@@ -1,4 +1,27 @@
 <resources>
     <string name="app_name">StudyOS</string>
     <string name="title_activity_welcome_page">WelcomePage</string>
+    <string name="title_activity_study">Study</string>
+    <string name="title_activity_videoto_notes">Video to Notes</string>
+    <string name="ai_summarization_subtitle">AI-powered summarization</string>
+    <string name="paste_video_url_label">Paste video URL</string>
+    <string name="generate_notes_button">Generate Notes</string>
+    <string name="video_url_placeholder">https://youtube.com/watch?v=ikcCDtI...</string>
+    <string name="back">Back</string>
+    <string name="notes_title">Notes</string>
+    <string name="search_placeholder">Search by title or keyword....</string>
+    <string name="folders_title">Folders</string>
+    <string name="folder_science">Science</string>
+    <string name="folder_social">Social</string>
+    <string name="folder_english">English</string>
+    <string name="new_folder">+ New Folder</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_study">Study</string>
+    <string name="nav_plan">Plan</string>
+    <string name="nav_progress">Progress</string>
+    <string name="nav_settings">Settings</string>
+    <string name="note_periodic_table_title">Periodic Table</string>
+    <string name="note_periodic_table_body">The periodic table is a tabular, organized display of all 118 known chemical elements arranged by increasing atomic number (number of protons).</string>
+    <string name="note_mitochondria_title">Mitochondria</string>
+    <string name="note_mitochondria_body">Mitochondria are membrane-bound cell organelles (mitochondrion, singular) that generate most of the chemical energy needed to power the cell\'s biochemical reactions.</string>
 </resources>

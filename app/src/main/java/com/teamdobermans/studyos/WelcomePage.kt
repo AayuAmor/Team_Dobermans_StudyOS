@@ -1,23 +1,13 @@
-package com.example.studyos.ui.screens
+package com.teamdobermans.studyos
 
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,7 +23,21 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-import com.teamdobermans.studyos.R
+
+class WelcomePage : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            Surface(modifier = Modifier.fillMaxSize()) {
+                WelcomeScreen(
+                    onGetStartedClick = { },
+                    onSkipIntroClick = { /* Handle navigation here */ }
+                )
+            }
+        }
+    }
+}
+
 
 @Composable
 fun WelcomeScreen(
@@ -47,14 +51,12 @@ fun WelcomeScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-
-
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(horizontal = 32.dp)
         ) {
             Image(
-                painter = painterResource(R.drawable.studyoslogo),
+                painter = painterResource(id = R.drawable.studyoslogo),
                 contentDescription = "StudyOS Logo",
                 modifier = Modifier
                     .size(160.dp)
@@ -64,7 +66,6 @@ fun WelcomeScreen(
             )
 
             Spacer(modifier = Modifier.height(32.dp))
-
 
             Text(
                 text = "Welcome to",
@@ -128,17 +129,13 @@ fun WelcomeScreen(
             modifier = Modifier.padding(horizontal = 32.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-
-
             Button(
                 onClick = onGetStartedClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White
-                )
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White)
             ) {
                 Text(
                     text = "Get Started",
@@ -148,16 +145,13 @@ fun WelcomeScreen(
                 )
             }
 
-
             Button(
                 onClick = onSkipIntroClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFEBE2F1)
-                )
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEBE2F1))
             ) {
                 Text(
                     text = "Skip intro",
@@ -170,13 +164,10 @@ fun WelcomeScreen(
     }
 }
 
-
 @Preview(showBackground = true, name = "Welcome Page")
 @Composable
 fun WelcomePagePreview() {
-    Surface(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    Surface(modifier = Modifier.fillMaxSize()) {
         WelcomeScreen()
     }
 }

@@ -7,14 +7,25 @@
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
+        android:label="StudyOS"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.StudyOS">
         <activity
+            android:name=".VideotoNotes"
+            android:exported="true"
+            android:label="@string/title_activity_videoto_notes"
+            android:theme="@style/Theme.StudyOS">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".WelcomePage"
             android:exported="true"
-            android:label="@string/title_activity_welcome_page"
+            android:label="Welcome"
             android:theme="@style/Theme.StudyOS">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -25,14 +36,8 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.StudyOS">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:label="StudyOS"
+            android:theme="@style/Theme.StudyOS" />
     </application>
 
 </manifest>
