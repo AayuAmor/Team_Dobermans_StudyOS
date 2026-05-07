@@ -9,7 +9,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,6 +29,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldColors
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +45,7 @@ import androidx.compose.ui.unit.sp
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 import com.teamdobermans.studyos.ui.theme.StudyPurple
 import com.teamdobermans.studyos.ui.theme.StudyPurpleDeep
+import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
 
 class OnboardingActivityWorksOffline : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -309,6 +314,8 @@ private fun OnboardingBodyPreview() {
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.White.copy(alpha = 0.2f)
             )
+
+
         ) {
             Text(
                 "Create Account",
@@ -320,6 +327,8 @@ private fun OnboardingBodyPreview() {
 
     }
 }
+
+
 
 @Preview(showBackground = true)
 @Composable

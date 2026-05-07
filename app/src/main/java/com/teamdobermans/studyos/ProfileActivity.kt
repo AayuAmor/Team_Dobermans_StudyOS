@@ -46,7 +46,7 @@ fun ProfileScreen() {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF5F5F7))
+                .background(Color(0xFFF7F7F9))
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
         ) {
@@ -55,7 +55,7 @@ fun ProfileScreen() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(StudyPurple)
-                    .padding(bottom = 40.dp)
+                    .padding(bottom = 60.dp)
             ) {
                 Column {
                     Row(
@@ -67,7 +67,7 @@ fun ProfileScreen() {
                     ) {
                         Surface(
                             shape = RoundedCornerShape(20.dp),
-                            color = Color.White.copy(alpha = 0.25f),
+                            color = Color.White.copy(alpha = 0.2f),
                             onClick = { /* Back */ }
                         ) {
                             Row(
@@ -85,54 +85,61 @@ fun ProfileScreen() {
                             }
                         }
                     }
-                    
+
                     Text(
                         "Profile",
                         color = Color.White,
-                        fontSize = 24.sp,
+                        fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 24.dp)
                     )
                 }
             }
+            Spacer(modifier = Modifier.height(40.dp))
 
-            // Profile Card
+            // Main Content with negative offset for overlap
             Column(
                 modifier = Modifier
                     .padding(horizontal = 20.dp)
-                    .offset(y = (-30).dp)
+                    .offset(y = (-40).dp)
             ) {
+                // Profile Info Card
+
+
+
+                Spacer(modifier = Modifier.height(40.dp))
+
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .shadow(8.dp, RoundedCornerShape(20.dp)),
-                    shape = RoundedCornerShape(20.dp),
+                        .shadow(12.dp, RoundedCornerShape(24.dp)),
+                    shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(24.dp),
+                            .padding(vertical = 32.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(80.dp)
-                                .clip(CircleShape)
-                                .background(StudyPurpleLight),
-                            contentAlignment = Alignment.Center
+                        Surface(
+                            modifier = Modifier.size(90.dp),
+                            shape = CircleShape,
+                            color = StudyPurpleLight
                         ) {
-                            Text(
-                                "DA",
-                                color = StudyPurple,
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    "DA",
+                                    color = StudyPurple,
+                                    fontSize = 32.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             "Ditya Adhikari",
-                            fontSize = 18.sp,
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             color = StudyPurple
                         )
@@ -144,73 +151,70 @@ fun ProfileScreen() {
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 // Update Preferences Card
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .shadow(4.dp, RoundedCornerShape(20.dp)),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
-                ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
-                        Text(
-                            "Update preferences",
-                            color = StudyPurple,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        ProfileTextField(value = "Ditya Adhikari", placeholder = "Name")
-                        Spacer(modifier = Modifier.height(12.dp))
-                        ProfileTextField(value = "", placeholder = "Email")
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Button(
-                            onClick = { },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = StudyPurple),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("Save Changes", color = Color.White)
-                        }
-                    }
-                }
+                PreferenceCard(
+                    title = "Update preferences",
+                    fields = listOf(
+                        "Ditya Adhikari" to "Name",
+                        "" to "Email"
+                    ),
+                    buttonText = "Save Changes"
+                )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 // Password Reset Card
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .shadow(4.dp, RoundedCornerShape(20.dp)),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
-                ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
-                        Text(
-                            "Password reset",
-                            color = StudyPurple,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        ProfileTextField(value = "", placeholder = "New password")
-                        Spacer(modifier = Modifier.height(12.dp))
-                        ProfileTextField(value = "", placeholder = "Confirm password")
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Button(
-                            onClick = { },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = StudyPurple),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("Update password", color = Color.White)
-                        }
-                    }
-                }
+                PreferenceCard(
+                    title = "Password reset",
+                    fields = listOf(
+                        "" to "New password",
+                        "" to "Confirm password"
+                    ),
+                    buttonText = "Update password"
+                )
                 
                 Spacer(modifier = Modifier.height(40.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun PreferenceCard(title: String, fields: List<Pair<String, String>>, buttonText: String) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(8.dp, RoundedCornerShape(10.dp)),
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(modifier = Modifier.padding(24.dp)) {
+            Text(
+                title,
+                color = StudyPurple.copy(alpha = 0.7f),
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            fields.forEach { (value, placeholder) ->
+                ProfileTextField(value = value, placeholder = placeholder)
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Button(
+                onClick = { },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = StudyPurple),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(buttonText, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
             }
         }
     }
@@ -221,7 +225,7 @@ fun ProfileTextField(value: String, placeholder: String) {
     TextField(
         value = value,
         onValueChange = {},
-        placeholder = { Text(placeholder, color = Color.Gray.copy(alpha = 0.6f)) },
+        placeholder = { Text(placeholder, color = StudyPurple.copy(alpha = 0.4f), fontWeight = FontWeight.Bold) },
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp)),
@@ -230,7 +234,9 @@ fun ProfileTextField(value: String, placeholder: String) {
             focusedContainerColor = StudyPurpleLight,
             unfocusedIndicatorColor = Color.Transparent,
             focusedIndicatorColor = Color.Transparent,
-            disabledIndicatorColor = Color.Transparent
+            disabledIndicatorColor = Color.Transparent,
+            focusedTextColor = StudyPurple,
+            unfocusedTextColor = StudyPurple
         ),
         singleLine = true
     )
