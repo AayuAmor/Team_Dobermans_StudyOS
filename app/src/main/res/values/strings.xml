@@ -24,4 +24,17 @@
     <string name="note_periodic_table_body">The periodic table is a tabular, organized display of all 118 known chemical elements arranged by increasing atomic number (number of protons).</string>
     <string name="note_mitochondria_title">Mitochondria</string>
     <string name="note_mitochondria_body">Mitochondria are membrane-bound cell organelles (mitochondrion, singular) that generate most of the chemical energy needed to power the cell\'s biochemical reactions.</string>
+    <string name="title_activity_flashcards">Flashcards</string>
+    <string name="flashcards_subtitle">Flip card • rate recall</string>
+    <string name="tap_to_reveal">TAP TO REVEAL</string>
+    <string name="mitosis">Mitosis</string>
+    <string name="mitosis_desc">Cell division producing 2 identical daughter cell</string>
+    <string name="swipe_or_tap">Swipe or tap</string>
+    <string name="again">Again</string>
+    <string name="got_it">Got it</string>
+    <string name="add_card">Add Card</string>
+    <string name="question_term">Question / term</string>
+    <string name="answer_definition">Answer / definition</string>
+    <string name="add_card_button">Add card</string>
+    <string name="biology">Biology</string>
 </resources>
