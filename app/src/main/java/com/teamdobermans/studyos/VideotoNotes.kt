@@ -48,7 +48,7 @@ fun VideoToNotesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color(0xFFF4F5FF)) // LightPurpleBg
+                .background(Color(0xFFF4F5FF))
         ) {
             HeaderSection(onBackClick = onBackClick)
             

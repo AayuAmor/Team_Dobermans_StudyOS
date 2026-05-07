@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 
-// ─── Data Models ───────────────────────────────────────────────────────────────
+
 data class Note(
     val id: Int,
     val title: String,
@@ -40,14 +40,12 @@ data class NavTab(
     val label: String,
     val iconResId: Int
 )
-
-// ─── Colors ────────────────────────────────────────────────────────────────────
 private val BrandPurple = Color(0xFF6C5CE7)
 private val BrandPurpleLight = Color(0xFF7C6CEF)
 private val BackgroundGray = Color(0xFFF0EFF5)
 private val SelectedChipBg = Color(0xFFDED9FF)
 
-// ─── Activity ──────────────────────────────────────────────────────────────────
+
 class NotesPage : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,7 +61,7 @@ class NotesPage : ComponentActivity() {
     }
 }
 
-// ─── Main Screen ───────────────────────────────────────────────────────────────
+
 @Composable
 fun NotesScreen(
     modifier: Modifier = Modifier,
