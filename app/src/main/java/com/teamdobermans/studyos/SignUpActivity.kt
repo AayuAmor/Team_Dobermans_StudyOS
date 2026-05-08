@@ -75,7 +75,7 @@ fun SignUpBody() {
     var passwordVisible by remember { mutableStateOf(false) }
 
     val context  = LocalContext.current
-    val activity = context as Activity
+    val activity = context as? Activity
 
     Column(
         modifier = Modifier
@@ -94,7 +94,7 @@ fun SignUpBody() {
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = Color.White.copy(alpha = 0.25f),
-                modifier = Modifier.clickable { activity.finish() }
+                modifier = Modifier.clickable { activity?.finish() }
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
