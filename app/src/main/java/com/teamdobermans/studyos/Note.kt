@@ -28,7 +28,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 
-
 data class Note(
     val id: Int,
     val title: String,
@@ -40,11 +39,11 @@ data class NavTab(
     val label: String,
     val iconResId: Int
 )
+
 private val BrandPurple = Color(0xFF6C5CE7)
 private val BrandPurpleLight = Color(0xFF7C6CEF)
 private val BackgroundGray = Color(0xFFF0EFF5)
 private val SelectedChipBg = Color(0xFFDED9FF)
-
 
 class NotesPage : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,7 +59,6 @@ class NotesPage : ComponentActivity() {
         }
     }
 }
-
 
 @Composable
 fun NotesScreen(
@@ -183,12 +181,21 @@ fun NotesHeader(
                     .clickable { onBackClick() }
                     .padding(horizontal = 14.dp, vertical = 8.dp)
             ) {
-                Text(
-                    text = "← " + stringResource(R.string.back),
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_arrow_back_24),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = stringResource(R.string.back),
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
 
             Box(
@@ -346,11 +353,13 @@ fun NoteCard(
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
-                Text(
-                    text = "×",
-                    color = Color.LightGray,
-                    fontSize = 24.sp,
-                    modifier = Modifier.clickable { onClose() }
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_clear),
+                    contentDescription = "Close",
+                    tint = Color.LightGray,
+                    modifier = Modifier
+                        .size(20.dp)
+                        .clickable { onClose() }
                 )
             }
 
@@ -387,30 +396,36 @@ fun BottomNavBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp),
+                .padding(vertical = 8.dp, horizontal = 12.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
             tabs.forEach { tab ->
                 val isActive = tab.label == activeTab
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                Box(
                     modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (isActive) SelectedChipBg else Color.Transparent)
                         .clickable { onTabClick(tab.label) }
-                        .padding(horizontal = 4.dp)
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        painter = painterResource(id = tab.iconResId),
-                        contentDescription = tab.label,
-                        tint = if (isActive) BrandPurple else Color.LightGray,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Text(
-                        text = tab.label,
-                        color = if (isActive) BrandPurple else Color.LightGray,
-                        fontSize = 11.sp,
-                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            painter = painterResource(id = tab.iconResId),
+                            contentDescription = tab.label,
+                            tint = if (isActive) BrandPurple else Color.LightGray,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text(
+                            text = tab.label,
+                            color = if (isActive) BrandPurple else Color.LightGray,
+                            fontSize = 11.sp,
+                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium
+                        )
+                    }
                 }
             }
         }
