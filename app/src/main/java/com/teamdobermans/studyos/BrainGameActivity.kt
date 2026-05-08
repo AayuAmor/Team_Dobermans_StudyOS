@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -57,7 +59,7 @@ fun BrainGameBody() {
             modifier = Modifier.fillMaxSize()
         ) {
 
-            // TOP HEADER
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -131,7 +133,7 @@ fun BrainGameBody() {
 
             Spacer(modifier = Modifier.height(120.dp))
 
-            // TITLE
+
             Text(
                 text = "Mental math sprint",
                 color = Color(0xFF5B4DDB),
@@ -141,7 +143,7 @@ fun BrainGameBody() {
 
             Spacer(modifier = Modifier.height(60.dp))
 
-            // QUESTION
+
             Text(
                 text = "? + ? = ?",
                 color = Color(0xFF352C8B),
@@ -152,7 +154,7 @@ fun BrainGameBody() {
 
             Spacer(modifier = Modifier.height(100.dp))
 
-            // SCORE SECTION
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -215,6 +217,28 @@ fun BrainGameBody() {
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(70.dp))
+
+
+            Button(
+                onClick = {},
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .width(220.dp)
+                    .height(58.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF5B4DDB)
+                )
+            ) {
+
+                Text(
+                    text = "Start Game",
+                    color = Color.White,
+                    fontSize = 24.sp
+                )
+            }
         }
     }
 }
@@ -225,3 +249,4 @@ fun BrainGamePreview() {
 
     BrainGameBody()
 }
+
