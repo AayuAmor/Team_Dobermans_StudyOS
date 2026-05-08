@@ -29,6 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,14 +45,25 @@ import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 import com.teamdobermans.studyos.ui.theme.StudyPurple
 import com.teamdobermans.studyos.ui.theme.StudyPurpleDeep
 import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
+import kotlin.random.Random
 
 data class SubjectProgress(val name: String, val percent: Float, val color: Color)
+
+private fun heatColor(level: Int): Color = when (level) {
+    0    -> Color(0xFFE8E4FF)
+    1    -> Color(0xFFBDB5FF)
+    2    -> Color(0xFF9589F5)
+    3    -> Color(0xFF6C5DD3)
+    else -> Color(0xFF4A3EB8)
+}
 
 class ProgressActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent { ProgressBody() }
+        setContent {
+            ProgressBody()
+        }
     }
 }
 
@@ -59,7 +71,7 @@ class ProgressActivity : ComponentActivity() {
 fun ProgressBody() {
 
     val context  = LocalContext.current
-    val activity = context as Activity
+    val activity = context as? Activity
 
     val subjectProgressList = listOf(
         SubjectProgress("Science", 0.40f, StudyPurple),
@@ -67,10 +79,20 @@ fun ProgressBody() {
         SubjectProgress("Math",    0.75f, Color(0xFFBFA300))
     )
 
+    val heatData    = remember { Array(4) { IntArray(36) { Random.nextInt(0, 5) } } }
+    val dayLabels   = listOf("Sun", "Tue", "Thu", "Sat")
+    val monthLabels = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep")
+
     Column(modifier = Modifier.fillMaxSize().background(StudyPurple)) {
 
         Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.25f), modifier = Modifier.clickable { activity.finish() }) {
+            Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.25f),
+
+                modifier = Modifier.clickable {
+
+                (context as? Activity)?.finish()
+
+            } ) {
                 Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(painter = painterResource(R.drawable.baseline_arrow_back_24), contentDescription = "Back", tint = Color.White, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(4.dp))
@@ -104,11 +126,8 @@ fun ProgressBody() {
 
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Column(modifier = Modifier.padding(16.dp)) {
-
                     Text("Subject Progress", color = StudyPurple, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-
                     Spacer(modifier = Modifier.height(14.dp))
-
                     if (subjectProgressList.isEmpty()) {
                         Text("No subjects tracked yet", color = Color.Gray, fontSize = 13.sp)
                     } else {
@@ -120,9 +139,42 @@ fun ProgressBody() {
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(modifier = Modifier.padding(start = 32.dp)) {
+                        monthLabels.forEach { month ->
+                            Text(month, fontSize = 9.sp, color = Color.Gray, modifier = Modifier.weight(1f))
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    dayLabels.forEachIndexed { rowIndex, dayLabel ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(dayLabel, fontSize = 9.sp, color = Color.Gray, modifier = Modifier.width(28.dp))
+                            heatData[rowIndex].forEach { level ->
+                                Box(modifier = Modifier.size(9.dp).padding(1.dp).clip(RoundedCornerShape(2.dp)).background(heatColor(level)))
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                    Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                        Text("Less", fontSize = 9.sp, color = Color.Gray)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        (0..4).forEach { lvl -> Box(modifier = Modifier.size(9.dp).padding(1.dp).clip(RoundedCornerShape(2.dp)).background(heatColor(lvl))) }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("More", fontSize = 9.sp, color = Color.Gray)
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(80.dp))
         }
     }
+
+//    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+//        StudyBottomNav(selected = 3)
+//    }
 }
 
 @Composable
@@ -149,51 +201,29 @@ fun StatCard(modifier: Modifier = Modifier, label: String, value: String, unit: 
     }
 }
 
-@Composable
-private fun ProgressBodyPreview() {
-    val subjects = listOf(SubjectProgress("Science", 0.40f, StudyPurple), SubjectProgress("Social", 0.45f, Color(0xFFE53935)), SubjectProgress("Math", 0.75f, Color(0xFFBFA300)))
-    Column(modifier = Modifier.fillMaxSize().background(StudyPurple)) {
-        Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.25f)) {
-                Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(painter = painterResource(R.drawable.baseline_arrow_back_24), contentDescription = "Back", tint = Color.White, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Back", color = Color.White, fontSize = 14.sp)
-                }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Text("Progress", style = TextStyle(color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold))
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                listOf("Study Hours", "Streak", "Performance").forEach { Text("• $it", color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp) }
-            }
-        }
-        Column(modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(0.dp)).background(StudyPurpleLight).padding(16.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatCard(modifier = Modifier.weight(1f), label = "Streak", value = "14", unit = "days 🔥")
-                StatCard(modifier = Modifier.weight(1f), label = "Cards Done", value = "0")
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatCard(modifier = Modifier.weight(1f), label = "Quiz average", value = "10")
-                StatCard(modifier = Modifier.weight(1f), label = "Focus min", value = "50", unit = "min")
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Subject Progress", color = StudyPurple, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Spacer(modifier = Modifier.height(14.dp))
-                    subjects.forEach { SubjectBar(it.name, it.percent, it.color); Spacer(modifier = Modifier.height(12.dp)) }
-                }
-            }
-        }
-    }
-}
+//@Composable
+//fun StudyBottomNav(selected: Int) {
+//    val items = listOf("Home" to R.drawable.baseline_arrow_back_24, "Study" to R.drawable.baseline_history_24,
+//        "Plan" to R.drawable.baseline_more_horiz_24, "Progress" to R.drawable.baseline_notifications_none_24,
+//        "Settings" to R.drawable.baseline_settings_24)
+//    Surface(modifier = Modifier.fillMaxWidth(), color = Color.White, shadowElevation = 12.dp) {
+//        Row(modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 8.dp, vertical = 8.dp), horizontalArrangement = Arrangement.SpaceAround) {
+//            items.forEachIndexed { index, (label, icon) ->
+//                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { }) {
+//                    Icon(painter = painterResource(icon), contentDescription = label,
+//                        tint = if (index == selected) StudyPurple else Color.Gray, modifier = Modifier.size(22.dp))
+//                    Spacer(modifier = Modifier.height(2.dp))
+//                    Text(label, color = if (index == selected) StudyPurple else Color.Gray, fontSize = 10.sp)
+//                }
+//            }
+//        }
+//    }
+//}
 
 @Preview(showBackground = true)
 @Composable
 fun ProgressPreview() {
     StudyOSTheme {
-        ProgressBodyPreview()
+        ProgressBody()
     }
 }
