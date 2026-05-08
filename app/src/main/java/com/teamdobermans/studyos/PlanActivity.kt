@@ -51,6 +51,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -89,26 +90,38 @@ fun PlanBody() {
     val firstDayOfWeek = currentMonth.atDay(1).dayOfWeek.value
     val daysInMonth  = currentMonth.lengthOfMonth()
 
-    var taskTitle       by remember { mutableStateOf("") }
-    var taskDate        by remember { mutableStateOf("") }
+    var taskTitle        by remember { mutableStateOf("") }
+    var taskDate         by remember { mutableStateOf("") }
     var priorityDropdown by remember { mutableStateOf(false) }
     var selectedPriority by remember { mutableStateOf(Priority.MEDIUM) }
     var subjectDropdown  by remember { mutableStateOf(false) }
     val subjects         = remember { mutableStateListOf("General", "Biology", "Physics", "Math") }
     var selectedSubject  by remember { mutableStateOf("General") }
+    val tasks            = remember { mutableStateListOf(
+        Task("Read Chapter 5", "Apr 22", Priority.HIGH, "Biology", done = true),
+        Task("Project Work of English", "Apr 25", Priority.MEDIUM, "English")
+    )}
+
+    val pendingCount = tasks.count { !it.done }
 
     Column(modifier = Modifier.fillMaxSize().background(StudyPurple)) {
 
         Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.25f), modifier = Modifier.clickable { activity?.finish() }) {
-                Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(painter = painterResource(R.drawable.baseline_arrow_back_24), contentDescription = "Back", tint = Color.White, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Back", color = Color.White, fontSize = 14.sp)
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.25f), modifier = Modifier.clickable { activity?.finish() }) {
+                    Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(painter = painterResource(R.drawable.baseline_arrow_back_24), contentDescription = "Back", tint = Color.White, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Back", color = Color.White, fontSize = 14.sp)
+                    }
+                }
+                Surface(shape = RoundedCornerShape(10.dp), color = Color.White.copy(alpha = 0.2f)) {
+                    Text("All", color = Color.White, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Text("Plan", style = TextStyle(color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold))
+            if (pendingCount > 0) Text("$pendingCount Task${if (pendingCount > 1) "s" else ""} Remaining", color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp)
         }
 
         Column(
@@ -156,42 +169,17 @@ fun PlanBody() {
 
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Column(modifier = Modifier.padding(16.dp)) {
-
-                    OutlinedTextField(
-                        value = taskTitle,
-                        onValueChange = { taskTitle = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        singleLine = true,
+                    OutlinedTextField(value = taskTitle, onValueChange = { taskTitle = it }, modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp), singleLine = true,
                         placeholder = { Text("New Task.....", color = Color.Gray) },
-                        colors = TextFieldDefaults.colors(
-                            unfocusedContainerColor = Color(0xFFF0EEFF),
-                            focusedContainerColor   = Color(0xFFF0EEFF),
-                            unfocusedIndicatorColor = Color.Transparent,
-                            focusedIndicatorColor   = StudyPurple,
-                        )
-                    )
-
+                        colors = TextFieldDefaults.colors(unfocusedContainerColor = Color(0xFFF0EEFF), focusedContainerColor = Color(0xFFF0EEFF), unfocusedIndicatorColor = Color.Transparent, focusedIndicatorColor = StudyPurple))
                     Spacer(modifier = Modifier.height(10.dp))
-
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-
-                        OutlinedTextField(
-                            value = taskDate,
-                            onValueChange = { taskDate = it },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true,
+                        OutlinedTextField(value = taskDate, onValueChange = { taskDate = it }, modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp), singleLine = true,
                             placeholder = { Text("dd.......yy", color = Color.Gray, fontSize = 13.sp) },
                             trailingIcon = { Icon(painter = painterResource(R.drawable.baseline_more_horiz_24), contentDescription = null, tint = Color.Gray, modifier = Modifier.size(18.dp)) },
-                            colors = TextFieldDefaults.colors(
-                                unfocusedContainerColor = Color(0xFFF0EEFF),
-                                focusedContainerColor   = Color(0xFFF0EEFF),
-                                unfocusedIndicatorColor = Color.Transparent,
-                                focusedIndicatorColor   = StudyPurple,
-                            )
-                        )
-
+                            colors = TextFieldDefaults.colors(unfocusedContainerColor = Color(0xFFF0EEFF), focusedContainerColor = Color(0xFFF0EEFF), unfocusedIndicatorColor = Color.Transparent, focusedIndicatorColor = StudyPurple))
                         Box(modifier = Modifier.weight(1f)) {
                             Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFF0EEFF), modifier = Modifier.fillMaxWidth().height(52.dp).clickable { priorityDropdown = true }) {
                                 Row(modifier = Modifier.padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
@@ -200,15 +188,11 @@ fun PlanBody() {
                                 }
                             }
                             DropdownMenu(expanded = priorityDropdown, onDismissRequest = { priorityDropdown = false }) {
-                                Priority.values().forEach { p ->
-                                    DropdownMenuItem(text = { Text(p.name.lowercase().replaceFirstChar { it.uppercase() }) }, onClick = { selectedPriority = p; priorityDropdown = false })
-                                }
+                                Priority.values().forEach { p -> DropdownMenuItem(text = { Text(p.name.lowercase().replaceFirstChar { it.uppercase() }) }, onClick = { selectedPriority = p; priorityDropdown = false }) }
                             }
                         }
                     }
-
                     Spacer(modifier = Modifier.height(10.dp))
-
                     Box(modifier = Modifier.fillMaxWidth()) {
                         Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFF0EEFF), modifier = Modifier.fillMaxWidth().height(52.dp).clickable { subjectDropdown = true }) {
                             Row(modifier = Modifier.padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
@@ -217,16 +201,19 @@ fun PlanBody() {
                             }
                         }
                         DropdownMenu(expanded = subjectDropdown, onDismissRequest = { subjectDropdown = false }) {
-                            subjects.forEach { subject ->
-                                DropdownMenuItem(text = { Text(subject) }, onClick = { selectedSubject = subject; subjectDropdown = false })
-                            }
+                            subjects.forEach { subject -> DropdownMenuItem(text = { Text(subject) }, onClick = { selectedSubject = subject; subjectDropdown = false }) }
                         }
                     }
-
                     Spacer(modifier = Modifier.height(14.dp))
-
                     Button(
-                        onClick = { /* TODO: add task */ },
+                        onClick = {
+                            val trimmed = taskTitle.trim()
+                            if (trimmed.isNotEmpty()) {
+                                tasks.add(Task(trimmed, taskDate, selectedPriority, selectedSubject))
+                                taskTitle = ""
+                                taskDate  = ""
+                            }
+                        },
                         enabled = taskTitle.trim().isNotEmpty(),
                         modifier = Modifier.fillMaxWidth().height(48.dp),
                         shape = RoundedCornerShape(12.dp),
@@ -237,9 +224,61 @@ fun PlanBody() {
                 }
             }
 
+            Spacer(modifier = Modifier.height(12.dp))
+
+            tasks.forEach { task ->
+                Surface(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    color = Color.White
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier.size(22.dp).clip(CircleShape)
+                                .background(if (task.done) StudyPurple else Color.Transparent)
+                                .clickable { val index = tasks.indexOf(task); if (index >= 0) tasks[index] = task.copy(done = !task.done) }
+                                .then(if (!task.done) Modifier.background(Color.White).clip(CircleShape) else Modifier),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (task.done) Icon(painter = painterResource(R.drawable.baseline_check_24), contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                            else Box(modifier = Modifier.size(22.dp).clip(CircleShape).background(Color(0xFFEEEBFF)))
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            task.title,
+                            modifier = Modifier.weight(1f),
+                            color = if (task.done) Color.Gray else Color(0xFF1A1A2E),
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 14.sp,
+                            textDecoration = if (task.done) TextDecoration.LineThrough else TextDecoration.None
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(50.dp),
+                            color = when (task.priority) { Priority.HIGH -> Color(0xFFFFEBEB); Priority.MEDIUM -> Color(0xFFFFF8E1); Priority.LOW -> Color(0xFFE8F5E9) }
+                        ) {
+                            Text(
+                                task.priority.name.lowercase().replaceFirstChar { it.uppercase() },
+                                color = when (task.priority) { Priority.HIGH -> Color(0xFFE53935); Priority.MEDIUM -> Color(0xFFFFC107); Priority.LOW -> Color(0xFF4CAF50) },
+                                fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("×", color = Color.Gray, fontSize = 16.sp, modifier = Modifier.clickable { tasks.remove(task) })
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(80.dp))
         }
     }
+
+//    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+//        StudyBottomNav(selected = 2)
+//    }
 }
 
 @Preview(showBackground = true)
