@@ -22,14 +22,21 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,9 +49,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 import com.teamdobermans.studyos.ui.theme.StudyPurple
 import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
 
@@ -66,6 +75,46 @@ fun SettingsBody() {
     var weeklySummary by remember { mutableStateOf(true) }
     var focusSounds   by remember { mutableStateOf(false) }
     var pinNotes      by remember { mutableStateOf(false) }
+
+    var dailyGoalMin  by remember { mutableStateOf(60) }
+    var goalDialog    by remember { mutableStateOf(false) }
+    var goalInput     by remember { mutableStateOf("") }
+
+    if (goalDialog) {
+        AlertDialog(
+            onDismissRequest = { goalDialog = false; goalInput = "" },
+            title = { Text("Daily Study Goal", fontWeight = FontWeight.Bold, color = Color(0xFF1A1A2E)) },
+            text = {
+                OutlinedTextField(
+                    value = goalInput,
+                    onValueChange = { goalInput = it.filter { c -> c.isDigit() }.take(3) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    placeholder = { Text("Minutes per day", color = Color.Gray) },
+                    colors = TextFieldDefaults.colors(
+                        unfocusedContainerColor = Color(0xFFF5F3FF),
+                        focusedContainerColor   = Color(0xFFF5F3FF),
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedIndicatorColor   = StudyPurple,
+                    )
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { val mins = goalInput.toIntOrNull(); if (mins != null && mins > 0) dailyGoalMin = mins; goalDialog = false; goalInput = "" },
+                    enabled = goalInput.toIntOrNull()?.let { it > 0 } == true,
+                    colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)
+                ) { Text("Save", color = Color.White, fontWeight = FontWeight.SemiBold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { goalDialog = false; goalInput = "" }) { Text("Cancel", color = Color.Gray) }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(20.dp)
+        )
+    }
 
     Column(modifier = Modifier.fillMaxSize().background(StudyPurple)) {
 
@@ -128,10 +177,45 @@ fun SettingsBody() {
                     SettingsToggleRow("Pin Notes", pinNotes) { pinNotes = it }
                 }
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        goalInput = dailyGoalMin.toString()
+                        goalDialog = true
+                    },
+                shape = RoundedCornerShape(16.dp)
+            ) {
+
+                Column(modifier = Modifier.padding(16.dp)) {
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+
+                        Text("Daily Study Goal", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+
+                        Icon(
+                            painter = painterResource(R.drawable.baseline_more_horiz_24),
+                            contentDescription = "Edit",
+                            tint = Color.Gray,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text("$dailyGoalMin min / Day", color = Color(0xFF1A1A2E), fontSize = 14.sp)
+                }
+            }
         }
     }
 }
-
 @Preview
 @Composable
 fun SettingsPreview() {
