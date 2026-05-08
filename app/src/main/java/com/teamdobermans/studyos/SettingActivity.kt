@@ -15,13 +15,20 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,6 +46,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.teamdobermans.studyos.ui.theme.StudyPurple
+import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
 
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,7 +60,7 @@ class SettingsActivity : ComponentActivity() {
 fun SettingsBody() {
 
     val context  = LocalContext.current
-    val activity = context as? Activity
+    val activity = context as Activity
 
     var offlineMode   by remember { mutableStateOf(true) }
     var weeklySummary by remember { mutableStateOf(true) }
@@ -63,16 +71,9 @@ fun SettingsBody() {
 
         Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
 
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = Color.White.copy(alpha = 0.25f),
-                modifier = Modifier.clickable { activity?.finish() }
-            ) {
+            Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.25f), modifier = Modifier.clickable { activity.finish() }) {
 
-                Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
 
                     Icon(
                         painter = painterResource(R.drawable.baseline_arrow_back_24),
@@ -83,24 +84,50 @@ fun SettingsBody() {
 
                     Spacer(modifier = Modifier.width(4.dp))
 
-                    Text(
-                        "Back",
-                        color = Color.White,
-                        fontSize = 14.sp
-                    )
+                    Text("Back", color = Color.White, fontSize = 14.sp)
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Text(
-                "Settings",
-                style = TextStyle(
-                    color = Color.White,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            )
+            Text("Settings", style = TextStyle(color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold))
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(StudyPurpleLight)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+                .navigationBarsPadding()
+        ) {
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+
+                Column(modifier = Modifier.padding(16.dp)) {
+
+                    Text("App Preferences", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    SettingsToggleRow("Offline mode", offlineMode) { offlineMode = it }
+
+                    HorizontalDivider()
+
+                    SettingsToggleRow("Weekly Summary Notification", weeklySummary) { weeklySummary = it }
+
+                    HorizontalDivider()
+
+                    SettingsToggleRow("Focus Sounds", focusSounds) { focusSounds = it }
+
+                    HorizontalDivider()
+
+                    SettingsToggleRow("Pin Notes", pinNotes) { pinNotes = it }
+                }
+            }
         }
     }
 }
