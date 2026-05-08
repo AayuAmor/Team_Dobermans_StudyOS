@@ -45,15 +45,12 @@ fun VideoToNotesScreen(
         bottomBar = { StudyOSBottomNavBar() }
     ) { paddingValues ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(Color(0xFFF4F5FF))
+
         ) {
             HeaderSection(onBackClick = onBackClick)
-            
+
             Spacer(modifier = Modifier.height(32.dp))
-            
+
             InputCard(onGenerateNotesClick = onGenerateNotesClick)
         }
     }

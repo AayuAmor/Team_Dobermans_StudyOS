@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -22,32 +23,37 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
+import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 
 class WelcomePage : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            Surface(modifier = Modifier.fillMaxSize()) {
-                WelcomeScreen(
-                    onGetStartedClick = { },
-                    onSkipIntroClick = { }
-                )
+            StudyOSTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = Color(0xFF5D53B1)
+                ) {
+                    WelcomeScreen(
+                        onGetStartedClick = { },
+                        onSkipIntroClick = { }
+                    )
+                }
             }
         }
     }
 }
 
-
 @Composable
 fun WelcomeScreen(
+    modifier: Modifier = Modifier,
     onGetStartedClick: () -> Unit = {},
     onSkipIntroClick: () -> Unit = {}
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF5C4EB2)),
+            .background(Color(0xFF5D53B1)),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -55,48 +61,53 @@ fun WelcomeScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(horizontal = 32.dp)
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.studyoslogo),
-                contentDescription = "StudyOS Logo",
+            Box(
                 modifier = Modifier
-                    .size(160.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(Color.White)
-                    .padding(12.dp)
-            )
+                    .size(180.dp)
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.studyoslogo),
+                    contentDescription = "StudyOS Logo",
+                    modifier = Modifier
+                        .size(140.dp)
+                )
+            }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(48.dp))
 
             Text(
-                text = "Welcome to",
+                text = stringResource(id = R.string.welcome_to),
                 color = Color.White,
-                fontSize = 30.sp,
+                fontSize = 32.sp,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
                 text = buildAnnotatedString {
-                    withStyle(style = SpanStyle(color = Color(0xFF7CA9FF))) {
-                        append("StudyOS")
+                    withStyle(style = SpanStyle(color = Color(0xFF90B9FF))) {
+                        append(stringResource(id = R.string.app_name))
                     }
                 },
-                fontSize = 32.sp,
+                fontSize = 40.sp,
                 fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Your all-in-one study system.\nLet's get your journey started in 3 steps.",
-                color = Color.White.copy(alpha = 0.85f),
+                text = stringResource(id = R.string.welcome_subtitle),
+                color = Color.White.copy(alpha = 0.9f),
                 fontSize = 16.sp,
                 textAlign = TextAlign.Center,
-                lineHeight = 22.sp
+                lineHeight = 24.sp,
+                fontWeight = FontWeight.Medium
             )
         }
 
-        Spacer(modifier = Modifier.height(40.dp))
-
+        Spacer(modifier = Modifier.height(48.dp))
 
         Row(
             horizontalArrangement = Arrangement.Center,
@@ -104,42 +115,46 @@ fun WelcomeScreen(
         ) {
             Box(
                 modifier = Modifier
-                    .width(28.dp)
+                    .width(32.dp)
                     .height(6.dp)
                     .background(Color.White, shape = RoundedCornerShape(3.dp))
             )
-            Spacer(modifier = Modifier.width(6.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             Box(
                 modifier = Modifier
                     .size(6.dp)
-                    .background(Color.White.copy(alpha = 0.5f), shape = RoundedCornerShape(3.dp))
+                    .background(Color.White.copy(alpha = 0.4f), shape = RoundedCornerShape(3.dp))
             )
-            Spacer(modifier = Modifier.width(6.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             Box(
                 modifier = Modifier
                     .size(6.dp)
-                    .background(Color.White.copy(alpha = 0.5f), shape = RoundedCornerShape(3.dp))
+                    .background(Color.White.copy(alpha = 0.4f), shape = RoundedCornerShape(3.dp))
             )
         }
 
-        Spacer(modifier = Modifier.height(40.dp))
-
+        Spacer(modifier = Modifier.height(64.dp))
 
         Column(
-            modifier = Modifier.padding(horizontal = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Button(
                 onClick = onGetStartedClick,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                    .height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = Color(0xFF5D53B1)
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
             ) {
                 Text(
-                    text = "Get Started",
-                    color = Color(0xFF6B5B95),
+                    text = stringResource(id = R.string.get_started),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -149,13 +164,16 @@ fun WelcomeScreen(
                 onClick = onSkipIntroClick,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEBE2F1))
+                    .height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFEBE2F1),
+                    contentColor = Color(0xFF5D53B1)
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
             ) {
                 Text(
-                    text = "Skip intro",
-                    color = Color(0xFF5D517A),
+                    text = stringResource(id = R.string.skip_intro),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -164,10 +182,10 @@ fun WelcomeScreen(
     }
 }
 
-@Preview(showBackground = true, name = "Welcome Page")
+@Preview(showBackground = true, name = "Welcome Page Preview")
 @Composable
 fun WelcomePagePreview() {
-    Surface(modifier = Modifier.fillMaxSize()) {
+    StudyOSTheme {
         WelcomeScreen()
     }
 }

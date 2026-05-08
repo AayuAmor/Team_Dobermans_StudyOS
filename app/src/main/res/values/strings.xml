@@ -15,6 +15,10 @@
     <string name="folder_social">Social</string>
     <string name="folder_english">English</string>
     <string name="new_folder">+ New Folder</string>
+    <string name="welcome_to">Welcome to</string>
+    <string name="welcome_subtitle">Your all-in-one study system.\nLet’s get your journey started in 3 steps.</string>
+    <string name="get_started">Get Started</string>
+    <string name="skip_intro">Skip intro</string>
     <string name="nav_home">Home</string>
     <string name="nav_study">Study</string>
     <string name="nav_plan">Plan</string>
