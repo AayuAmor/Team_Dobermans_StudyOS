@@ -37,10 +37,14 @@ android {
     buildFeatures {
         compose = true
     }
-}
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.4"
+    }
 
 
-dependencies {
+
+    dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
