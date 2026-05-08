@@ -1,5 +1,5 @@
 package com.example.dobermans_team_studyos
-
+import androidx.compose.ui.tooling.preview.Preview
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -27,7 +27,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -75,7 +74,6 @@ fun BrainGameBody() {
 
                 Column {
 
-                    // BACK BUTTON
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
@@ -129,9 +127,31 @@ fun BrainGameBody() {
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(120.dp))
+
+            // TITLE
+            Text(
+                text = "Mental math sprint",
+                color = Color(0xFF5B4DDB),
+                fontSize = 32.sp,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+
+            Spacer(modifier = Modifier.height(60.dp))
+
+            // QUESTION
+            Text(
+                text = "? + ? = ?",
+                color = Color(0xFF352C8B),
+                fontSize = 62.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
         }
     }
 }
+
 
 @Preview
 @Composable
