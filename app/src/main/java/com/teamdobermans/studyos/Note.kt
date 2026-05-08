@@ -100,7 +100,7 @@ fun NotesScreen(
                         (searchQuery.isEmpty() ||
                                 note.title.contains(searchQuery, ignoreCase = true) ||
                                 note.body.contains(searchQuery, ignoreCase = true))
-            }.toMutableList()
+            }
         )
     }
 
@@ -147,7 +147,7 @@ fun NotesScreen(
                         note = note,
                         onClick = { onNoteClick(note) },
                         onClose = {
-                            visibleNotes = visibleNotes.toMutableList().also { it.remove(note) }
+                            visibleNotes = visibleNotes.filter { it != note }
                         }
                     )
                 }

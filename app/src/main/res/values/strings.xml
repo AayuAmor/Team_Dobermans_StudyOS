@@ -41,4 +41,5 @@
     <string name="answer_definition">Answer / definition</string>
     <string name="add_card_button">Add card</string>
     <string name="biology">Biology</string>
+    <string name="title_activity_notes">Notes</string>
 </resources>
