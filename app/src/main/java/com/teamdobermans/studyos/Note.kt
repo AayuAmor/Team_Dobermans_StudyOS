@@ -1,5 +1,6 @@
 package com.teamdobermans.studyos
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -26,6 +27,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.teamdobermans.studyos.ui.theme.BrandPurple
+import com.teamdobermans.studyos.ui.theme.LightPurpleBg
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 
 data class Note(
@@ -40,7 +43,6 @@ data class NavTab(
     val iconResId: Int
 )
 
-private val BrandPurple = Color(0xFF6C5CE7)
 private val BrandPurpleLight = Color(0xFF7C6CEF)
 private val BackgroundGray = Color(0xFFF0EFF5)
 private val SelectedChipBg = Color(0xFFDED9FF)
@@ -51,8 +53,23 @@ class NotesPage : ComponentActivity() {
         setContent {
             StudyOSTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
+                    val context = this
                     NotesScreen(
-                        onBackClick = { finish() }
+                        onBackClick = { finish() },
+                        onAddClick = {
+                            startActivity(Intent(context, VideotoNotes::class.java))
+                        },
+                        onNavClick = { tabLabel ->
+                            when (tabLabel) {
+                                getString(R.string.nav_home) -> {
+                                    startActivity(Intent(context, WelcomePage::class.java))
+                                }
+                                getString(R.string.nav_study) -> {
+                                    startActivity(Intent(context, Flashcards::class.java))
+                                }
+                                // Add other navigations if needed
+                            }
+                        }
                     )
                 }
             }

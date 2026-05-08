@@ -1,5 +1,6 @@
 package com.teamdobermans.studyos
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -32,17 +33,35 @@ class Flashcards : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             StudyOSTheme {
-                FlashcardsScreen()
+                FlashcardsScreen(
+                    onBackClick = { finish() },
+                    onNavClick = { label ->
+                        when (label) {
+                            getString(R.string.nav_home) -> {
+                                startActivity(Intent(this, WelcomePage::class.java))
+                                finish()
+                            }
+                            getString(R.string.nav_study) -> {
+                                // Already here
+                            }
+                            // Add other navigations if needed
+                        }
+                    }
+                )
             }
         }
     }
 }
 
 @Composable
-fun FlashcardsScreen(modifier: Modifier = Modifier) {
+fun FlashcardsScreen(
+    modifier: Modifier = Modifier,
+    onBackClick: () -> Unit = {},
+    onNavClick: (String) -> Unit = {}
+) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        bottomBar = { StudyOSBottomNavigation() },
+        bottomBar = { StudyOSBottomNavigation(onNavClick = onNavClick) },
         containerColor = LightPurpleBg
     ) { innerPadding ->
         Column(
@@ -50,7 +69,7 @@ fun FlashcardsScreen(modifier: Modifier = Modifier) {
                 .padding(innerPadding)
                 .fillMaxSize()
         ) {
-            FlashcardsHeader()
+            FlashcardsHeader(onBackClick = onBackClick)
             
             Column(
                 modifier = Modifier
@@ -208,7 +227,10 @@ fun FlashcardsScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun FlashcardsHeader(modifier: Modifier = Modifier) {
+fun FlashcardsHeader(
+    onBackClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = BrandPurple,
@@ -218,7 +240,7 @@ fun FlashcardsHeader(modifier: Modifier = Modifier) {
             modifier = Modifier.padding(16.dp)
         ) {
             Button(
-                onClick = {},
+                onClick = onBackClick,
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.2f)),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                 modifier = Modifier.height(32.dp)
@@ -310,16 +332,17 @@ fun RecallButton(
 }
 
 @Composable
-fun StudyOSBottomNavigation() {
+fun StudyOSBottomNavigation(onNavClick: (String) -> Unit = {}) {
     NavigationBar(
         containerColor = Color.White,
         tonalElevation = 8.dp
     ) {
+        val homeLabel = stringResource(R.string.nav_home)
         NavigationBarItem(
             icon = { Icon(painterResource(R.drawable.baseline_home_24), contentDescription = null) },
-            label = { Text(stringResource(R.string.nav_home)) },
+            label = { Text(homeLabel) },
             selected = false,
-            onClick = {},
+            onClick = { onNavClick(homeLabel) },
             colors = NavigationBarItemDefaults.colors(
                 unselectedIconColor = BrandPurple,
                 unselectedTextColor = BrandPurple,
@@ -327,11 +350,12 @@ fun StudyOSBottomNavigation() {
                 indicatorColor = LightPurpleBg
             )
         )
+        val studyLabel = stringResource(R.string.nav_study)
         NavigationBarItem(
             icon = { Icon(painterResource(R.drawable.baseline_menu_book_24), contentDescription = null) },
-            label = { Text(stringResource(R.string.nav_study)) },
+            label = { Text(studyLabel) },
             selected = true,
-            onClick = {},
+            onClick = { onNavClick(studyLabel) },
             colors = NavigationBarItemDefaults.colors(
                 unselectedIconColor = BrandPurple,
                 unselectedTextColor = BrandPurple,

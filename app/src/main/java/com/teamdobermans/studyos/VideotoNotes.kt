@@ -1,5 +1,6 @@
 package com.teamdobermans.studyos
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -27,7 +28,21 @@ class VideotoNotes : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    VideoToNotesScreen()
+                    VideoToNotesScreen(
+                        onBackClick = { finish() },
+                        onNavClick = { label ->
+                            when (label) {
+                                getString(R.string.nav_home) -> {
+                                    startActivity(Intent(this, WelcomePage::class.java))
+                                    finish()
+                                }
+                                getString(R.string.nav_study) -> {
+                                    startActivity(Intent(this, NotesPage::class.java))
+                                    finish()
+                                }
+                            }
+                        }
+                    )
                 }
             }
         }
@@ -38,11 +53,12 @@ class VideotoNotes : ComponentActivity() {
 fun VideoToNotesScreen(
     modifier: Modifier = Modifier,
     onBackClick: () -> Unit = {},
-    onGenerateNotesClick: () -> Unit = {}
+    onGenerateNotesClick: () -> Unit = {},
+    onNavClick: (String) -> Unit = {}
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        bottomBar = { StudyOSBottomNavBar() }
+        bottomBar = { StudyOSBottomNavBar(onNavClick = onNavClick) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -172,6 +188,7 @@ private fun InputCard(
 
 @Composable
 private fun StudyOSBottomNavBar(
+    onNavClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     NavigationBar(
@@ -188,9 +205,10 @@ private fun StudyOSBottomNavBar(
         )
         
         items.forEach { (labelRes, iconRes, selected) ->
+            val label = stringResource(id = labelRes)
             NavigationBarItem(
                 selected = selected,
-                onClick = { },
+                onClick = { onNavClick(label) },
                 icon = {
                     Icon(
                         painter = painterResource(id = iconRes),

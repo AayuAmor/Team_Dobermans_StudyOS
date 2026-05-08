@@ -1,5 +1,6 @@
 package com.teamdobermans.studyos
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -35,8 +36,12 @@ class WelcomePage : ComponentActivity() {
                     color = Color(0xFF5D53B1)
                 ) {
                     WelcomeScreen(
-                        onGetStartedClick = { },
-                        onSkipIntroClick = { }
+                        onGetStartedClick = {
+                            startActivity(Intent(this, NotesPage::class.java))
+                        },
+                        onSkipIntroClick = {
+                            startActivity(Intent(this, NotesPage::class.java))
+                        }
                     )
                 }
             }
