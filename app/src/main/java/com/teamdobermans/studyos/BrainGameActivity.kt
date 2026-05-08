@@ -1,10 +1,9 @@
 package com.example.dobermans_team_studyos
-import androidx.compose.ui.tooling.preview.Preview
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,9 +14,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,8 +26,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -82,10 +83,10 @@ fun BrainGameBody() {
                             .padding(horizontal = 14.dp, vertical = 10.dp)
                     ) {
 
-                        Image(
-                            painter = painterResource(R.drawable.outline_arrow_back_24),
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
                             contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                            tint = Color.White
                         )
 
                         Spacer(modifier = Modifier.width(6.dp))
@@ -148,13 +149,79 @@ fun BrainGameBody() {
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
+
+            Spacer(modifier = Modifier.height(100.dp))
+
+            // SCORE SECTION
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+
+                    Text(
+                        text = "Score",
+                        color = Color(0xFF5B4DDB),
+                        fontSize = 20.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "0",
+                        color = Color(0xFF5B4DDB),
+                        fontSize = 30.sp
+                    )
+                }
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+
+                    Text(
+                        text = "Best",
+                        color = Color(0xFF5B4DDB),
+                        fontSize = 20.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "0",
+                        color = Color(0xFF5B4DDB),
+                        fontSize = 30.sp
+                    )
+                }
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+
+                    Text(
+                        text = "Time",
+                        color = Color(0xFF5B4DDB),
+                        fontSize = 20.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "30",
+                        color = Color.Red,
+                        fontSize = 30.sp
+                    )
+                }
+            }
         }
     }
 }
 
-
-@Preview
+@Preview(showBackground = true)
 @Composable
-fun BrainGamePreview(){
+fun BrainGamePreview() {
+
     BrainGameBody()
 }
