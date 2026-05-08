@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">StudyOS</string>
     <string name="title_activity_dashboard">DashboardActivity</string>
+    <string name="title_activity_plan">PlanActivity</string>
 </resources>
