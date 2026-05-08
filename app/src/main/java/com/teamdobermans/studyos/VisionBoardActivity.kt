@@ -60,6 +60,8 @@ import com.teamdobermans.studyos.ui.theme.StudyPurple
 import com.teamdobermans.studyos.ui.theme.StudyPurpleDeep
 import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
 
+data class PinnedGoal(val emoji: String, val text: String, val target: String)
+
 class VisionBoardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,23 +74,23 @@ class VisionBoardActivity : ComponentActivity() {
 fun VisionBoardBody() {
 
     val context  = LocalContext.current
-    val activity = context as Activity
+    val activity = context as? Activity
 
-    var goalText         by remember { mutableStateOf("") }
-    var selectedEmoji    by remember { mutableStateOf("🏅") }
-    var targetValue      by remember { mutableStateOf("") }
-    var subjectDropdown  by remember { mutableStateOf(false) }
-    val subjects         = remember { mutableStateListOf("General", "Biology", "Physics", "Math") }
-    var selectedSubject  by remember { mutableStateOf("General") }
+    var goalText        by remember { mutableStateOf("") }
+    var selectedEmoji   by remember { mutableStateOf("🏅") }
+    var targetValue     by remember { mutableStateOf("") }
+    var subjectDropdown by remember { mutableStateOf(false) }
+    val subjects        = remember { mutableStateListOf("General", "Biology", "Physics", "Math") }
+    var selectedSubject by remember { mutableStateOf("General") }
+    val pinnedGoals     = remember { mutableStateListOf(PinnedGoal("🏅", "Get 90% in finals", "90%"), PinnedGoal("📚", "Study 2 hrs daily", "")) }
 
     val emojiOptions = listOf("🏅", "⭐", "💪", "🚀", "💵")
-
-    val canPin = goalText.trim().isNotEmpty()
+    val canPin       = goalText.trim().isNotEmpty()
 
     Column(modifier = Modifier.fillMaxSize().background(StudyPurple)) {
 
         Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.25f), modifier = Modifier.clickable { activity.finish() }) {
+            Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.25f), modifier = Modifier.clickable { activity?.finish() }) {
                 Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(painter = painterResource(R.drawable.baseline_arrow_back_24), contentDescription = "Back", tint = Color.White, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(4.dp))
@@ -109,7 +111,6 @@ fun VisionBoardBody() {
                 Column(modifier = Modifier.padding(16.dp)) {
 
                     Text("Add goal", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-
                     Spacer(modifier = Modifier.height(10.dp))
 
                     OutlinedTextField(
@@ -148,28 +149,14 @@ fun VisionBoardBody() {
                     Spacer(modifier = Modifier.height(14.dp))
 
                     Text("Subject-level goal", color = Color.Gray, fontSize = 12.sp)
-
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Box(modifier = Modifier.weight(1f)) {
-                            Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                color = Color(0xFFF0EEFF),
-                                modifier = Modifier.fillMaxWidth().clickable { subjectDropdown = true }
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
+                            Surface(shape = RoundedCornerShape(10.dp), color = Color(0xFFF0EEFF), modifier = Modifier.fillMaxWidth().clickable { subjectDropdown = true }) {
+                                Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                                     Text(selectedSubject, color = StudyPurple, fontWeight = FontWeight.Medium, fontSize = 14.sp)
-                                    Icon(painter = painterResource(R.drawable.baseline_more_horiz_24), contentDescription = null,
-                                        tint = StudyPurple, modifier = Modifier.size(16.dp))
+                                    Icon(painter = painterResource(R.drawable.baseline_more_horiz_24), contentDescription = null, tint = StudyPurple, modifier = Modifier.size(16.dp))
                                 }
                             }
                             DropdownMenu(expanded = subjectDropdown, onDismissRequest = { subjectDropdown = false }) {
@@ -180,13 +167,9 @@ fun VisionBoardBody() {
                                     )
                                 }
                                 HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
-                                DropdownMenuItem(
-                                    text = { Text("Add subject...", color = StudyPurple, fontWeight = FontWeight.SemiBold) },
-                                    onClick = { subjectDropdown = false }
-                                )
+                                DropdownMenuItem(text = { Text("Add subject...", color = StudyPurple, fontWeight = FontWeight.SemiBold) }, onClick = { subjectDropdown = false })
                             }
                         }
-
                         OutlinedTextField(
                             value = targetValue,
                             onValueChange = { targetValue = it.filter { c -> c.isDigit() || c == '%' }.take(5) },
@@ -202,7 +185,6 @@ fun VisionBoardBody() {
                                 focusedIndicatorColor   = StudyPurple,
                             )
                         )
-
                         Button(
                             onClick = { },
                             colors = ButtonDefaults.buttonColors(containerColor = StudyPurple),
@@ -220,17 +202,48 @@ fun VisionBoardBody() {
                         color = if (canPin) Color(0xFFEEEBFF) else Color(0xFFF5F5F5)
                     ) {
                         Box(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp).clickable(enabled = canPin) { },
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp).clickable(enabled = canPin) {
+                                pinnedGoals.add(PinnedGoal(selectedEmoji, goalText.trim(), targetValue.trim()))
+                                goalText = ""
+                                targetValue = ""
+                            },
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                "Pin to Board",
-                                color = if (canPin) StudyPurple else Color.Gray,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 15.sp
-                            )
+                            Text("Pin to Board", color = if (canPin) StudyPurple else Color.Gray, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                         }
                     }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (pinnedGoals.isNotEmpty()) {
+                val rows = pinnedGoals.chunked(2)
+                rows.forEach { rowGoals ->
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        rowGoals.forEach { goal ->
+                            Card(
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White)
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp)) {
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+                                        Text(goal.emoji, fontSize = 30.sp)
+                                        Text("×", color = Color.Gray, fontSize = 16.sp, modifier = Modifier.clickable { pinnedGoals.remove(goal) })
+                                    }
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(goal.text, color = Color(0xFF1A1A2E), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                    if (goal.target.isNotEmpty()) {
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text("Target: ${goal.target}", color = Color.Gray, fontSize = 11.sp)
+                                    }
+                                }
+                            }
+                        }
+                        if (rowGoals.size == 1) Spacer(modifier = Modifier.weight(1f))
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
 
@@ -238,20 +251,13 @@ fun VisionBoardBody() {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-        StudyBottomNav(selected = 0)
-    }
-}
-
-@Composable
-fun StudyBottomNav(selected: Int) {
-    TODO("Not yet implemented")
+//    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+//        StudyBottomNav(selected = 0)
+//    }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun VisionBoardPreview() {
-    StudyOSTheme {
-        VisionBoardBody()
-    }
+    StudyOSTheme { VisionBoardBody() }
 }
