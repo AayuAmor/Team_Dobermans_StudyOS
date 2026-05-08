@@ -25,13 +25,20 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -43,6 +50,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,6 +62,11 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle as JavaTextStyle
 import java.util.Locale
+import androidx.compose.ui.platform.LocalLocale
+
+enum class Priority { HIGH, MEDIUM, LOW }
+
+data class Task(val title: String, val dueDate: String, val priority: Priority, val subject: String, var done: Boolean = false)
 
 class PlanActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -76,6 +89,14 @@ fun PlanBody() {
     val firstDayOfWeek = currentMonth.atDay(1).dayOfWeek.value
     val daysInMonth  = currentMonth.lengthOfMonth()
 
+    var taskTitle       by remember { mutableStateOf("") }
+    var taskDate        by remember { mutableStateOf("") }
+    var priorityDropdown by remember { mutableStateOf(false) }
+    var selectedPriority by remember { mutableStateOf(Priority.MEDIUM) }
+    var subjectDropdown  by remember { mutableStateOf(false) }
+    val subjects         = remember { mutableStateListOf("General", "Biology", "Physics", "Math") }
+    var selectedSubject  by remember { mutableStateOf("General") }
+
     Column(modifier = Modifier.fillMaxSize().background(StudyPurple)) {
 
         Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
@@ -97,46 +118,121 @@ fun PlanBody() {
 
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Row(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-
                     Column(modifier = Modifier.width(80.dp)) {
-                        Text(selectedDate.month.getDisplayName(JavaTextStyle.SHORT, Locale.getDefault()), color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                        Text(selectedDate.dayOfWeek.getDisplayName(JavaTextStyle.FULL, Locale.getDefault()), color = Color(0xFF1A1A2E), fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                        Text("${selectedDate.dayOfMonth}", color = StudyPurple, fontWeight = FontWeight.ExtraBold, fontSize = 80.sp)
+                        Text(selectedDate.month.getDisplayName(JavaTextStyle.SHORT, LocalLocale.current.platformLocale), color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                        Text(selectedDate.dayOfWeek.getDisplayName(JavaTextStyle.FULL, LocalLocale.current.platformLocale), color = Color(0xFF1A1A2E), fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                        Text("${selectedDate.dayOfMonth}", color = StudyPurple, fontWeight = FontWeight.ExtraBold, fontSize = 48.sp)
                     }
-
                     Column(modifier = Modifier.weight(1f)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                            dayHeaders.forEach { day -> Text(day, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.Center) }
+                            dayHeaders.forEach { day -> Text(day, fontSize = 11.sp, color = Color.Gray, modifier = Modifier.weight(1f), textAlign = TextAlign.Center) }
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         val totalCells = firstDayOfWeek - 1 + daysInMonth
                         val rows = (totalCells + 6) / 7
-                        var dayCounter = 1
                         for (row in 0 until rows) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                                 for (col in 0 until 7) {
-                                    val cellIndex = row * 7 + col
-                                    val dayNum = cellIndex - (firstDayOfWeek - 1) + 1
+                                    val dayNum = row * 7 + col - (firstDayOfWeek - 1) + 1
                                     if (dayNum in 1..daysInMonth) {
                                         val date = currentMonth.atDay(dayNum)
                                         val isSelected = date == selectedDate
                                         val isToday    = date == today
-                                        Box(
-                                            modifier = Modifier.weight(1f).padding(2.dp).aspectRatio(1f)
-                                                .clip(CircleShape)
-                                                .background(when { isSelected -> StudyPurple; else -> Color.Transparent })
-                                                .clickable { selectedDate = date },
-                                            contentAlignment = Alignment.Center
-                                        ) {
+                                        Box(modifier = Modifier.weight(1f).padding(2.dp).aspectRatio(1f).clip(CircleShape)
+                                            .background(if (isSelected) StudyPurple else Color.Transparent).clickable { selectedDate = date },
+                                            contentAlignment = Alignment.Center) {
                                             Text("$dayNum", fontSize = 11.sp, fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Normal,
                                                 color = when { isSelected -> Color.White; isToday -> StudyPurple; else -> Color(0xFF1A1A2E) })
                                         }
-                                    } else {
-                                        Box(modifier = Modifier.weight(1f).padding(2.dp))
-                                    }
+                                    } else { Box(modifier = Modifier.weight(1f).padding(2.dp)) }
                                 }
                             }
                         }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                Column(modifier = Modifier.padding(16.dp)) {
+
+                    OutlinedTextField(
+                        value = taskTitle,
+                        onValueChange = { taskTitle = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        placeholder = { Text("New Task.....", color = Color.Gray) },
+                        colors = TextFieldDefaults.colors(
+                            unfocusedContainerColor = Color(0xFFF0EEFF),
+                            focusedContainerColor   = Color(0xFFF0EEFF),
+                            unfocusedIndicatorColor = Color.Transparent,
+                            focusedIndicatorColor   = StudyPurple,
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+
+                        OutlinedTextField(
+                            value = taskDate,
+                            onValueChange = { taskDate = it },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            placeholder = { Text("dd.......yy", color = Color.Gray, fontSize = 13.sp) },
+                            trailingIcon = { Icon(painter = painterResource(R.drawable.baseline_more_horiz_24), contentDescription = null, tint = Color.Gray, modifier = Modifier.size(18.dp)) },
+                            colors = TextFieldDefaults.colors(
+                                unfocusedContainerColor = Color(0xFFF0EEFF),
+                                focusedContainerColor   = Color(0xFFF0EEFF),
+                                unfocusedIndicatorColor = Color.Transparent,
+                                focusedIndicatorColor   = StudyPurple,
+                            )
+                        )
+
+                        Box(modifier = Modifier.weight(1f)) {
+                            Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFF0EEFF), modifier = Modifier.fillMaxWidth().height(52.dp).clickable { priorityDropdown = true }) {
+                                Row(modifier = Modifier.padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text(selectedPriority.name.lowercase().replaceFirstChar { it.uppercase() }, color = when (selectedPriority) { Priority.HIGH -> Color(0xFFE53935); Priority.MEDIUM -> Color(0xFFFFC107); Priority.LOW -> Color(0xFF4CAF50) }, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                                    Icon(painter = painterResource(R.drawable.baseline_more_horiz_24), contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))
+                                }
+                            }
+                            DropdownMenu(expanded = priorityDropdown, onDismissRequest = { priorityDropdown = false }) {
+                                Priority.values().forEach { p ->
+                                    DropdownMenuItem(text = { Text(p.name.lowercase().replaceFirstChar { it.uppercase() }) }, onClick = { selectedPriority = p; priorityDropdown = false })
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFF0EEFF), modifier = Modifier.fillMaxWidth().height(52.dp).clickable { subjectDropdown = true }) {
+                            Row(modifier = Modifier.padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(selectedSubject, color = Color(0xFF1A1A2E), fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                                Icon(painter = painterResource(R.drawable.baseline_more_horiz_24), contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))
+                            }
+                        }
+                        DropdownMenu(expanded = subjectDropdown, onDismissRequest = { subjectDropdown = false }) {
+                            subjects.forEach { subject ->
+                                DropdownMenuItem(text = { Text(subject) }, onClick = { selectedSubject = subject; subjectDropdown = false })
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Button(
+                        onClick = { /* TODO: add task */ },
+                        enabled = taskTitle.trim().isNotEmpty(),
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)
+                    ) {
+                        Text("+ Add Task", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                     }
                 }
             }
@@ -149,5 +245,7 @@ fun PlanBody() {
 @Preview(showBackground = true)
 @Composable
 fun PlanPreview() {
-    StudyOSTheme { PlanBody() }
+    StudyOSTheme {
+        PlanBody()
+    }
 }
