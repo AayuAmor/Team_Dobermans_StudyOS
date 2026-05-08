@@ -12,6 +12,28 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.StudyOS">
         <activity
+            android:name=".Quiz"
+            android:exported="true"
+            android:label="@string/title_activity_quiz"
+            android:theme="@style/Theme.StudyOS">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".BrainGame"
+            android:exported="true"
+            android:label="@string/title_activity_brain_game"
+            android:theme="@style/Theme.StudyOS">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".StudyActivityOS"
             android:exported="true"
             android:label="@string/title_activity_study_os"
