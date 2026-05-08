@@ -45,6 +45,9 @@ fun VideoToNotesScreen(
         bottomBar = { StudyOSBottomNavBar() }
     ) { paddingValues ->
         Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
 
         ) {
             HeaderSection(onBackClick = onBackClick)
