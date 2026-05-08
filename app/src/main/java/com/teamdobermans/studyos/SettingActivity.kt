@@ -52,7 +52,7 @@ class SettingsActivity : ComponentActivity() {
 fun SettingsBody() {
 
     val context  = LocalContext.current
-    val activity = context as Activity
+    val activity = context as? Activity
 
     var offlineMode   by remember { mutableStateOf(true) }
     var weeklySummary by remember { mutableStateOf(true) }
@@ -66,7 +66,7 @@ fun SettingsBody() {
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = Color.White.copy(alpha = 0.25f),
-                modifier = Modifier.clickable { activity.finish() }
+                modifier = Modifier.clickable { activity?.finish() }
             ) {
 
                 Row(
