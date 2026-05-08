@@ -4,4 +4,5 @@
     <string name="title_activity_pomodoro">PomodoroActivity</string>
     <string name="title_activity_onboarding_works_offline">OnboardingActivity_worksOffline</string>
     <string name="title_activity_mock_test">MockTestActivity</string>
+    <string name="title_activity_progress">ProgressActivity</string>
 </resources>
