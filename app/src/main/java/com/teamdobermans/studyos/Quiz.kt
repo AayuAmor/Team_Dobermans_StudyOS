@@ -1,4 +1,4 @@
-package com.example.computing38
+package com.teamdobermans.studyos
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -39,7 +39,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-class BrainGameScreen : ComponentActivity() {
+class QuizScreen : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -248,53 +248,9 @@ fun OptionCard(
     }
 }
 
-@Composable
-fun BottomItem(
-    title: String,
-    icon: ImageVector,
-    selected: Boolean
-) {
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(16.dp))
-                .background(
-                    if (selected)
-                        Color(0xFFE8E2FF)
-                    else
-                        Color.Transparent
-                )
-                .padding(horizontal = 14.dp, vertical = 8.dp)
-        ) {
-
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = Color(0xFF7B42FF)
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = title,
-                    color = Color(0xFF7B42FF),
-                    fontSize = 11.sp
-                )
-            }
-        }
-    }
-}
 
 @Preview(showBackground = true)
 @Composable
 fun PreviewQuizUI() {
     QuizUI()
-}}
+}

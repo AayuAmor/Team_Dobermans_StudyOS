@@ -32,6 +32,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Schedule
 
 class StudyActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -103,10 +108,11 @@ fun StudyUI() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
-                Image(
-                    painter = painterResource(R.drawable.flashcard),
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.MenuBook,
                     contentDescription = null,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(28.dp),
+                    tint = Color.White
                 )
 
                 Spacer(modifier = Modifier.width(10.dp))
@@ -128,10 +134,11 @@ fun StudyUI() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
-                Image(
-                    painter = painterResource(R.drawable.itsclock),
+                Icon(
+                    imageVector = Icons.Filled.Schedule,
                     contentDescription = null,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(28.dp),
+                    tint = Color.White
                 )
 
                 Spacer(modifier = Modifier.width(10.dp))
@@ -153,10 +160,11 @@ fun StudyUI() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
-                Image(
-                    painter = painterResource(R.drawable.noteok),
+                Icon(
+                    imageVector = Icons.Filled.Check,
                     contentDescription = null,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(28.dp),
+                    tint = Color.White
                 )
 
                 Spacer(modifier = Modifier.width(10.dp))
