@@ -67,7 +67,7 @@ class PlanActivity : ComponentActivity() {
 fun PlanBody() {
 
     val context  = LocalContext.current
-    val activity = context as Activity
+    val activity = context as? Activity
 
     val today        = LocalDate.now()
     var selectedDate by remember { mutableStateOf(today) }
@@ -79,7 +79,7 @@ fun PlanBody() {
     Column(modifier = Modifier.fillMaxSize().background(StudyPurple)) {
 
         Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.25f), modifier = Modifier.clickable { activity.finish() }) {
+            Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.25f), modifier = Modifier.clickable { activity?.finish() }) {
                 Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(painter = painterResource(R.drawable.baseline_arrow_back_24), contentDescription = "Back", tint = Color.White, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(4.dp))
@@ -101,7 +101,7 @@ fun PlanBody() {
                     Column(modifier = Modifier.width(80.dp)) {
                         Text(selectedDate.month.getDisplayName(JavaTextStyle.SHORT, Locale.getDefault()), color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                         Text(selectedDate.dayOfWeek.getDisplayName(JavaTextStyle.FULL, Locale.getDefault()), color = Color(0xFF1A1A2E), fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                        Text("${selectedDate.dayOfMonth}", color = StudyPurple, fontWeight = FontWeight.ExtraBold, fontSize = 48.sp)
+                        Text("${selectedDate.dayOfMonth}", color = StudyPurple, fontWeight = FontWeight.ExtraBold, fontSize = 80.sp)
                     }
 
                     Column(modifier = Modifier.weight(1f)) {
