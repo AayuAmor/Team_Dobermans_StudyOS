@@ -1,6 +1,7 @@
 package com.teamdobermans.studyos
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -28,6 +29,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
@@ -44,6 +46,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -55,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 import com.teamdobermans.studyos.ui.theme.StudyPurple
+import com.teamdobermans.studyos.ui.theme.StudyPurpleDeep
 import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
 
 class SettingsActivity : ComponentActivity() {
@@ -69,7 +73,7 @@ class SettingsActivity : ComponentActivity() {
 fun SettingsBody() {
 
     val context  = LocalContext.current
-    val activity = context as Activity
+    val activity = context as? Activity
 
     var offlineMode   by remember { mutableStateOf(true) }
     var weeklySummary by remember { mutableStateOf(true) }
@@ -119,105 +123,117 @@ fun SettingsBody() {
     Column(modifier = Modifier.fillMaxSize().background(StudyPurple)) {
 
         Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
-
-            Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.25f), modifier = Modifier.clickable { activity.finish() }) {
-
+            Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.25f), modifier = Modifier.clickable { activity?.finish() }) {
                 Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-
-                    Icon(
-                        painter = painterResource(R.drawable.baseline_arrow_back_24),
-                        contentDescription = "Back",
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
-
+                    Icon(painter = painterResource(R.drawable.baseline_arrow_back_24), contentDescription = "Back", tint = Color.White, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-
                     Text("Back", color = Color.White, fontSize = 14.sp)
                 }
             }
-
             Spacer(modifier = Modifier.height(12.dp))
-
             Text("Settings", style = TextStyle(color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold))
         }
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(StudyPurpleLight)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-                .navigationBarsPadding()
+            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(0.dp)).background(StudyPurpleLight)
+                .verticalScroll(rememberScrollState()).padding(16.dp).navigationBarsPadding()
         ) {
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-
+            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Column(modifier = Modifier.padding(16.dp)) {
-
                     Text("App Preferences", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-
                     Spacer(modifier = Modifier.height(8.dp))
-
-                    SettingsToggleRow("Offline mode", offlineMode) { offlineMode = it }
-
-                    HorizontalDivider()
-
+                    SettingsToggleRow("Offline mode",                offlineMode)   { offlineMode   = it }
+                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
                     SettingsToggleRow("Weekly Summary Notification", weeklySummary) { weeklySummary = it }
-
-                    HorizontalDivider()
-
-                    SettingsToggleRow("Focus Sounds", focusSounds) { focusSounds = it }
-
-                    HorizontalDivider()
-
-                    SettingsToggleRow("Pin Notes", pinNotes) { pinNotes = it }
+                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
+                    SettingsToggleRow("Focus Sounds",                focusSounds)  { focusSounds   = it }
+                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
+                    SettingsToggleRow("Pin Notes",                   pinNotes)     { pinNotes      = it }
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        goalInput = dailyGoalMin.toString()
-                        goalDialog = true
-                    },
-                shape = RoundedCornerShape(16.dp)
-            ) {
-
+            Card(modifier = Modifier.fillMaxWidth().clickable { goalInput = dailyGoalMin.toString(); goalDialog = true },
+                shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Column(modifier = Modifier.padding(16.dp)) {
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Text("Daily Study Goal", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-
-                        Icon(
-                            painter = painterResource(R.drawable.baseline_more_horiz_24),
-                            contentDescription = "Edit",
-                            tint = Color.Gray,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        Icon(painter = painterResource(R.drawable.baseline_more_horiz_24), contentDescription = "Edit", tint = Color.Gray, modifier = Modifier.size(18.dp))
                     }
-
                     Spacer(modifier = Modifier.height(4.dp))
-
                     Text("$dailyGoalMin min / Day", color = Color(0xFF1A1A2E), fontSize = 14.sp)
                 }
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                Column(modifier = Modifier.padding(16.dp)) {
+
+                    Text("Export and Data", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFDEEEFF)
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp).clickable { /* TODO: export notes as PDF */ },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Export Notes as PDF", color = Color(0xFF1A62B7), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFEEEBFF)
+                    ) {
+//                        Box(
+//                            modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp).clickable {
+//                                val intent = Intent(context, LoginActivity::class.java)
+//                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+//                                context.startActivity(intent)
+//                            },
+//                            contentAlignment = Alignment.Center
+//                        ) {
+//                            Text("Sign Out", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+//                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(80.dp))
         }
     }
+//
+//    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+//        StudyBottomNav(selected = 4)
+//    }
 }
-@Preview
+
+@Composable
+fun SettingsToggleRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, color = Color(0xFF1A1A2E), fontSize = 14.sp)
+        Switch(checked = checked, onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = StudyPurple, uncheckedThumbColor = Color.White, uncheckedTrackColor = Color.Gray.copy(alpha = 0.3f)))
+    }
+}
+
+@Preview(showBackground = true)
 @Composable
 fun SettingsPreview() {
-    SettingsBody()
+    StudyOSTheme { SettingsBody() }
 }
