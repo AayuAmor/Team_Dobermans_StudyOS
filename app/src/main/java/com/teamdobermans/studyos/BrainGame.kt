@@ -49,9 +49,8 @@ class BrainGameScreen : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            MaterialTheme {
                 BrainUI()
-            }
+
         }
     }
 }
@@ -69,7 +68,7 @@ fun BrainUI() {
             modifier = Modifier.fillMaxSize()
         ) {
 
-            // TOP HEADER
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -89,7 +88,7 @@ fun BrainUI() {
                     modifier = Modifier.fillMaxSize()
                 ) {
 
-                    // BACK BUTTON
+
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(14.dp))
@@ -148,7 +147,6 @@ fun BrainUI() {
                 }
             }
 
-            // MAIN CARD
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -189,7 +187,7 @@ fun BrainUI() {
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
 
-                        // SCORE
+
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
@@ -209,7 +207,6 @@ fun BrainUI() {
                             )
                         }
 
-                        // BEST
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
@@ -229,7 +226,7 @@ fun BrainUI() {
                             )
                         }
 
-                        // TIME
+
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
@@ -273,7 +270,7 @@ fun BrainUI() {
             }
         }
 
-        // BOTTOM NAVIGATION
+
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -362,10 +359,8 @@ fun BottomItem(
     }
 }
 
-@Preview(showBackground = true)
+@Preview
 @Composable
 fun PreviewBrainUI() {
-    MaterialTheme {
-        BrainUI()
-    }
+    BrainUI()
 }
