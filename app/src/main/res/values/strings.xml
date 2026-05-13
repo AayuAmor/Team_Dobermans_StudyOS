@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">StudyOS</string>
-<<<<<<< HEAD
     <string name="title_activity_dashboard">DashboardActivity</string>
     <string name="title_activity_plan">PlanActivity</string>
     <string name="title_activity_setting">SettingActivity</string>
