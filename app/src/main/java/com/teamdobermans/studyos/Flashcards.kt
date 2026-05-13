@@ -9,8 +9,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -292,7 +290,7 @@ fun FlashcardsHeader(
                         )
                         Spacer(modifier = Modifier.width(24.dp))
                         Icon(
-                            imageVector = Icons.Default.KeyboardArrowDown,
+                            painter = painterResource(id = R.drawable.baseline_keyboard_arrow_down_24),
                             contentDescription = null,
                             tint = Color.White.copy(alpha = 0.4f),
                             modifier = Modifier.size(20.dp)
