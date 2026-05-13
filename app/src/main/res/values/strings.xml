@@ -1,12 +1,3 @@
 <resources>
     <string name="app_name">StudyOS</string>
-    <string name="title_activity_sign_up">SignUpActivity</string>
-    <string name="title_activity_pomodoro">PomodoroActivity</string>
-    <string name="title_activity_onboarding_works_offline">OnboardingActivity_worksOffline</string>
-    <string name="title_activity_mock_test">MockTestActivity</string>
-    <string name="title_activity_progress">ProgressActivity</string>
-    <string name="title_activity_login">LoginActivity</string>
-    <string name="title_activity_onboarding_worksoffline">OnboardingActivityWorksoffline</string>
-    <string name="title_activity_profile">ProfileActivity</string>
-    <string name="title_activity_vision_board">VisionBoardActivity</string>
 </resources>

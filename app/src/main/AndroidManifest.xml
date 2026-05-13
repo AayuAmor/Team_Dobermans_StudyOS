@@ -12,65 +12,16 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.StudyOS">
         <activity
-            android:name=".VisionBoardActivity"
-            android:exported="true"
-            android:label="@string/title_activity_vision_board"
-            android:theme="@style/Theme.StudyOS">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".ProfileActivity"
-            android:exported="true"
-            android:label="@string/title_activity_profile"
-            android:theme="@style/Theme.StudyOS">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".OnboardingActivity_worksOffline"
-            android:exported="true"
-            android:label="@string/title_activity_onboarding_works_offline"
-            android:theme="@style/Theme.StudyOS">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".OnboardingActivityWorksoffline"
-            android:exported="true"
-            android:label="@string/title_activity_onboarding_worksoffline"
-            android:theme="@style/Theme.StudyOS">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".LoginActivity"
-            android:exported="true"
-            android:label="@string/title_activity_login"
-            android:theme="@style/Theme.StudyOS">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.StudyOS" />
+            android:theme="@style/Theme.StudyOS">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>
