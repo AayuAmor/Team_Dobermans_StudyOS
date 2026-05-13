@@ -31,6 +31,7 @@ class VideotoNotes : ComponentActivity() {
                     VideoToNotesScreen(
                         onBackClick = { finish() },
                         onNavClick = { label ->
+                            /*
                             when (label) {
                                 getString(R.string.nav_home) -> {
                                     startActivity(Intent(this, WelcomePage::class.java))
@@ -41,6 +42,7 @@ class VideotoNotes : ComponentActivity() {
                                     finish()
                                 }
                             }
+                            */
                         }
                     )
                 }

@@ -36,6 +36,7 @@ class Flashcards : ComponentActivity() {
                 FlashcardsScreen(
                     onBackClick = { finish() },
                     onNavClick = { label ->
+                        /*
                         when (label) {
                             getString(R.string.nav_home) -> {
                                 startActivity(Intent(this, WelcomePage::class.java))
@@ -44,8 +45,8 @@ class Flashcards : ComponentActivity() {
                             getString(R.string.nav_study) -> {
                                 // Already here
                             }
-                            // Add other navigations if needed
                         }
+                        */
                     }
                 )
             }

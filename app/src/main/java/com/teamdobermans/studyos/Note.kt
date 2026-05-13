@@ -53,22 +53,22 @@ class NotesPage : ComponentActivity() {
         setContent {
             StudyOSTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    val context = this
                     NotesScreen(
                         onBackClick = { finish() },
                         onAddClick = {
-                            startActivity(Intent(context, VideotoNotes::class.java))
+                            // startActivity(Intent(this, VideotoNotes::class.java))
                         },
                         onNavClick = { tabLabel ->
+                            /*
                             when (tabLabel) {
                                 getString(R.string.nav_home) -> {
-                                    startActivity(Intent(context, WelcomePage::class.java))
+                                    startActivity(Intent(this, WelcomePage::class.java))
                                 }
                                 getString(R.string.nav_study) -> {
-                                    startActivity(Intent(context, Flashcards::class.java))
+                                    startActivity(Intent(this, Flashcards::class.java))
                                 }
-                                // Add other navigations if needed
                             }
+                            */
                         }
                     )
                 }

@@ -37,10 +37,10 @@ class WelcomePage : ComponentActivity() {
                 ) {
                     WelcomeScreen(
                         onGetStartedClick = {
-                            startActivity(Intent(this, NotesPage::class.java))
+                            // startActivity(Intent(this, NotesPage::class.java))
                         },
                         onSkipIntroClick = {
-                            startActivity(Intent(this, NotesPage::class.java))
+                            // startActivity(Intent(this, NotesPage::class.java))
                         }
                     )
                 }
