@@ -12,9 +12,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.StudyOS">
         <activity
-            android:name=".ProgressActivity"
+            android:name=".VisionBoardActivity"
             android:exported="true"
-            android:label="@string/title_activity_progress"
+            android:label="@string/title_activity_vision_board"
             android:theme="@style/Theme.StudyOS">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -23,9 +23,9 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".MockTestActivity"
+            android:name=".ProfileActivity"
             android:exported="true"
-            android:label="@string/title_activity_mock_test"
+            android:label="@string/title_activity_profile"
             android:theme="@style/Theme.StudyOS">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -45,9 +45,9 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".PomodoroActivity"
+            android:name=".OnboardingActivityWorksoffline"
             android:exported="true"
-            android:label="@string/title_activity_pomodoro"
+            android:label="@string/title_activity_onboarding_worksoffline"
             android:theme="@style/Theme.StudyOS">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -56,9 +56,9 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".SignUpActivity"
+            android:name=".LoginActivity"
             android:exported="true"
-            android:label="@string/title_activity_sign_up"
+            android:label="@string/title_activity_login"
             android:theme="@style/Theme.StudyOS">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -70,13 +70,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.StudyOS">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.StudyOS" />
     </application>
 
 </manifest>

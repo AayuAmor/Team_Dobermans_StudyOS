@@ -6,6 +6,7 @@
         <option name="selectionMode" value="DROPDOWN" />
         <DialogSelection />
       </SelectionState>
+<<<<<<< HEAD
       <SelectionState runConfigName="SignUpActivity (1)">
         <option name="selectionMode" value="DROPDOWN" />
         <DialogSelection />
@@ -23,6 +24,25 @@
         <DialogSelection />
       </SelectionState>
       <SelectionState runConfigName="ProgressActivity (1)">
+=======
+      <SelectionState runConfigName="LoginActivity">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="ProfileActivity">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="OnboardingActivityWorksOffline (3)">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="ProfileActivity (1)">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="VisionBoardActivity">
+>>>>>>> rohit
         <option name="selectionMode" value="DROPDOWN" />
         <DialogSelection />
       </SelectionState>
