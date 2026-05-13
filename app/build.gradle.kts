@@ -5,11 +5,7 @@ plugins {
 
 android {
     namespace = "com.teamdobermans.studyos"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.teamdobermans.studyos"
@@ -37,9 +33,14 @@ android {
     buildFeatures {
         compose = true
     }
-}
 
-dependencies {
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.4"
+    }
+
+
+
+    dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
@@ -58,4 +59,4 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
-}
+    }
