@@ -236,7 +236,11 @@ fun LoginBody() {
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
-                    onClick = { /* sign-in logic */ },
+                    onClick = {
+                        val intent = Intent(context, DashboardActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        context.startActivity(intent)
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp)
@@ -318,8 +322,8 @@ fun LoginBody() {
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
                         modifier = Modifier.clickable {
-//                            val intent = Intent(context, SignUpActivity::class.java)
-//                            context.startActivity(intent)
+                            val intent = Intent(context, SignUpActivity::class.java)
+                            context.startActivity(intent)
                         }
                     )
                 }
@@ -584,8 +588,3 @@ fun LoginPreview() {
         LoginBodyPreview()
     }
 }
-
-
-
-
-
