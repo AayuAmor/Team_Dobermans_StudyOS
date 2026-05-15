@@ -196,7 +196,7 @@ fun ProfileBody() {
                         onClick = { /* TODO: update password */ },
                         enabled = passwordsMatch,
                         modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = RoundedCornerShape(1.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)
                     ) {
                         Text("Update password", color = Color.White, fontWeight = FontWeight.SemiBold)
@@ -209,7 +209,7 @@ fun ProfileBody() {
     }
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-        StudyBottomNav(selected = 4)
+        StudyBottomNav(selected = 2)
     }
 }
 

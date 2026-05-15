@@ -17,12 +17,21 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.EventNote
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.EventNote
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.runtime.remember
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -47,47 +56,34 @@ fun StudyBottomNav(selected: Int) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White,
-        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-        shadowElevation = 24.dp
+        shadowElevation = 16.dp
     ) {
         Row(
             modifier = Modifier
                 .navigationBarsPadding()
                 .fillMaxWidth()
-                .padding(top = 16.dp, bottom = 12.dp),
+                .padding(vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
             NavItem(
                 label = "Home",
-                icon = Icons.Rounded.Home,
+                icon = if (selected == 0) Icons.Rounded.Home else Icons.Outlined.Home,
                 isSelected = selected == 0,
-                onClick = { /* TODO */ }
-            )
-            NavItem(
-                label = "Study",
-                icon = Icons.Rounded.MenuBook,
-                isSelected = selected == 1,
-                onClick = { /* TODO */ }
-            )
-            NavItem(
-                label = "Plan",
-                icon = Icons.Rounded.EventNote,
-                isSelected = selected == 2,
-                onClick = { /* TODO */ }
+                onClick = { /* TODO: Navigate to Home */ }
             )
             NavItem(
                 label = "Progress",
-                icon = Icons.Rounded.BarChart,
-                isSelected = selected == 3,
-                onClick = { /* TODO */ }
+                icon = if (selected == 1) Icons.Rounded.BarChart else Icons.Outlined.BarChart,
+                isSelected = selected == 1,
+                onClick = { /* TODO: Navigate to Progress */ }
             )
             NavItem(
                 label = "Settings",
-                icon = Icons.Rounded.Settings,
-                isSelected = selected == 4,
+                icon = if (selected == 2) Icons.Rounded.Settings else Icons.Outlined.Settings,
+                isSelected = selected == 2,
                 onClick = {
-                    if (selected != 4) {
+                    if (selected != 2) {
                         context.startActivity(Intent(context, ProfileActivity::class.java))
                     }
                 }
@@ -98,19 +94,22 @@ fun StudyBottomNav(selected: Int) {
 
 @Composable
 fun NavItem(label: String, icon: ImageVector, isSelected: Boolean, onClick: () -> Unit) {
-    val tintColor = if (isSelected) StudyPurple else Color(0xFF9E9E9E)
+    val tintColor = if (isSelected) StudyPurple else Color(0xFF8E8EA9)
     val bgColor = if (isSelected) StudyPurple.copy(alpha = 0.12f) else Color.Transparent
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .clickable(onClick = onClick)
-            .padding(horizontal = 4.dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            )
     ) {
         Box(
             modifier = Modifier
-                .size(width = 48.dp, height = 32.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .size(width = 64.dp, height = 32.dp)
+                .clip(CircleShape)
                 .background(bgColor),
             contentAlignment = Alignment.Center
         ) {
@@ -125,7 +124,7 @@ fun NavItem(label: String, icon: ImageVector, isSelected: Boolean, onClick: () -
         Text(
             text = label,
             color = tintColor,
-            fontSize = 11.sp,
+            fontSize = 12.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
         )
     }
