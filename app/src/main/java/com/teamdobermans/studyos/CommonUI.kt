@@ -70,7 +70,11 @@ fun StudyBottomNav(selected: Int) {
                 label = "Home",
                 icon = if (selected == 0) Icons.Rounded.Home else Icons.Outlined.Home,
                 isSelected = selected == 0,
-                onClick = { /* TODO: Navigate to Home */ }
+                onClick = {
+                    if (selected != 0) {
+                        context.startActivity(Intent(context, MainActivity::class.java))
+                    }
+                }
             )
             NavItem(
                 label = "Study",
