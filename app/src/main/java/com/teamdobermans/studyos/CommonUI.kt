@@ -86,28 +86,6 @@ fun StudyBottomNav(selected: Int) {
                     }
                 }
             )
-            NavItem(
-                label = "Plan",
-                icon = if (selected == 2) Icons.Rounded.EventNote else Icons.Outlined.EventNote,
-                isSelected = selected == 2,
-                onClick = { /* TODO: Navigate to Plan */ }
-            )
-            NavItem(
-                label = "Progress",
-                icon = if (selected == 3) Icons.Rounded.BarChart else Icons.Outlined.BarChart,
-                isSelected = selected == 3,
-                onClick = { /* TODO: Navigate to Progress */ }
-            )
-            NavItem(
-                label = "Settings",
-                icon = if (selected == 4) Icons.Rounded.Settings else Icons.Outlined.Settings,
-                isSelected = selected == 4,
-                onClick = {
-                    if (selected != 4) {
-                        context.startActivity(Intent(context, ProfileActivity::class.java))
-                    }
-                }
-            )
         }
     }
 }
