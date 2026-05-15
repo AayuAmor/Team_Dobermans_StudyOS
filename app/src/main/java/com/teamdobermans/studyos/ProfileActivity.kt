@@ -1,12 +1,16 @@
 package com.teamdobermans.studyos
 
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -72,7 +76,7 @@ fun initials(name: String): String {
 fun ProfileBody() {
 
     val context  = LocalContext.current
-    val activity = context as? Activity
+    val activity = context.findActivity()
 
     val displayName  = "Ditya Adhikari"
     val displayEmail = "dityaadhikari345@gmail.com"
@@ -100,7 +104,7 @@ fun ProfileBody() {
 
         Column(
             modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(0.dp)).background(StudyPurpleLight)
-                .verticalScroll(rememberScrollState()).padding(16.dp).navigationBarsPadding()
+                .verticalScroll(rememberScrollState()).padding(16.dp)
         ) {
 
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
@@ -192,7 +196,7 @@ fun ProfileBody() {
                         onClick = { /* TODO: update password */ },
                         enabled = passwordsMatch,
                         modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(1.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)
                     ) {
                         Text("Update password", color = Color.White, fontWeight = FontWeight.SemiBold)
@@ -200,13 +204,13 @@ fun ProfileBody() {
                 }
             }
 
-            Spacer(modifier = Modifier.height(80.dp))
+            Spacer(modifier = Modifier.height(120.dp))
         }
     }
 
-//    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-//        StudyBottomNav(selected = 0)
-//    }
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        StudyBottomNav(selected = 4)
+    }
 }
 
 @Preview(showBackground = true)

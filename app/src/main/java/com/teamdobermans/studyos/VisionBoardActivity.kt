@@ -1,6 +1,9 @@
 package com.teamdobermans.studyos
 
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -75,7 +78,7 @@ class VisionBoardActivity : ComponentActivity() {
 fun VisionBoardBody() {
 
     val context  = LocalContext.current
-    val activity = context as? Activity
+    val activity = context.findActivity()
 
     var goalText        by remember { mutableStateOf("") }
     var selectedEmoji   by remember { mutableStateOf("🏅") }
@@ -105,7 +108,7 @@ fun VisionBoardBody() {
 
         Column(
             modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(0.dp)).background(StudyPurpleLight)
-                .verticalScroll(rememberScrollState()).padding(16.dp).navigationBarsPadding()
+                .verticalScroll(rememberScrollState()).padding(16.dp)
         ) {
 
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
@@ -248,13 +251,13 @@ fun VisionBoardBody() {
                 }
             }
 
-            Spacer(modifier = Modifier.height(80.dp))
+            Spacer(modifier = Modifier.height(120.dp))
         }
     }
 
-//    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-//        StudyBottomNav(selected = 0)
-//    }
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        StudyBottomNav(selected = 1)
+    }
 }
 
 @Preview(showBackground = true)

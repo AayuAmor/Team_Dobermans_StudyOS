@@ -1,7 +1,6 @@
 package com.teamdobermans.studyos
 
 import android.app.Activity
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -220,6 +219,7 @@ fun LoginBody() {
                         )
                         Text(
                             "Remember me",
+
                             color = Color.Gray,
                             fontSize = 13.sp
                         )
@@ -538,6 +538,7 @@ private fun LoginBodyPreview() {
                 ) {
                     Image(
                         painter = painterResource(R.drawable.google),
+
                         contentDescription = null,
                         modifier = Modifier.size(22.dp)
                     )
