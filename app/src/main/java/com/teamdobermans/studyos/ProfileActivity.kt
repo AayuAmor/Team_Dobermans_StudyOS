@@ -209,7 +209,7 @@ fun ProfileBody() {
     }
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-        StudyBottomNav(selected = 2)
+        StudyBottomNav(selected = 4)
     }
 }
 
