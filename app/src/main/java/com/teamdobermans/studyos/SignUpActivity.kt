@@ -311,8 +311,8 @@ fun SignUpBody() {
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
                         modifier = Modifier.clickable {
-//                            val intent = Intent(context, LoginActivity::class.java)
-//                            context.startActivity(intent)
+                            val intent = Intent(context, LoginActivity::class.java)
+                            context.startActivity(intent)
                         }
                     )
                 }

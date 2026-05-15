@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -18,6 +19,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
+import com.teamdobermans.studyos.NavRoute
+import com.teamdobermans.studyos.StudyOSBottomNav
 
 class VideotoNotes : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,23 +31,7 @@ class VideotoNotes : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    VideoToNotesScreen(
-                        onBackClick = { finish() },
-                        onNavClick = { label ->
-                            /*
-                            when (label) {
-                                getString(R.string.nav_home) -> {
-                                    startActivity(Intent(this, WelcomePage::class.java))
-                                    finish()
-                                }
-                                getString(R.string.nav_study) -> {
-                                    startActivity(Intent(this, NotesPage::class.java))
-                                    finish()
-                                }
-                            }
-                            */
-                        }
-                    )
+                    VideoToNotesScreen(onBackClick = { finish() })
                 }
             }
         }
@@ -60,7 +47,7 @@ fun VideoToNotesScreen(
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        bottomBar = { StudyOSBottomNavBar(onNavClick = onNavClick) }
+        bottomBar = { StudyOSBottomNav(currentRoute = NavRoute.STUDY, context = LocalContext.current) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -110,16 +97,16 @@ private fun HeaderSection(
                 fontWeight = FontWeight.Bold
             )
         }
-        
+
         Spacer(modifier = Modifier.height(20.dp))
-        
+
         Text(
             text = stringResource(id = R.string.title_activity_videoto_notes),
             color = Color.White,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold
         )
-        
+
         Text(
             text = stringResource(id = R.string.ai_summarization_subtitle),
             color = Color.White.copy(alpha = 0.7f),
@@ -150,9 +137,9 @@ private fun InputCard(
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -166,9 +153,9 @@ private fun InputCard(
                     maxLines = 1
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             Button(
                 onClick = onGenerateNotesClick,
                 modifier = Modifier
@@ -188,53 +175,6 @@ private fun InputCard(
     }
 }
 
-@Composable
-private fun StudyOSBottomNavBar(
-    onNavClick: (String) -> Unit = {},
-    modifier: Modifier = Modifier
-) {
-    NavigationBar(
-        modifier = modifier,
-        containerColor = Color.White,
-        tonalElevation = 8.dp
-    ) {
-        val items = listOf(
-            Triple(R.string.nav_home, R.drawable.baseline_home_24, true),
-            Triple(R.string.nav_study, R.drawable.baseline_menu_book_24, false),
-            Triple(R.string.nav_plan, R.drawable.ic_calendar, false),
-            Triple(R.string.nav_progress, R.drawable.ic_progress, false),
-            Triple(R.string.nav_settings, R.drawable.baseline_settings_24, false)
-        )
-        
-        items.forEach { (labelRes, iconRes, selected) ->
-            val label = stringResource(id = labelRes)
-            NavigationBarItem(
-                selected = selected,
-                onClick = { onNavClick(label) },
-                icon = {
-                    Icon(
-                        painter = painterResource(id = iconRes),
-                        contentDescription = stringResource(id = labelRes),
-                        modifier = Modifier.size(24.dp)
-                    )
-                },
-                label = {
-                    Text(
-                        text = stringResource(id = labelRes),
-                        fontSize = 10.sp
-                    )
-                },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color(0xFF5E5CE6),
-                    selectedTextColor = Color(0xFF5E5CE6),
-                    unselectedIconColor = Color.Gray,
-                    unselectedTextColor = Color.Gray,
-                    indicatorColor = Color.Transparent
-                )
-            )
-        }
-    }
-}
 
 @Preview(showBackground = true)
 @Composable

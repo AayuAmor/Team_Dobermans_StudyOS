@@ -1,6 +1,5 @@
 package com.teamdobermans.studyos
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -14,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -31,22 +31,7 @@ class Flashcards : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             StudyOSTheme {
-                FlashcardsScreen(
-                    onBackClick = { finish() },
-                    onNavClick = { label ->
-                        /*
-                        when (label) {
-                            getString(R.string.nav_home) -> {
-                                startActivity(Intent(this, WelcomePage::class.java))
-                                finish()
-                            }
-                            getString(R.string.nav_study) -> {
-                                // Already here
-                            }
-                        }
-                        */
-                    }
-                )
+                FlashcardsScreen(onBackClick = { finish() })
             }
         }
     }
@@ -55,12 +40,13 @@ class Flashcards : ComponentActivity() {
 @Composable
 fun FlashcardsScreen(
     modifier: Modifier = Modifier,
-    onBackClick: () -> Unit = {},
-    onNavClick: (String) -> Unit = {}
+    onBackClick: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        bottomBar = { StudyOSBottomNavigation(onNavClick = onNavClick) },
+        bottomBar = { StudyOSBottomNav(currentRoute = NavRoute.STUDY, context = context) },
         containerColor = LightPurpleBg
     ) { innerPadding ->
         Column(
@@ -69,7 +55,7 @@ fun FlashcardsScreen(
                 .fillMaxSize()
         ) {
             FlashcardsHeader(onBackClick = onBackClick)
-            
+
             Column(
                 modifier = Modifier
                     .padding(16.dp)
@@ -78,17 +64,13 @@ fun FlashcardsScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
+                    modifier = Modifier.fillMaxWidth().height(200.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
+                        modifier = Modifier.fillMaxSize().padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
@@ -122,12 +104,10 @@ fun FlashcardsScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         repeat(7) { index ->
                             Box(
-                                modifier = Modifier
-                                    .size(12.dp)
-                                    .background(
-                                        color = if (index == 0) BrandPurple else BrandPurple.copy(alpha = 0.3f),
-                                        shape = CircleShape
-                                    )
+                                modifier = Modifier.size(12.dp).background(
+                                    color = if (index == 0) BrandPurple else BrandPurple.copy(alpha = 0.3f),
+                                    shape = CircleShape
+                                )
                             )
                         }
                     }
@@ -159,8 +139,7 @@ fun FlashcardsScreen(
                 }
 
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -175,7 +154,6 @@ fun FlashcardsScreen(
                             fontWeight = FontWeight.Bold,
                             color = BrandPurple
                         )
-                        
                         TextField(
                             value = "",
                             onValueChange = {},
@@ -183,14 +161,13 @@ fun FlashcardsScreen(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(8.dp),
                             colors = TextFieldDefaults.colors(
-                                focusedContainerColor = BrandPurple,
+                                focusedContainerColor   = BrandPurple,
                                 unfocusedContainerColor = BrandPurple,
-                                focusedIndicatorColor = Color.Transparent,
+                                focusedIndicatorColor   = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent,
-                                cursorColor = Color.White
+                                cursorColor             = Color.White
                             )
                         )
-
                         TextField(
                             value = "",
                             onValueChange = {},
@@ -198,14 +175,13 @@ fun FlashcardsScreen(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(8.dp),
                             colors = TextFieldDefaults.colors(
-                                focusedContainerColor = BrandPurple,
+                                focusedContainerColor   = BrandPurple,
                                 unfocusedContainerColor = BrandPurple,
-                                focusedIndicatorColor = Color.Transparent,
+                                focusedIndicatorColor   = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent,
-                                cursorColor = Color.White
+                                cursorColor             = Color.White
                             )
                         )
-
                         Button(
                             onClick = {},
                             modifier = Modifier.fillMaxWidth(),
@@ -226,18 +202,13 @@ fun FlashcardsScreen(
 }
 
 @Composable
-fun FlashcardsHeader(
-    onBackClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun FlashcardsHeader(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = BrandPurple,
         shape = RoundedCornerShape(bottomStart = 0.dp, bottomEnd = 0.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Button(
                 onClick = onBackClick,
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.2f)),
@@ -253,9 +224,9 @@ fun FlashcardsHeader(
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(text = stringResource(R.string.back), color = Color.White, fontSize = 14.sp)
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -274,20 +245,12 @@ fun FlashcardsHeader(
                         color = Color.White.copy(alpha = 0.8f)
                     )
                 }
-                
-                Surface(
-                    color = Color.White.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
+                Surface(color = Color.White.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
                     Row(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = stringResource(R.string.biology),
-                            color = Color.White.copy(alpha = 0.6f),
-                            fontSize = 14.sp
-                        )
+                        Text(text = stringResource(R.string.biology), color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp)
                         Spacer(modifier = Modifier.width(24.dp))
                         Icon(
                             painter = painterResource(id = R.drawable.baseline_keyboard_arrow_down_24),
@@ -327,77 +290,6 @@ fun RecallButton(
             Spacer(modifier = Modifier.width(8.dp))
             Text(text = text, color = contentColor, fontWeight = FontWeight.SemiBold)
         }
-    }
-}
-
-@Composable
-fun StudyOSBottomNavigation(onNavClick: (String) -> Unit = {}) {
-    NavigationBar(
-        containerColor = Color.White,
-        tonalElevation = 8.dp
-    ) {
-        val homeLabel = stringResource(R.string.nav_home)
-        NavigationBarItem(
-            icon = { Icon(painterResource(R.drawable.baseline_home_24), contentDescription = null) },
-            label = { Text(homeLabel) },
-            selected = false,
-            onClick = { onNavClick(homeLabel) },
-            colors = NavigationBarItemDefaults.colors(
-                unselectedIconColor = BrandPurple,
-                unselectedTextColor = BrandPurple,
-                selectedIconColor = BrandPurple,
-                indicatorColor = LightPurpleBg
-            )
-        )
-        val studyLabel = stringResource(R.string.nav_study)
-        NavigationBarItem(
-            icon = { Icon(painterResource(R.drawable.baseline_menu_book_24), contentDescription = null) },
-            label = { Text(studyLabel) },
-            selected = true,
-            onClick = { onNavClick(studyLabel) },
-            colors = NavigationBarItemDefaults.colors(
-                unselectedIconColor = BrandPurple,
-                unselectedTextColor = BrandPurple,
-                selectedIconColor = BrandPurple,
-                indicatorColor = LightPurpleBg
-            )
-        )
-        NavigationBarItem(
-            icon = { Icon(painterResource(R.drawable.ic_calendar), contentDescription = null) },
-            label = { Text(stringResource(R.string.nav_plan)) },
-            selected = false,
-            onClick = {},
-            colors = NavigationBarItemDefaults.colors(
-                unselectedIconColor = BrandPurple,
-                unselectedTextColor = BrandPurple,
-                selectedIconColor = BrandPurple,
-                indicatorColor = LightPurpleBg
-            )
-        )
-        NavigationBarItem(
-            icon = { Icon(painterResource(R.drawable.ic_progress), contentDescription = null) },
-            label = { Text(stringResource(R.string.nav_progress)) },
-            selected = false,
-            onClick = {},
-            colors = NavigationBarItemDefaults.colors(
-                unselectedIconColor = BrandPurple,
-                unselectedTextColor = BrandPurple,
-                selectedIconColor = BrandPurple,
-                indicatorColor = LightPurpleBg
-            )
-        )
-        NavigationBarItem(
-            icon = { Icon(painterResource(R.drawable.baseline_settings_24), contentDescription = null) },
-            label = { Text(stringResource(R.string.nav_settings)) },
-            selected = false,
-            onClick = {},
-            colors = NavigationBarItemDefaults.colors(
-                unselectedIconColor = BrandPurple,
-                unselectedTextColor = BrandPurple,
-                selectedIconColor = BrandPurple,
-                indicatorColor = LightPurpleBg
-            )
-        )
     }
 }
 

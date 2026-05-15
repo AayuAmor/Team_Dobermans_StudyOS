@@ -30,6 +30,9 @@ import androidx.compose.ui.unit.sp
 import com.teamdobermans.studyos.ui.theme.BrandPurple
 import com.teamdobermans.studyos.ui.theme.LightPurpleBg
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
+import androidx.compose.ui.platform.LocalContext
+import com.teamdobermans.studyos.NavRoute
+import com.teamdobermans.studyos.StudyOSBottomNav
 
 data class Note(
     val id: Int,
@@ -56,19 +59,7 @@ class NotesPage : ComponentActivity() {
                     NotesScreen(
                         onBackClick = { finish() },
                         onAddClick = {
-                            // startActivity(Intent(this, VideotoNotes::class.java))
-                        },
-                        onNavClick = { tabLabel ->
-                            /*
-                            when (tabLabel) {
-                                getString(R.string.nav_home) -> {
-                                    startActivity(Intent(this, WelcomePage::class.java))
-                                }
-                                getString(R.string.nav_study) -> {
-                                    startActivity(Intent(this, Flashcards::class.java))
-                                }
-                            }
-                            */
+                            startActivity(Intent(this, VideotoNotes::class.java))
                         }
                     )
                 }
@@ -87,7 +78,6 @@ fun NotesScreen(
 ) {
     var activeFolder by remember { mutableStateOf("Science") }
     var searchQuery by remember { mutableStateOf("") }
-    var activeNavTab by remember { mutableStateOf("Study") }
 
     val folders = listOf(
         stringResource(R.string.folder_science),
@@ -124,15 +114,7 @@ fun NotesScreen(
     Scaffold(
         modifier = modifier,
         containerColor = BackgroundGray,
-        bottomBar = {
-            BottomNavBar(
-                activeTab = activeNavTab,
-                onTabClick = { tab ->
-                    activeNavTab = tab
-                    onNavClick(tab)
-                }
-            )
-        }
+        bottomBar = { StudyOSBottomNav(currentRoute = NavRoute.STUDY, context = LocalContext.current) }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -392,62 +374,6 @@ fun NoteCard(
     }
 }
 
-@Composable
-fun BottomNavBar(
-    activeTab: String,
-    onTabClick: (String) -> Unit
-) {
-    val tabs = listOf(
-        NavTab(stringResource(R.string.nav_home), R.drawable.baseline_home_24),
-        NavTab(stringResource(R.string.nav_study), R.drawable.baseline_menu_book_24),
-        NavTab(stringResource(R.string.nav_plan), R.drawable.ic_calendar),
-        NavTab(stringResource(R.string.nav_progress), R.drawable.ic_progress),
-        NavTab(stringResource(R.string.nav_settings), R.drawable.baseline_settings_24)
-    )
-
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = Color.White,
-        shadowElevation = 8.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp, horizontal = 12.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            tabs.forEach { tab ->
-                val isActive = tab.label == activeTab
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(if (isActive) SelectedChipBg else Color.Transparent)
-                        .clickable { onTabClick(tab.label) }
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            painter = painterResource(id = tab.iconResId),
-                            contentDescription = tab.label,
-                            tint = if (isActive) BrandPurple else Color.LightGray,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = tab.label,
-                            color = if (isActive) BrandPurple else Color.LightGray,
-                            fontSize = 11.sp,
-                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
 
 @Preview(showBackground = true)
 @Composable
