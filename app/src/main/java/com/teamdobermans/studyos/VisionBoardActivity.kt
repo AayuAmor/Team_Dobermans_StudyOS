@@ -257,7 +257,7 @@ fun VisionBoardBody() {
         }
 
         Box(modifier = Modifier.align(Alignment.BottomCenter)) {
-            StudyBottomNav(selected = 1)
+            StudyBottomNav(selected = 2)
         }
     }
 }

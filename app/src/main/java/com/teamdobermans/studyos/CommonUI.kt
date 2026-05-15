@@ -77,12 +77,38 @@ fun StudyBottomNav(selected: Int) {
                 }
             )
             NavItem(
-                label = "Study",
-                icon = if (selected == 1) Icons.Rounded.MenuBook else Icons.Outlined.MenuBook,
+                label = "Plan",
+                icon = if (selected == 1) Icons.Rounded.EventNote else Icons.Outlined.EventNote,
                 isSelected = selected == 1,
                 onClick = {
-                    if (selected != 1) {
+                    // Navigate to Plan
+                }
+            )
+            NavItem(
+                label = "Study",
+                icon = if (selected == 2) Icons.Rounded.MenuBook else Icons.Outlined.MenuBook,
+                isSelected = selected == 2,
+                onClick = {
+                    if (selected != 2) {
                         context.startActivity(Intent(context, VisionBoardActivity::class.java))
+                    }
+                }
+            )
+            NavItem(
+                label = "Progress",
+                icon = if (selected == 3) Icons.Rounded.BarChart else Icons.Outlined.BarChart,
+                isSelected = selected == 3,
+                onClick = {
+                    // Navigate to Progress
+                }
+            )
+            NavItem(
+                label = "Profile",
+                icon = if (selected == 4) Icons.Rounded.Settings else Icons.Outlined.Settings,
+                isSelected = selected == 4,
+                onClick = {
+                    if (selected != 4) {
+                        context.startActivity(Intent(context, ProfileActivity::class.java))
                     }
                 }
             )
