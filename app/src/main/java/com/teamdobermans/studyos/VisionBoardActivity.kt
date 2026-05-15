@@ -251,12 +251,7 @@ fun VisionBoardBody() {
                 }
             }
 
-            Spacer(modifier = Modifier.height(120.dp))
         }
-    }
-
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-        StudyBottomNav(selected = 1)
     }
 }
 
