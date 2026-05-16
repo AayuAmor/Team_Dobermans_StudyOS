@@ -1,5 +1,6 @@
 package com.teamdobermans.studyos
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -26,9 +27,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.teamdobermans.studyos.ui.theme.BrandPurple
+import com.teamdobermans.studyos.ui.theme.LightPurpleBg
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
+import androidx.compose.ui.platform.LocalContext
+import com.teamdobermans.studyos.NavRoute
+import com.teamdobermans.studyos.StudyOSBottomNav
 
-// ─── Data Models ───────────────────────────────────────────────────────────────
 data class Note(
     val id: Int,
     val title: String,
@@ -41,13 +46,10 @@ data class NavTab(
     val iconResId: Int
 )
 
-// ─── Colors ────────────────────────────────────────────────────────────────────
-private val BrandPurple = Color(0xFF6C5CE7)
 private val BrandPurpleLight = Color(0xFF7C6CEF)
 private val BackgroundGray = Color(0xFFF0EFF5)
 private val SelectedChipBg = Color(0xFFDED9FF)
 
-// ─── Activity ──────────────────────────────────────────────────────────────────
 class NotesPage : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,7 +57,10 @@ class NotesPage : ComponentActivity() {
             StudyOSTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     NotesScreen(
-                        onBackClick = { finish() }
+                        onBackClick = { finish() },
+                        onAddClick = {
+                            startActivity(Intent(this, VideotoNotes::class.java))
+                        }
                     )
                 }
             }
@@ -63,7 +68,6 @@ class NotesPage : ComponentActivity() {
     }
 }
 
-// ─── Main Screen ───────────────────────────────────────────────────────────────
 @Composable
 fun NotesScreen(
     modifier: Modifier = Modifier,
@@ -74,7 +78,6 @@ fun NotesScreen(
 ) {
     var activeFolder by remember { mutableStateOf("Science") }
     var searchQuery by remember { mutableStateOf("") }
-    var activeNavTab by remember { mutableStateOf("Study") }
 
     val folders = listOf(
         stringResource(R.string.folder_science),
@@ -104,22 +107,14 @@ fun NotesScreen(
                         (searchQuery.isEmpty() ||
                                 note.title.contains(searchQuery, ignoreCase = true) ||
                                 note.body.contains(searchQuery, ignoreCase = true))
-            }.toMutableList()
+            }
         )
     }
 
     Scaffold(
         modifier = modifier,
         containerColor = BackgroundGray,
-        bottomBar = {
-            BottomNavBar(
-                activeTab = activeNavTab,
-                onTabClick = { tab ->
-                    activeNavTab = tab
-                    onNavClick(tab)
-                }
-            )
-        }
+        bottomBar = { StudyOSBottomNav(currentRoute = NavRoute.STUDY, context = LocalContext.current) }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -151,7 +146,7 @@ fun NotesScreen(
                         note = note,
                         onClick = { onNoteClick(note) },
                         onClose = {
-                            visibleNotes = visibleNotes.toMutableList().also { it.remove(note) }
+                            visibleNotes = visibleNotes.filter { it != note }
                         }
                     )
                 }
@@ -185,12 +180,21 @@ fun NotesHeader(
                     .clickable { onBackClick() }
                     .padding(horizontal = 14.dp, vertical = 8.dp)
             ) {
-                Text(
-                    text = "← " + stringResource(R.string.back),
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.baseline_arrow_back_24),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = stringResource(R.string.back),
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
 
             Box(
@@ -348,11 +352,13 @@ fun NoteCard(
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
-                Text(
-                    text = "×",
-                    color = Color.LightGray,
-                    fontSize = 24.sp,
-                    modifier = Modifier.clickable { onClose() }
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_clear),
+                    contentDescription = "Close",
+                    tint = Color.LightGray,
+                    modifier = Modifier
+                        .size(20.dp)
+                        .clickable { onClose() }
                 )
             }
 
@@ -368,56 +374,6 @@ fun NoteCard(
     }
 }
 
-@Composable
-fun BottomNavBar(
-    activeTab: String,
-    onTabClick: (String) -> Unit
-) {
-    val tabs = listOf(
-        NavTab(stringResource(R.string.nav_home), R.drawable.baseline_home_24),
-        NavTab(stringResource(R.string.nav_study), R.drawable.baseline_menu_book_24),
-        NavTab(stringResource(R.string.nav_plan), R.drawable.ic_calendar),
-        NavTab(stringResource(R.string.nav_progress), R.drawable.ic_progress),
-        NavTab(stringResource(R.string.nav_settings), R.drawable.baseline_settings_24)
-    )
-
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = Color.White,
-        shadowElevation = 8.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            tabs.forEach { tab ->
-                val isActive = tab.label == activeTab
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .clickable { onTabClick(tab.label) }
-                        .padding(horizontal = 4.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = tab.iconResId),
-                        contentDescription = tab.label,
-                        tint = if (isActive) BrandPurple else Color.LightGray,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Text(
-                        text = tab.label,
-                        color = if (isActive) BrandPurple else Color.LightGray,
-                        fontSize = 11.sp,
-                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium
-                    )
-                }
-            }
-        }
-    }
-}
 
 @Preview(showBackground = true)
 @Composable

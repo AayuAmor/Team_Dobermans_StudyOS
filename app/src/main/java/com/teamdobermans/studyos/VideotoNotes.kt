@@ -1,5 +1,6 @@
 package com.teamdobermans.studyos
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -17,6 +19,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
+import com.teamdobermans.studyos.NavRoute
+import com.teamdobermans.studyos.StudyOSBottomNav
 
 class VideotoNotes : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,7 +31,7 @@ class VideotoNotes : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    VideoToNotesScreen()
+                    VideoToNotesScreen(onBackClick = { finish() })
                 }
             }
         }
@@ -38,22 +42,23 @@ class VideotoNotes : ComponentActivity() {
 fun VideoToNotesScreen(
     modifier: Modifier = Modifier,
     onBackClick: () -> Unit = {},
-    onGenerateNotesClick: () -> Unit = {}
+    onGenerateNotesClick: () -> Unit = {},
+    onNavClick: (String) -> Unit = {}
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        bottomBar = { StudyOSBottomNavBar() }
+        bottomBar = { StudyOSBottomNav(currentRoute = NavRoute.STUDY, context = LocalContext.current) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color(0xFFF4F5FF)) // LightPurpleBg
+
         ) {
             HeaderSection(onBackClick = onBackClick)
-            
+
             Spacer(modifier = Modifier.height(32.dp))
-            
+
             InputCard(onGenerateNotesClick = onGenerateNotesClick)
         }
     }
@@ -67,7 +72,7 @@ private fun HeaderSection(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(Color(0xFF5E5CE6)) // BrandPurple
+            .background(Color(0xFF5E5CE6))
             .padding(top = 16.dp, bottom = 24.dp, start = 20.dp, end = 20.dp)
     ) {
         Button(
@@ -92,16 +97,16 @@ private fun HeaderSection(
                 fontWeight = FontWeight.Bold
             )
         }
-        
+
         Spacer(modifier = Modifier.height(20.dp))
-        
+
         Text(
             text = stringResource(id = R.string.title_activity_videoto_notes),
             color = Color.White,
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold
         )
-        
+
         Text(
             text = stringResource(id = R.string.ai_summarization_subtitle),
             color = Color.White.copy(alpha = 0.7f),
@@ -132,25 +137,25 @@ private fun InputCard(
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF5E5CE6), RoundedCornerShape(12.dp))
+                    .background(Color.LightGray, RoundedCornerShape(12.dp))
                     .padding(horizontal = 16.dp, vertical = 14.dp)
             ) {
                 Text(
                     text = stringResource(id = R.string.video_url_placeholder),
-                    color = Color.White.copy(alpha = 0.8f),
+                    color = Color.Gray.copy(alpha = 0.8f),
                     fontSize = 14.sp,
                     maxLines = 1
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             Button(
                 onClick = onGenerateNotesClick,
                 modifier = Modifier
@@ -170,51 +175,6 @@ private fun InputCard(
     }
 }
 
-@Composable
-private fun StudyOSBottomNavBar(
-    modifier: Modifier = Modifier
-) {
-    NavigationBar(
-        modifier = modifier,
-        containerColor = Color.White,
-        tonalElevation = 8.dp
-    ) {
-        val items = listOf(
-            Triple(R.string.nav_home, R.drawable.baseline_home_24, true),
-            Triple(R.string.nav_study, R.drawable.baseline_menu_book_24, false),
-            Triple(R.string.nav_plan, R.drawable.ic_calendar, false),
-            Triple(R.string.nav_progress, R.drawable.ic_progress, false),
-            Triple(R.string.nav_settings, R.drawable.baseline_settings_24, false)
-        )
-        
-        items.forEach { (labelRes, iconRes, selected) ->
-            NavigationBarItem(
-                selected = selected,
-                onClick = { },
-                icon = {
-                    Icon(
-                        painter = painterResource(id = iconRes),
-                        contentDescription = stringResource(id = labelRes),
-                        modifier = Modifier.size(24.dp)
-                    )
-                },
-                label = {
-                    Text(
-                        text = stringResource(id = labelRes),
-                        fontSize = 10.sp
-                    )
-                },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color(0xFF5E5CE6),
-                    selectedTextColor = Color(0xFF5E5CE6),
-                    unselectedIconColor = Color.Gray,
-                    unselectedTextColor = Color.Gray,
-                    indicatorColor = Color.Transparent
-                )
-            )
-        }
-    }
-}
 
 @Preview(showBackground = true)
 @Composable
