@@ -58,6 +58,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.mutableStateListOf
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
+import androidx.compose.material3.Scaffold
 
 private enum class Difficulty { EASY, MEDIUM, HARD }
 
@@ -184,7 +185,7 @@ fun MockTestBody() {
                 .background(StudyPurpleLight)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
-                .navigationBarsPadding()
+
         ) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -458,9 +459,6 @@ fun MockTestBody() {
         }
     }
 
-//    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-//        StudyBottomNav(selected = 0)
-//    }
 }
 
 @Composable
@@ -496,31 +494,72 @@ private fun MockTestBodyPreview() {
 
     Column(modifier = Modifier.fillMaxSize().background(StudyPurple)) {
 
-        Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Column(
+            modifier = Modifier.fillMaxWidth().statusBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
             Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.25f)) {
-                Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(painter = painterResource(R.drawable.baseline_arrow_back_24), contentDescription = "Back", tint = Color.White, modifier = Modifier.size(18.dp))
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.baseline_arrow_back_24),
+                        contentDescription = "Back",
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Back", color = Color.White, fontSize = 14.sp)
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Text("Mock Test", style = TextStyle(color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold))
+            Text(
+                "Mock Test",
+                style = TextStyle(
+                    color = Color.White,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            )
             Text("Timed exam simulation", color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp)
         }
 
-        Column(modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(0.dp)).background(StudyPurpleLight).padding(16.dp)) {
+        Column(
+            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(0.dp))
+                .background(StudyPurpleLight).padding(16.dp)
+        ) {
 
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)) {
+            Card(
+                modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Mock Test", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Text(
+                        "Mock Test",
+                        color = StudyPurple,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp
+                    )
                     Spacer(modifier = Modifier.height(10.dp))
                     Surface(shape = RoundedCornerShape(10.dp), color = StudyPurple) {
-                        Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("All Subjects", color = Color.White, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "All Subjects",
+                                color = Color.White,
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 14.sp
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Icon(painter = painterResource(R.drawable.baseline_more_horiz_24), contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Icon(
+                                painter = painterResource(R.drawable.baseline_more_horiz_24),
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
                         }
                     }
                 }
@@ -528,20 +567,52 @@ private fun MockTestBodyPreview() {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)) {
+            Card(
+                modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Generate from Notes", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Text(
+                        "Generate from Notes",
+                        color = StudyPurple,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp
+                    )
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("AI will use your selected note to generate questions", color = Color.Gray, fontSize = 12.sp)
+                    Text(
+                        "AI will use your selected note to generate questions",
+                        color = Color.Gray,
+                        fontSize = 12.sp
+                    )
                     Spacer(modifier = Modifier.height(10.dp))
-                    Surface(shape = RoundedCornerShape(10.dp), color = Color.Gray.copy(alpha = 0.15f)) {
-                        Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(painter = painterResource(R.drawable.baseline_history_24), contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color.Gray.copy(alpha = 0.15f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.baseline_history_24),
+                                contentDescription = null,
+                                tint = Color.Gray,
+                                modifier = Modifier.size(16.dp)
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Select a note", color = Color.Gray, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                            Text(
+                                "Select a note",
+                                color = Color.Gray,
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 14.sp
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Icon(painter = painterResource(R.drawable.baseline_more_horiz_24), contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))
+                            Icon(
+                                painter = painterResource(R.drawable.baseline_more_horiz_24),
+                                contentDescription = null,
+                                tint = Color.Gray,
+                                modifier = Modifier.size(16.dp)
+                            )
                         }
                     }
                 }
@@ -549,16 +620,38 @@ private fun MockTestBodyPreview() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text("DIFFICULTY", color = StudyPurple, fontWeight = FontWeight.Bold, fontSize = 13.sp, letterSpacing = 1.sp)
+            Text(
+                "DIFFICULTY",
+                color = StudyPurple,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                letterSpacing = 1.sp
+            )
             Spacer(modifier = Modifier.height(10.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                listOf(Triple("Easy", Color(0xFF4CAF50), Color(0xFFE8F5E9)),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                listOf(
+                    Triple("Easy", Color(0xFF4CAF50), Color(0xFFE8F5E9)),
                     Triple("Medium", Color(0xFFFFC107), Color(0xFFFFF8E1)),
-                    Triple("Hard", Color(0xFFE53935), Color(0xFFFFEBEB))).forEach { (label, sel, bg) ->
-                    Surface(shape = RoundedCornerShape(50.dp), color = bg, modifier = Modifier.weight(1f)) {
-                        Box(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), contentAlignment = Alignment.Center) {
-                            Text(label, color = if (label == "Medium") sel else Color.Gray,
-                                fontWeight = if (label == "Medium") FontWeight.Bold else FontWeight.Normal, fontSize = 14.sp)
+                    Triple("Hard", Color(0xFFE53935), Color(0xFFFFEBEB))
+                ).forEach { (label, sel, bg) ->
+                    Surface(
+                        shape = RoundedCornerShape(50.dp),
+                        color = bg,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                label,
+                                color = if (label == "Medium") sel else Color.Gray,
+                                fontWeight = if (label == "Medium") FontWeight.Bold else FontWeight.Normal,
+                                fontSize = 14.sp
+                            )
                         }
                     }
                 }
@@ -566,10 +659,17 @@ private fun MockTestBodyPreview() {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Button(onClick = {}, modifier = Modifier.fillMaxWidth().height(52.dp),
+            Button(
+                onClick = {}, modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)) {
-                Text("Start Test", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)
+            ) {
+                Text(
+                    "Start Test",
+                    color = Color.White,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }

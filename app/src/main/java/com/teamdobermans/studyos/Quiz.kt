@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,12 +19,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -33,7 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -43,9 +38,7 @@ class QuizScreen : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         enableEdgeToEdge()
-
         setContent {
             QuizUI()
         }
@@ -54,172 +47,130 @@ class QuizScreen : ComponentActivity() {
 
 @Composable
 fun QuizUI() {
+    val context = LocalContext.current
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF3F1FB))
-    ) {
-
-        Column(
-            modifier = Modifier.fillMaxSize()
+    Scaffold(
+        bottomBar = {
+            // This properly handles your system navigation bars and insets
+            StudyOSBottomNav(currentRoute = NavRoute.STUDY, context = context)
+        }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFF3F1FB))
+                .padding(bottom = innerPadding.calculateBottomPadding())
         ) {
-
-            // TOP SECTION
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xFF5B4DDB),
-                                Color(0xFF6A5AF9)
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                // TOP SECTION
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(230.dp) // Slightly adjusted to comfortably fit progress bars
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color(0xFF5B4DDB),
+                                    Color(0xFF6A5AF9)
+                                )
                             )
                         )
-                    )
-                    .padding(20.dp)
-            ) {
+                        .padding(20.dp)
+                ) {
+                    Column {
+                        // BACK BUTTON
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(Color.White.copy(alpha = 0.12f))
+                                .padding(horizontal = 14.dp, vertical = 10.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.White
+                            )
 
-                Column {
+                            Spacer(modifier = Modifier.width(6.dp))
 
-                    // BACK BUTTON
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(Color.White.copy(alpha = 0.12f))
-                            .padding(horizontal = 14.dp, vertical = 10.dp)
-                    ) {
+                            Text(
+                                text = "Back",
+                                color = Color.White,
+                                fontSize = 16.sp
+                            )
+                        }
 
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = null,
-                            tint = Color.White
-                        )
-
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.height(18.dp))
 
                         Text(
-                            text = "Back",
-                            color = Color.White,
+                            text = "Question 1 of 5",
+                            color = Color.White.copy(alpha = 0.8f),
                             fontSize = 16.sp
                         )
-                    }
 
-                    Spacer(modifier = Modifier.height(18.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
 
-                    Text(
-                        text = "Question 1 of 5",
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 16.sp
-                    )
+                        Text(
+                            text = "Which Organelle produces energy?",
+                            color = Color.White,
+                            fontSize = 30.sp,
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = 36.sp
+                        )
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(18.dp))
 
-                    Text(
-                        text = "Which Organnelle produces energy ?",
-                        color = Color.White,
-                        fontSize = 30.sp,
-                        fontWeight = FontWeight.Bold,
-                        lineHeight = 36.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(18.dp))
-
-                    // PROGRESS BAR
-                    Row {
-
-                        repeat(5) { index ->
-
-                            Box(
-                                modifier = Modifier
-                                    .width(85.dp)
-                                    .height(4.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(
-                                        if (index == 0)
-                                            Color.White
-                                        else
-                                            Color(0xFF8D83FF)
-                                    )
-                            )
-
-                            Spacer(modifier = Modifier.width(10.dp))
+                        // PROGRESS BAR
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            repeat(5) { index ->
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f) // Uses weight instead of hardcoded width to scale cleanly
+                                        .height(4.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(
+                                            if (index == 0) Color.White else Color(0xFF8D83FF)
+                                        )
+                                )
+                                if (index < 4) {
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                }
+                            }
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // OPTIONS (Now fully functioning using the reusable composable)
+                OptionCard("A", "Nucleus")
+                OptionCard("B", "Mitochondria")
+                OptionCard("C", "Ribosome")
+                OptionCard("D", "Golgi")
             }
-
-            Spacer(modifier = Modifier.height(40.dp))
-
-            // OPTIONS
-            OptionCard("A", "Nucleus")
-            OptionCard("B", "Mitochondria")
-            OptionCard("C", "Ribosome")
-            OptionCard("D", "Golgi")
-        }
-
-        // BOTTOM NAVIGATION
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .background(Color.White)
-                .padding(vertical = 14.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-
-            BottomItem(
-                title = "Home",
-                icon = Icons.Default.Home,
-                selected = true
-            )
-
-            BottomItem(
-                title = "Study",
-                icon = Icons.Default.MenuBook,
-                selected = false
-            )
-
-            BottomItem(
-                title = "Plan",
-                icon = Icons.Default.CalendarMonth,
-                selected = false
-            )
-
-            BottomItem(
-                title = "Progress",
-                icon = Icons.Default.ShowChart,
-                selected = false
-            )
-
-            BottomItem(
-                title = "Settings",
-                icon = Icons.Default.Settings,
-                selected = false
-            )
         }
     }
 }
 
+// Reusable Option Card Composable (Moved outside QuizUI)
 @Composable
 fun OptionCard(
     letter: String,
-    answer: String
+    answer: String,
+    modifier: Modifier = Modifier
 ) {
-
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 12.dp)
+            .padding(horizontal = 24.dp, vertical = 8.dp)
             .clip(RoundedCornerShape(18.dp))
             .background(Color.White)
-            .padding(horizontal = 22.dp, vertical = 30.dp),
+            .padding(horizontal = 22.dp, vertical = 20.dp), // Tailored padding for clean scaling
         verticalAlignment = Alignment.CenterVertically
     ) {
-
         // CIRCLE LETTER
         Box(
             modifier = Modifier
@@ -228,7 +179,6 @@ fun OptionCard(
                 .background(Color(0xFFEAE5FF)),
             contentAlignment = Alignment.Center
         ) {
-
             Text(
                 text = letter,
                 color = Color(0xFF7B42FF),
@@ -241,13 +191,12 @@ fun OptionCard(
 
         Text(
             text = answer,
-            color = Color(0xFF7B42FF),
-            fontSize = 28.sp,
+            color = Color(0xFF4A4A4A), // Slightly darker body color for improved text readability
+            fontSize = 22.sp,
             fontWeight = FontWeight.SemiBold
         )
     }
 }
-
 
 @Preview(showBackground = true)
 @Composable

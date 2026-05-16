@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -37,7 +36,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.ui.platform.LocalContext
 
 class StudyActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,183 +51,176 @@ class StudyActivity : ComponentActivity() {
 @Composable
 fun StudyUI() {
 
-    val context = LocalContext.current
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFF6A5AE0), Color(0xFF5A4FCF))
+                )
+            )
+    ) {
 
-    Scaffold(
-        bottomBar = { StudyOSBottomNav(currentRoute = NavRoute.STUDY, context = context) }
-    ) { innerPadding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(Color(0xFF6A5AE0), Color(0xFF5A4FCF))
-                    )
-                )
-                .padding(bottom = innerPadding.calculateBottomPadding())
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            Column(
+            Spacer(modifier = Modifier.height(60.dp))
+
+
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .size(120.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.studyoslogo),
+                    contentDescription = null,
+                    modifier = Modifier.size(80.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = "Key Features",
+                fontSize = 24.sp,
+                color = Color.White
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+
+            Row (
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+                    .clip(RoundedCornerShape(15.dp))
+                    .background(Color.White.copy(alpha = 0.15f))
+                    .padding(15.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
 
-                Spacer(modifier = Modifier.height(60.dp))
-
-
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(Color.White),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = painterResource(R.drawable.studyoslogo),
-                        contentDescription = null,
-                        modifier = Modifier.size(80.dp),
-                        contentScale = ContentScale.Fit
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Text(
-                    text = "Key Features",
-                    fontSize = 24.sp,
-                    color = Color.White
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                    contentDescription = null,
+                    modifier = Modifier.size(28.dp),
+                    tint = Color.White
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Column {
+                    Text("Flashcards & Quiz", color = Color.White)
+                    Text("Spaced repetition learning", color = Color.LightGray, fontSize = 13.sp)
+                }
+            }
 
 
-                Row (
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+                    .clip(RoundedCornerShape(15.dp))
+                    .background(Color.White.copy(alpha = 0.15f))
+                    .padding(15.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                Icon(
+                    imageVector = Icons.Filled.Schedule,
+                    contentDescription = null,
+                    modifier = Modifier.size(28.dp),
+                    tint = Color.White
+                )
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Column {
+                    Text("Pomodoro Time", color = Color.White)
+                    Text("Customizable focus sessions", color = Color.LightGray, fontSize = 13.sp)
+                }
+            }
+
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp)
+                    .clip(RoundedCornerShape(15.dp))
+                    .background(Color.White.copy(alpha = 0.15f))
+                    .padding(15.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(28.dp),
+                    tint = Color.White
+                )
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Column {
+                    Text("Smart Notes", color = Color.White)
+                    Text("Organize in folder, search instantly", color = Color.LightGray, fontSize = 13.sp)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+
+            Row {
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 6.dp)
-                        .clip(RoundedCornerShape(15.dp))
-                        .background(Color.White.copy(alpha = 0.15f))
-                        .padding(15.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.MenuBook,
-                        contentDescription = null,
-                        modifier = Modifier.size(28.dp),
-                        tint = Color.White
-                    )
-
-                    Spacer(modifier = Modifier.width(10.dp))
-
-                    Column {
-                        Text("Flashcards & Quiz", color = Color.White)
-                        Text("Spaced repetition learning", color = Color.LightGray, fontSize = 13.sp)
-                    }
-                }
-
-
-                Row(
+                        .padding(4.dp)
+                        .size(8.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(Color.LightGray)
+                )
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 6.dp)
-                        .clip(RoundedCornerShape(15.dp))
-                        .background(Color.White.copy(alpha = 0.15f))
-                        .padding(15.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-
-                    Icon(
-                        imageVector = Icons.Filled.Schedule,
-                        contentDescription = null,
-                        modifier = Modifier.size(28.dp),
-                        tint = Color.White
-                    )
-
-                    Spacer(modifier = Modifier.width(10.dp))
-
-                    Column {
-                        Text("Pomodoro Time", color = Color.White)
-                        Text("Customizable focus sessions", color = Color.LightGray, fontSize = 13.sp)
-                    }
-                }
-
-
-                Row(
+                        .padding(4.dp)
+                        .width(40.dp)
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(Color.White)
+                )
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 6.dp)
-                        .clip(RoundedCornerShape(15.dp))
-                        .background(Color.White.copy(alpha = 0.15f))
-                        .padding(15.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                        .padding(4.dp)
+                        .size(8.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(Color.LightGray)
+                )
+            }
 
-                    Icon(
-                        imageVector = Icons.Filled.Check,
-                        contentDescription = null,
-                        modifier = Modifier.size(28.dp),
-                        tint = Color.White
-                    )
-
-                    Spacer(modifier = Modifier.width(10.dp))
-
-                    Column {
-                        Text("Smart Notes", color = Color.White)
-                        Text("Organize in folder, search instantly", color = Color.LightGray, fontSize = 13.sp)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(30.dp))
 
 
-                Row {
-                    Box(
-                        modifier = Modifier
-                            .padding(4.dp)
-                            .size(8.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(Color.LightGray)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .padding(4.dp)
-                            .width(40.dp)
-                            .height(8.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(Color.White)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .padding(4.dp)
-                            .size(8.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(Color.LightGray)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(30.dp))
-
-
-                Button(
-                    onClick = {},
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(55.dp),
-                    shape = RoundedCornerShape(15.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFD6D1E8)
-                    )
-                ) {
-                    Text("Next", color = Color.DarkGray)
-                }
+            Button(
+                onClick = {},
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(55.dp),
+                shape = RoundedCornerShape(15.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFD6D1E8)
+                )
+            ) {
+                Text("Next", color = Color.DarkGray)
             }
         }
     }
-
 }
+
 
 @Preview
 @Composable
