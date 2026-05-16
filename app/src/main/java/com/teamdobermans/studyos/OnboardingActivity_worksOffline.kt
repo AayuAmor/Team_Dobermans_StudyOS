@@ -177,8 +177,8 @@ fun OnboardingBody() {
 
         Button(
             onClick = {
-//                val intent = Intent(context, SignUpActivity::class.java)
-//                context.startActivity(intent)
+                val intent = Intent(context, SignUpActivity::class.java)
+                context.startActivity(intent)
             },
             modifier = Modifier
                 .fillMaxWidth()

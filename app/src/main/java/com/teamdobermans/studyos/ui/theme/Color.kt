@@ -14,3 +14,6 @@ val StudyPurple     = Color(0xFF5B4FD4)
 val StudyPurpleDeep = Color(0xFF493FAD)
 val StudyPurpleLight= Color(0xFFEEEBFF)
 val StudyCardBg     = Color(0xFFDFDFE8)
+
+val BrandPurple = Color(0xFF5B4FD4)
+val LightPurpleBg = Color(0xFFF5F3FF)

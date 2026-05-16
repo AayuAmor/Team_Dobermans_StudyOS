@@ -29,7 +29,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
@@ -58,27 +57,23 @@ import com.teamdobermans.studyos.ui.theme.StudyCardBg
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 import com.teamdobermans.studyos.ui.theme.StudyPurple
 import com.teamdobermans.studyos.ui.theme.StudyPurpleDeep
-import java.io.BufferedReader
-import java.io.InputStreamReader
 
-class LoginActivity : ComponentActivity() {
+class SignUpActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            StudyOSTheme {
-                LoginBody()
-            }
+            SignUpBody()
         }
     }
 }
 
 @Composable
-fun LoginBody() {
+fun SignUpBody() {
+    var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    var rememberMe by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val activity = context as? Activity
@@ -117,10 +112,10 @@ fun LoginBody() {
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            "Welcome Back",
+            "Create Account",
             style = TextStyle(
                 color = Color.White,
                 fontSize = 28.sp,
@@ -128,7 +123,7 @@ fun LoginBody() {
             )
         )
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
         Card(
             modifier = Modifier
@@ -140,6 +135,32 @@ fun LoginBody() {
             elevation = CardDefaults.cardElevation(defaultElevation = 18.dp)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
+                Text(
+                    "Full Name",
+                    color = StudyPurple,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = fullName,
+                    onValueChange = { fullName = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(8.dp, RoundedCornerShape(12.dp))
+                        .background(color = Color.White, shape = RoundedCornerShape(12.dp)),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(
+                        unfocusedContainerColor = Color.White,
+                        focusedContainerColor = Color.White,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedIndicatorColor = StudyPurple,
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Text(
                     "Email",
                     color = StudyPurple,
@@ -204,62 +225,34 @@ fun LoginBody() {
                     )
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable { rememberMe = !rememberMe }
-                    ) {
-                        Checkbox(
-                            checked = rememberMe,
-                            onCheckedChange = { rememberMe = it }
-                        )
-                        Text(
-                            "Remember me",
-                            color = Color.Gray,
-                            fontSize = 13.sp
-                        )
-                    }
-                    Text(
-                        "Forgot Password?",
-                        color = StudyPurple,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 13.sp,
-                        modifier = Modifier.clickable { }
-                    )
-                }
-
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
                     onClick = {
-                        var fileContent = ""
-                        try {
-                            context.openFileInput("user_data.txt").use { input ->
-                                val reader = BufferedReader(InputStreamReader(input))
-                                val sb = java.lang.StringBuilder()
-                                var line: String?
-                                while (reader.readLine().also { line = it } != null) {
-                                    sb.append(line)
-                                }
-                                fileContent = sb.toString()
+                        if (fullName.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty()) {
+                            val sharedPref = context.getSharedPreferences("StudyOSPrefs", Context.MODE_PRIVATE)
+                            with(sharedPref.edit()) {
+                                putString("USER_NAME", fullName)
+                                putString("USER_EMAIL", email)
+                                putString("USER_PASSWORD", password)
+                                apply()
                             }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
 
-                        if (email.isNotEmpty() && fileContent.contains(email)) {
-                            Toast.makeText(context, "Login Successful!", Toast.LENGTH_SHORT).show()
-                            val intent = Intent(context, DashboardActivity::class.java)
+                            try {
+                                val fileContents = "Welcome to StudyOS, $fullName!"
+                                context.openFileOutput("user_data.txt", Context.MODE_PRIVATE).use { output ->
+                                    output.write(fileContents.toByteArray())
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+
+                            Toast.makeText(context, "Registration Successful!", Toast.LENGTH_SHORT).show()
+                            val intent = Intent(context, LoginActivity::class.java)
                             context.startActivity(intent)
                             activity?.finish()
                         } else {
-                            Toast.makeText(context, "Invalid credentials", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
                         }
                     },
                     modifier = Modifier
@@ -270,7 +263,7 @@ fun LoginBody() {
                     colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)
                 ) {
                     Text(
-                        "Sign In",
+                        "Sign Up",
                         color = Color.White,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold
@@ -333,17 +326,17 @@ fun LoginBody() {
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        "Don't have an account? ",
+                        "Already have an account? ",
                         color = Color.Gray,
                         fontSize = 14.sp
                     )
                     Text(
-                        "Sign Up",
+                        "Sign In",
                         color = StudyPurple,
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
                         modifier = Modifier.clickable {
-                            val intent = Intent(context, SignUpActivity::class.java)
+                            val intent = Intent(context, LoginActivity::class.java)
                             context.startActivity(intent)
                             activity?.finish()
                         }
@@ -358,8 +351,8 @@ fun LoginBody() {
 
 @Preview
 @Composable
-fun LoginPreview() {
+fun SignUpPreview() {
     StudyOSTheme {
-        LoginBody()
+        SignUpBody()
     }
 }
