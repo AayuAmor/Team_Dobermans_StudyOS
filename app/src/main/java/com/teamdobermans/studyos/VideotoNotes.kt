@@ -143,12 +143,12 @@ private fun InputCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF5E5CE6), RoundedCornerShape(12.dp))
+                    .background(Color.LightGray, RoundedCornerShape(12.dp))
                     .padding(horizontal = 16.dp, vertical = 14.dp)
             ) {
                 Text(
                     text = stringResource(id = R.string.video_url_placeholder),
-                    color = Color.White.copy(alpha = 0.8f),
+                    color = Color.Gray.copy(alpha = 0.8f),
                     fontSize = 14.sp,
                     maxLines = 1
                 )
