@@ -65,6 +65,15 @@ class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val sharedPref = getSharedPreferences("StudyOSPrefs", Context.MODE_PRIVATE)
+        val isRemembered = sharedPref.getBoolean("IS_REMEMBERED", false)
+        if (isRemembered) {
+            val intent = Intent(this, DashboardActivity::class.java)
+            startActivity(intent)
+            finish()
+        }
+
         setContent {
             StudyOSTheme {
                 LoginBody()
@@ -238,22 +247,29 @@ fun LoginBody() {
 
                 Button(
                     onClick = {
-                        var fileContent = ""
-                        try {
-                            context.openFileInput("user_data.txt").use { input ->
-                                val reader = BufferedReader(InputStreamReader(input))
-                                val sb = java.lang.StringBuilder()
-                                var line: String?
-                                while (reader.readLine().also { line = it } != null) {
-                                    sb.append(line)
-                                }
-                                fileContent = sb.toString()
-                            }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
+                        val sharedPref = context.getSharedPreferences("StudyOSPrefs", Context.MODE_PRIVATE)
+                        val savedEmail = sharedPref.getString("USER_EMAIL", "")
+                        val savedPassword = sharedPref.getString("USER_PASSWORD", "")
 
-                        if (email.isNotEmpty() && fileContent.contains(email)) {
+                        if (email == savedEmail && password == savedPassword && email.isNotEmpty()) {
+                            with(sharedPref.edit()) {
+                                putBoolean("IS_REMEMBERED", rememberMe)
+                                apply()
+                            }
+
+                            try {
+                                context.openFileInput("user_data.txt").use { input ->
+                                    val reader = BufferedReader(InputStreamReader(input))
+                                    val sb = java.lang.StringBuilder()
+                                    var line: String?
+                                    while (reader.readLine().also { line = it } != null) {
+                                        sb.append(line)
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+
                             Toast.makeText(context, "Login Successful!", Toast.LENGTH_SHORT).show()
                             val intent = Intent(context, DashboardActivity::class.java)
                             context.startActivity(intent)
