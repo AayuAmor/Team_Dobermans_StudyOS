@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.Scaffold
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -29,6 +28,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
@@ -49,11 +49,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.teamdobermans.studyos.NavRoute
-import com.teamdobermans.studyos.StudyOSBottomNav
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 import com.teamdobermans.studyos.ui.theme.StudyPurple
-import com.teamdobermans.studyos.ui.theme.StudyPurpleDeep
 import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
 
 class ProfileActivity : ComponentActivity() {
@@ -72,16 +69,15 @@ fun initials(name: String): String {
 
 @Composable
 fun ProfileBody() {
-
-    val context  = LocalContext.current
+    val context = LocalContext.current
     val activity = context as? Activity
 
-    val displayName  = "Ditya Adhikari"
+    val displayName = "Ditya Adhikari"
     val displayEmail = "dityaadhikari345@gmail.com"
 
-    var editName        by remember { mutableStateOf(displayName) }
-    var editEmail       by remember { mutableStateOf("") }
-    var newPassword     by remember { mutableStateOf("") }
+    var editName by remember { mutableStateOf(displayName) }
+    var editEmail by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
     val passwordsMatch = newPassword.isNotEmpty() && newPassword == confirmPassword
@@ -90,29 +86,66 @@ fun ProfileBody() {
         bottomBar = { StudyOSBottomNav(currentRoute = NavRoute.SETTINGS, context = context) }
     ) { innerPadding ->
 
-        Column(modifier = Modifier.fillMaxSize().background(StudyPurple)
-            .padding(bottom = innerPadding.calculateBottomPadding())) {
-
-            Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
-                Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.25f), modifier = Modifier.clickable { activity?.finish() }) {
-                    Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(painter = painterResource(R.drawable.baseline_arrow_back_24), contentDescription = "Back", tint = Color.White, modifier = Modifier.size(18.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(StudyPurple)
+                .padding(bottom = innerPadding.calculateBottomPadding())
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.White.copy(alpha = 0.25f),
+                    modifier = Modifier.clickable { activity?.finish() }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.baseline_arrow_back_24),
+                            contentDescription = "Back",
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Back", color = Color.White, fontSize = 14.sp)
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
-                Text("Profile", style = TextStyle(color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold))
+                Text(
+                    "Profile",
+                    style = TextStyle(color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                )
             }
 
             Column(
-                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(0.dp)).background(StudyPurpleLight)
-                    .verticalScroll(rememberScrollState()).padding(16.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .background(StudyPurpleLight)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp)
             ) {
 
-                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                    Column(modifier = Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(modifier = Modifier.size(72.dp).clip(CircleShape).background(Color(0xFFDDD8FF)), contentAlignment = Alignment.Center) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier.size(72.dp).clip(CircleShape).background(Color(0xFFDDD8FF)),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text(initials(displayName), color = StudyPurple, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                         }
                         Spacer(modifier = Modifier.height(12.dp))
@@ -124,21 +157,49 @@ fun ProfileBody() {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("Update preferences", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                         Spacer(modifier = Modifier.height(12.dp))
-                        OutlinedTextField(value = editName, onValueChange = { editName = it }, modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp), singleLine = true,
-                            colors = TextFieldDefaults.colors(unfocusedContainerColor = Color(0xFFF0EEFF), focusedContainerColor = Color(0xFFF0EEFF), unfocusedIndicatorColor = Color.Transparent, focusedIndicatorColor = StudyPurple))
+                        OutlinedTextField(
+                            value = editName,
+                            onValueChange = { editName = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            colors = TextFieldDefaults.colors(
+                                unfocusedContainerColor = Color(0xFFF0EEFF),
+                                focusedContainerColor = Color(0xFFF0EEFF),
+                                unfocusedIndicatorColor = Color.Transparent,
+                                focusedIndicatorColor = StudyPurple
+                            )
+                        )
                         Spacer(modifier = Modifier.height(10.dp))
-                        OutlinedTextField(value = editEmail, onValueChange = { editEmail = it }, modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp), singleLine = true,
+                        OutlinedTextField(
+                            value = editEmail,
+                            onValueChange = { editEmail = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
                             placeholder = { Text("Email", color = Color.Gray) },
-                            colors = TextFieldDefaults.colors(unfocusedContainerColor = Color(0xFFF0EEFF), focusedContainerColor = Color(0xFFF0EEFF), unfocusedIndicatorColor = Color.Transparent, focusedIndicatorColor = StudyPurple))
+                            colors = TextFieldDefaults.colors(
+                                unfocusedContainerColor = Color(0xFFF0EEFF),
+                                focusedContainerColor = Color(0xFFF0EEFF),
+                                unfocusedIndicatorColor = Color.Transparent,
+                                focusedIndicatorColor = StudyPurple
+                            )
+                        )
                         Spacer(modifier = Modifier.height(14.dp))
-                        Button(onClick = { /* TODO: save changes */ }, modifier = Modifier.fillMaxWidth().height(48.dp),
-                            shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)) {
+                        Button(
+                            onClick = { },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)
+                        ) {
                             Text("Save Changes", color = Color.White, fontWeight = FontWeight.SemiBold)
                         }
                     }
@@ -146,13 +207,14 @@ fun ProfileBody() {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-
                         Text("Password reset", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-
                         Spacer(modifier = Modifier.height(12.dp))
-
                         OutlinedTextField(
                             value = newPassword,
                             onValueChange = { newPassword = it },
@@ -163,14 +225,12 @@ fun ProfileBody() {
                             placeholder = { Text("New password", color = Color.Gray) },
                             colors = TextFieldDefaults.colors(
                                 unfocusedContainerColor = Color(0xFFF0EEFF),
-                                focusedContainerColor   = Color(0xFFF0EEFF),
+                                focusedContainerColor = Color(0xFFF0EEFF),
                                 unfocusedIndicatorColor = Color.Transparent,
-                                focusedIndicatorColor   = StudyPurple,
+                                focusedIndicatorColor = StudyPurple,
                             )
                         )
-
                         Spacer(modifier = Modifier.height(10.dp))
-
                         OutlinedTextField(
                             value = confirmPassword,
                             onValueChange = { confirmPassword = it },
@@ -182,9 +242,9 @@ fun ProfileBody() {
                             placeholder = { Text("Confirm password", color = Color.Gray) },
                             colors = TextFieldDefaults.colors(
                                 unfocusedContainerColor = Color(0xFFF0EEFF),
-                                focusedContainerColor   = Color(0xFFF0EEFF),
+                                focusedContainerColor = Color(0xFFF0EEFF),
                                 unfocusedIndicatorColor = Color.Transparent,
-                                focusedIndicatorColor   = StudyPurple,
+                                focusedIndicatorColor = StudyPurple,
                             )
                         )
 
@@ -196,7 +256,7 @@ fun ProfileBody() {
                         Spacer(modifier = Modifier.height(14.dp))
 
                         Button(
-                            onClick = { /* TODO: update password */ },
+                            onClick = { },
                             enabled = passwordsMatch,
                             modifier = Modifier.fillMaxWidth().height(48.dp),
                             shape = RoundedCornerShape(12.dp),
@@ -206,13 +266,9 @@ fun ProfileBody() {
                         }
                     }
                 }
-
             }
         }
-
-
     }
-
 }
 
 @Preview(showBackground = true)
