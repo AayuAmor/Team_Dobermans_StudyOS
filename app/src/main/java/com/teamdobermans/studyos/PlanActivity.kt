@@ -107,7 +107,6 @@ fun PlanBody() {
     var priorityDropdown by remember { mutableStateOf(false) }
     var selectedPriority by remember { mutableStateOf(Priority.MEDIUM) }
 
-    // Track professional dialog picker output strings
     var displayDueDate   by remember { mutableStateOf(today.format(dateFormatter)) }
     var showDatePicker   by remember { mutableStateOf(false) }
 
@@ -120,7 +119,6 @@ fun PlanBody() {
 
     val pendingCount = tasks.count { !it.done }
 
-    // Dialog Range Picker Overlay Setup
     if (showDatePicker) {
         val dateRangePickerState = rememberDateRangePickerState()
         DatePickerDialog(
@@ -335,7 +333,6 @@ fun PlanBody() {
                         Spacer(modifier = Modifier.height(10.dp))
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            // Professional Read-Only Date Range Picker field
                             OutlinedTextField(
                                 value = displayDueDate,
                                 onValueChange = {},
@@ -347,16 +344,21 @@ fun PlanBody() {
                                 shape = RoundedCornerShape(12.dp),
                                 singleLine = true,
                                 label = { Text("Due Date / Range", fontSize = 11.sp, color = StudyPurple) },
+                                // Active StudyPurple icon interaction bindings
                                 trailingIcon = {
-                                    Icon(painter = painterResource(R.drawable.baseline_more_horiz_24),
-                                        contentDescription = null, tint = Color.Gray, modifier = Modifier.size(18.dp))
+                                    Icon(
+                                        painter = painterResource(R.drawable.baseline_more_horiz_24),
+                                        contentDescription = "Open Custom Range Picker Calendar",
+                                        tint = StudyPurple,
+                                        modifier = Modifier.size(18.dp).clickable { showDatePicker = true }
+                                    )
                                 },
                                 colors = TextFieldDefaults.colors(
                                     disabledContainerColor  = Color(0xFFF0EEFF),
                                     disabledTextColor       = Color(0xFF1A1A2E),
                                     disabledLabelColor      = StudyPurple,
                                     disabledIndicatorColor  = Color.Transparent,
-                                    disabledTrailingIconColor = Color.Gray
+                                    disabledTrailingIconColor = StudyPurple
                                 )
                             )
                             Box(modifier = Modifier.weight(0.7f).align(Alignment.Bottom)) {
