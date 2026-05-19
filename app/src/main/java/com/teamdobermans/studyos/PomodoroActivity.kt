@@ -109,13 +109,10 @@ fun PomodoroBody() {
         if (timeRemaining == 0) {
             if (selectedTab == PomodoroTab.FOCUS) {
                 sessionsToday++
-                selectedTab = if (sessionsToday % 4 == 0) {
-                    PomodoroTab.LONG_BREAK
-                } else {
-                    PomodoroTab.SHORT_BREAK
-                }
+                selectedTab = if (sessionsToday % 4 == 0) PomodoroTab.LONG_BREAK else PomodoroTab.SHORT_BREAK
                 isRunning = true
             } else {
+                selectedTab = PomodoroTab.FOCUS
                 isRunning = false
             }
         }
