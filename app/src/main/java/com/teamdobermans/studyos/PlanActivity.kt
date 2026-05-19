@@ -113,7 +113,7 @@ fun PlanBody() {
     val tasks            = remember {
         mutableStateListOf(
             Task("Read Chapter 5", "Focusing on cellular structures", "May 22, 2026", Priority.HIGH, done = true),
-            Task("Project Work of English", "Draft introduction segment", "May 25, 2026", Priority.MEDIUM)
+            Task("Project Work of English", "Draft introduction segment", "May 25, 2026 - May 28, 2026", Priority.MEDIUM)
         )
     }
 
@@ -344,7 +344,6 @@ fun PlanBody() {
                                 shape = RoundedCornerShape(12.dp),
                                 singleLine = true,
                                 label = { Text("Due Date / Range", fontSize = 11.sp, color = StudyPurple) },
-                                // Active StudyPurple icon interaction bindings
                                 trailingIcon = {
                                     Icon(
                                         painter = painterResource(R.drawable.baseline_more_horiz_24),
@@ -442,14 +441,31 @@ fun PlanBody() {
                                 )
                             }
                             Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                task.title,
-                                modifier = Modifier.weight(1f),
-                                color = if (task.done) Color.Gray else Color(0xFF1A1A2E),
-                                fontWeight = FontWeight.Medium,
-                                fontSize = 14.sp,
-                                textDecoration = if (task.done) TextDecoration.LineThrough else TextDecoration.None
-                            )
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    task.title,
+                                    color = if (task.done) Color.Gray else Color(0xFF1A1A2E),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    textDecoration = if (task.done) TextDecoration.LineThrough else TextDecoration.None
+                                )
+                                if (task.description.isNotEmpty()) {
+                                    Text(
+                                        task.description,
+                                        color = Color.Gray,
+                                        fontSize = 12.sp,
+                                        textDecoration = if (task.done) TextDecoration.LineThrough else TextDecoration.None
+                                    )
+                                }
+                                Text(
+                                    "Due: ${task.dueDate}",
+                                    color = StudyPurple.copy(alpha = 0.8f),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Light
+                                )
+                            }
+
                             Surface(
                                 shape = RoundedCornerShape(50.dp),
                                 color = when (task.priority) {
