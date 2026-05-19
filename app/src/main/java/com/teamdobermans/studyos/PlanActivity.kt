@@ -30,14 +30,20 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DateRangePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -61,13 +67,15 @@ import androidx.compose.ui.unit.sp
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 import com.teamdobermans.studyos.ui.theme.StudyPurple
 import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle as JavaTextStyle
 
 enum class Priority { HIGH, MEDIUM, LOW }
 
-// Modified data model structure swap: subject -> description
 data class Task(val title: String, val description: String, val dueDate: String, val priority: Priority, var done: Boolean = false)
 
 class PlanActivity : ComponentActivity() {
@@ -78,6 +86,7 @@ class PlanActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlanBody() {
     val context  = LocalContext.current
@@ -91,20 +100,68 @@ fun PlanBody() {
     val firstDayOfWeek = currentMonth.atDay(1).dayOfWeek.value
     val daysInMonth    = currentMonth.lengthOfMonth()
 
+    val dateFormatter  = remember(currentLocale) { DateTimeFormatter.ofPattern("MMM dd, yyyy", currentLocale) }
+
     var taskTitle        by remember { mutableStateOf("") }
-    var taskDescription  by remember { mutableStateOf("") } // Track user description details
-    var taskDate         by remember { mutableStateOf("") }
+    var taskDescription  by remember { mutableStateOf("") }
     var priorityDropdown by remember { mutableStateOf(false) }
     var selectedPriority by remember { mutableStateOf(Priority.MEDIUM) }
 
+    // Track professional dialog picker output strings
+    var displayDueDate   by remember { mutableStateOf(today.format(dateFormatter)) }
+    var showDatePicker   by remember { mutableStateOf(false) }
+
     val tasks            = remember {
         mutableStateListOf(
-            Task("Read Chapter 5", "Focusing on cellular structures", "Apr 22", Priority.HIGH, done = true),
-            Task("Project Work of English", "Draft introduction segment", "Apr 25", Priority.MEDIUM)
+            Task("Read Chapter 5", "Focusing on cellular structures", "May 22, 2026", Priority.HIGH, done = true),
+            Task("Project Work of English", "Draft introduction segment", "May 25, 2026", Priority.MEDIUM)
         )
     }
 
     val pendingCount = tasks.count { !it.done }
+
+    // Dialog Range Picker Overlay Setup
+    if (showDatePicker) {
+        val dateRangePickerState = rememberDateRangePickerState()
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val startMillis = dateRangePickerState.selectedStartDateMillis
+                        val endMillis = dateRangePickerState.selectedEndDateMillis
+                        if (startMillis != null) {
+                            val startDate = Instant.ofEpochMilli(startMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+                            displayDueDate = if (endMillis != null) {
+                                val endDate = Instant.ofEpochMilli(endMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+                                "${startDate.format(dateFormatter)} - ${endDate.format(dateFormatter)}"
+                            } else {
+                                startDate.format(dateFormatter)
+                            }
+                        }
+                        showDatePicker = false
+                    }
+                ) { Text("Select", color = StudyPurple, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancel", color = Color.Gray) }
+            },
+            colors = DatePickerDefaults.colors(containerColor = Color.White)
+        ) {
+            DateRangePicker(
+                state = dateRangePickerState,
+                modifier = Modifier.weight(1f).padding(top = 16.dp),
+                title = { Text(text = "Select Due Range", modifier = Modifier.padding(start = 24.dp), fontWeight = FontWeight.Bold) },
+                headline = { Text(text = "Choose Dates", modifier = Modifier.padding(start = 24.dp), fontSize = 14.sp) },
+                showModeToggle = false,
+                colors = DatePickerDefaults.colors(
+                    selectedDayContainerColor = StudyPurple,
+                    dayInSelectionRangeContainerColor = StudyPurple.copy(alpha = 0.15f),
+                    todayDateBorderColor = StudyPurple
+                )
+            )
+        }
+    }
 
     Scaffold(
         bottomBar = { StudyOSBottomNav(currentRoute = NavRoute.PLAN, context = context) }
@@ -209,7 +266,10 @@ fun PlanBody() {
                                                         border = if (isToday && !isSelected) BorderStroke(1.5.dp, StudyPurple) else BorderStroke(0.dp, Color.Transparent),
                                                         shape = CircleShape
                                                     )
-                                                    .clickable(enabled = !isPast) { selectedDate = date },
+                                                    .clickable(enabled = !isPast) {
+                                                        selectedDate = date
+                                                        displayDueDate = date.format(dateFormatter)
+                                                    },
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 Text(
@@ -257,7 +317,6 @@ fun PlanBody() {
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        // Category Description Box replacing standard dropdown layout
                         OutlinedTextField(
                             value = taskDescription,
                             onValueChange = { taskDescription = it },
@@ -276,25 +335,31 @@ fun PlanBody() {
                         Spacer(modifier = Modifier.height(10.dp))
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            // Professional Read-Only Date Range Picker field
                             OutlinedTextField(
-                                value = taskDate,
-                                onValueChange = { taskDate = it },
-                                modifier = Modifier.weight(1f),
+                                value = displayDueDate,
+                                onValueChange = {},
+                                readOnly = true,
+                                modifier = Modifier
+                                    .weight(1.3f)
+                                    .clickable { showDatePicker = true },
+                                enabled = false,
                                 shape = RoundedCornerShape(12.dp),
                                 singleLine = true,
-                                placeholder = { Text("dd.......yy", color = Color.Gray, fontSize = 13.sp) },
+                                label = { Text("Due Date / Range", fontSize = 11.sp, color = StudyPurple) },
                                 trailingIcon = {
                                     Icon(painter = painterResource(R.drawable.baseline_more_horiz_24),
                                         contentDescription = null, tint = Color.Gray, modifier = Modifier.size(18.dp))
                                 },
                                 colors = TextFieldDefaults.colors(
-                                    unfocusedContainerColor = Color(0xFFF0EEFF),
-                                    focusedContainerColor   = Color(0xFFF0EEFF),
-                                    unfocusedIndicatorColor = Color.Transparent,
-                                    focusedIndicatorColor   = StudyPurple
+                                    disabledContainerColor  = Color(0xFFF0EEFF),
+                                    disabledTextColor       = Color(0xFF1A1A2E),
+                                    disabledLabelColor      = StudyPurple,
+                                    disabledIndicatorColor  = Color.Transparent,
+                                    disabledTrailingIconColor = Color.Gray
                                 )
                             )
-                            Box(modifier = Modifier.weight(1f)) {
+                            Box(modifier = Modifier.weight(0.7f).align(Alignment.Bottom)) {
                                 Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFF0EEFF),
                                     modifier = Modifier.fillMaxWidth().height(52.dp).clickable { priorityDropdown = true }) {
                                     Row(modifier = Modifier.padding(horizontal = 14.dp),
@@ -330,10 +395,10 @@ fun PlanBody() {
                             onClick = {
                                 val trimmedTitle = taskTitle.trim()
                                 if (trimmedTitle.isNotEmpty()) {
-                                    tasks.add(Task(trimmedTitle, taskDescription.trim(), taskDate, selectedPriority))
+                                    tasks.add(Task(trimmedTitle, taskDescription.trim(), displayDueDate, selectedPriority))
                                     taskTitle = ""
                                     taskDescription = ""
-                                    taskDate  = ""
+                                    displayDueDate = today.format(dateFormatter)
                                 }
                             },
                             enabled = taskTitle.trim().isNotEmpty(),
