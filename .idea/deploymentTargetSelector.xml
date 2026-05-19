@@ -2,51 +2,11 @@
 <project version="4">
   <component name="deploymentTargetSelector">
     <selectionStates>
-<<<<<<< HEAD
-      <SelectionState runConfigName="app">
-=======
-      <SelectionState runConfigName="VisionBoardActivity">
->>>>>>> 023d30d (merge: merging with rohit branch)
+      <SelectionState runConfigName="PlanActivity">
         <option name="selectionMode" value="DROPDOWN" />
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="SettingsActivity (2)">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DialogSelection />
-      </SelectionState>
-      <SelectionState runConfigName="SettingsActivity (3)">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DialogSelection />
-      </SelectionState>
-      <SelectionState runConfigName="DashboardActivity">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DialogSelection />
-      </SelectionState>
-      <SelectionState runConfigName="DashboardActivity (1)">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DialogSelection />
-      </SelectionState>
-      <SelectionState runConfigName="SignUpActivity">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DialogSelection />
-      </SelectionState>
-      <SelectionState runConfigName="SettingsActivity (2)">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DialogSelection />
-      </SelectionState>
-      <SelectionState runConfigName="SettingsActivity (3)">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DialogSelection />
-      </SelectionState>
-      <SelectionState runConfigName="DashboardActivity">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DialogSelection />
-      </SelectionState>
-      <SelectionState runConfigName="DashboardActivity (1)">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DialogSelection />
-      </SelectionState>
-      <SelectionState runConfigName="SignUpActivity">
+      <SelectionState runConfigName="PlanActivity (1)">
         <option name="selectionMode" value="DROPDOWN" />
         <DialogSelection />
       </SelectionState>

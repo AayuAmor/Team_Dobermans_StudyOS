@@ -5,7 +5,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -61,7 +64,6 @@ import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle as JavaTextStyle
-import java.util.Locale
 
 enum class Priority { HIGH, MEDIUM, LOW }
 
@@ -77,9 +79,11 @@ class PlanActivity : ComponentActivity() {
 
 @Composable
 fun PlanBody() {
-
     val context  = LocalContext.current
     val activity = context as? Activity
+
+    // Configuration-safe locale tracking
+    val currentLocale = LocalConfiguration.current.locales[0]
 
     val today          = LocalDate.now()
     var selectedDate   by remember { mutableStateOf(today) }
@@ -170,9 +174,9 @@ fun PlanBody() {
                     colors = CardDefaults.cardColors(containerColor = Color.White)) {
                     Row(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                         Column(modifier = Modifier.width(80.dp)) {
-                            Text(selectedDate.month.getDisplayName(JavaTextStyle.SHORT, Locale.getDefault()),
+                            Text(selectedDate.month.getDisplayName(JavaTextStyle.SHORT, currentLocale),
                                 color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                            Text(selectedDate.dayOfWeek.getDisplayName(JavaTextStyle.FULL, Locale.getDefault()),
+                            Text(selectedDate.dayOfWeek.getDisplayName(JavaTextStyle.FULL, currentLocale),
                                 color = Color(0xFF1A1A2E), fontWeight = FontWeight.Bold, fontSize = 15.sp)
                             Text("${selectedDate.dayOfMonth}", color = StudyPurple,
                                 fontWeight = FontWeight.ExtraBold, fontSize = 48.sp)
@@ -194,16 +198,33 @@ fun PlanBody() {
                                             val date       = currentMonth.atDay(dayNum)
                                             val isSelected = date == selectedDate
                                             val isToday    = date == today
+                                            val isPast     = date.isBefore(today)
+
                                             Box(
-                                                modifier = Modifier.weight(1f).padding(2.dp).aspectRatio(1f)
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .padding(2.dp)
+                                                    .aspectRatio(1f)
                                                     .clip(CircleShape)
                                                     .background(if (isSelected) StudyPurple else Color.Transparent)
-                                                    .clickable { selectedDate = date },
+                                                    .border(
+                                                        border = if (isToday && !isSelected) BorderStroke(1.5.dp, StudyPurple) else BorderStroke(0.dp, Color.Transparent),
+                                                        shape = CircleShape
+                                                    )
+                                                    .clickable(enabled = !isPast) { selectedDate = date },
                                                 contentAlignment = Alignment.Center
                                             ) {
-                                                Text("$dayNum", fontSize = 11.sp,
+                                                Text(
+                                                    text = "$dayNum",
+                                                    fontSize = 11.sp,
                                                     fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Normal,
-                                                    color = when { isSelected -> Color.White; isToday -> StudyPurple; else -> Color(0xFF1A1A2E) })
+                                                    color = when {
+                                                        isSelected -> Color.White
+                                                        isPast -> Color.LightGray
+                                                        isToday -> StudyPurple
+                                                        else -> Color(0xFF1A1A2E)
+                                                    }
+                                                )
                                             }
                                         } else {
                                             Box(modifier = Modifier.weight(1f).padding(2.dp))
