@@ -115,6 +115,10 @@ fun PlanBody() {
     var priorityDropdown by remember { mutableStateOf(false) }
     var selectedPriority by remember { mutableStateOf(Priority.MEDIUM) }
 
+    var filterDropdownExpanded by remember { mutableStateOf(false) }
+    var currentFilterSubjectId by remember { mutableStateOf("ALL_FILTER") }
+    val dynamicNoteSubjects = StudyDataRepository.dynamicSubjects
+
     var displayDueDate   by remember { mutableStateOf(today.format(dateFormatter)) }
     var showDatePicker   by remember { mutableStateOf(false) }
 
@@ -125,7 +129,8 @@ fun PlanBody() {
         )
     }
 
-    val pendingCount = tasks.count { !it.done }
+    val filteredTasks = if (currentFilterSubjectId == "ALL_FILTER") tasks else tasks.filter { it.subjectId == currentFilterSubjectId }
+    val pendingCount = filteredTasks.count { !it.done }
 
     if (showDatePicker) {
         val dateRangePickerState = rememberDateRangePickerState()
@@ -210,9 +215,29 @@ fun PlanBody() {
                             Text("Back", color = Color.White, fontSize = 14.sp)
                         }
                     }
-                    Surface(shape = RoundedCornerShape(10.dp), color = Color.White.copy(alpha = 0.2f)) {
-                        Text("All", color = Color.White, fontSize = 13.sp,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+
+                    Box {
+                        val selectedFilterLabel = if (currentFilterSubjectId == "ALL_FILTER") "All" else dynamicNoteSubjects.find { it.id == currentFilterSubjectId }?.name ?: "Unknown"
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color.White.copy(alpha = 0.2f),
+                            modifier = Modifier.clickable { filterDropdownExpanded = true }
+                        ) {
+                            Text(selectedFilterLabel, color = Color.White, fontSize = 13.sp,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                        }
+                        DropdownMenu(expanded = filterDropdownExpanded, onDismissRequest = { filterDropdownExpanded = false }) {
+                            DropdownMenuItem(text = { Text("All") }, onClick = { currentFilterSubjectId = "ALL_FILTER"; filterDropdownExpanded = false })
+                            dynamicNoteSubjects.forEach { subject ->
+                                DropdownMenuItem(
+                                    text = { Text(subject.name) },
+                                    onClick = {
+                                        currentFilterSubjectId = subject.id
+                                        filterDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -404,7 +429,6 @@ fun PlanBody() {
                             onClick = {
                                 val trimmedTitle = taskTitle.trim()
                                 if (trimmedTitle.isNotEmpty()) {
-                                    // Default assignments implemented to prevent architectural breakage
                                     tasks.add(Task(trimmedTitle, taskDescription.trim(), displayDueDate, selectedPriority, "sub_gen", "General Study"))
                                     taskTitle = ""
                                     taskDescription = ""
@@ -423,7 +447,7 @@ fun PlanBody() {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                tasks.forEach { task ->
+                filteredTasks.forEach { task ->
                     Surface(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                         shape = RoundedCornerShape(14.dp),
