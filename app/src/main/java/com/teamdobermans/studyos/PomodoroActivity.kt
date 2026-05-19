@@ -107,8 +107,17 @@ fun PomodoroBody() {
             timeRemaining--
         }
         if (timeRemaining == 0) {
-            isRunning = false
-            if (selectedTab == PomodoroTab.FOCUS) sessionsToday++
+            if (selectedTab == PomodoroTab.FOCUS) {
+                sessionsToday++
+                selectedTab = if (sessionsToday % 4 == 0) {
+                    PomodoroTab.LONG_BREAK
+                } else {
+                    PomodoroTab.SHORT_BREAK
+                }
+                isRunning = true
+            } else {
+                isRunning = false
+            }
         }
     }
 
