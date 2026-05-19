@@ -67,7 +67,8 @@ import java.time.format.TextStyle as JavaTextStyle
 
 enum class Priority { HIGH, MEDIUM, LOW }
 
-data class Task(val title: String, val dueDate: String, val priority: Priority, val subject: String, var done: Boolean = false)
+// Modified data model structure swap: subject -> description
+data class Task(val title: String, val description: String, val dueDate: String, val priority: Priority, var done: Boolean = false)
 
 class PlanActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -81,8 +82,6 @@ class PlanActivity : ComponentActivity() {
 fun PlanBody() {
     val context  = LocalContext.current
     val activity = context as? Activity
-
-    // Configuration-safe locale tracking
     val currentLocale = LocalConfiguration.current.locales[0]
 
     val today          = LocalDate.now()
@@ -93,16 +92,15 @@ fun PlanBody() {
     val daysInMonth    = currentMonth.lengthOfMonth()
 
     var taskTitle        by remember { mutableStateOf("") }
+    var taskDescription  by remember { mutableStateOf("") } // Track user description details
     var taskDate         by remember { mutableStateOf("") }
     var priorityDropdown by remember { mutableStateOf(false) }
     var selectedPriority by remember { mutableStateOf(Priority.MEDIUM) }
-    var subjectDropdown  by remember { mutableStateOf(false) }
-    val subjects         = remember { mutableStateListOf("General", "Biology", "Physics", "Math") }
-    var selectedSubject  by remember { mutableStateOf("General") }
+
     val tasks            = remember {
         mutableStateListOf(
-            Task("Read Chapter 5",         "Apr 22", Priority.HIGH,   "Biology", done = true),
-            Task("Project Work of English", "Apr 25", Priority.MEDIUM, "English")
+            Task("Read Chapter 5", "Focusing on cellular structures", "Apr 22", Priority.HIGH, done = true),
+            Task("Project Work of English", "Draft introduction segment", "Apr 25", Priority.MEDIUM)
         )
     }
 
@@ -248,7 +246,25 @@ fun PlanBody() {
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true,
-                            placeholder = { Text("New Task.....", color = Color.Gray) },
+                            placeholder = { Text("Task Title.....", color = Color.Gray) },
+                            colors = TextFieldDefaults.colors(
+                                unfocusedContainerColor = Color(0xFFF0EEFF),
+                                focusedContainerColor   = Color(0xFFF0EEFF),
+                                unfocusedIndicatorColor = Color.Transparent,
+                                focusedIndicatorColor   = StudyPurple
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Category Description Box replacing standard dropdown layout
+                        OutlinedTextField(
+                            value = taskDescription,
+                            onValueChange = { taskDescription = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            placeholder = { Text("Description / Category Details.....", color = Color.Gray) },
+                            maxLines = 3,
                             colors = TextFieldDefaults.colors(
                                 unfocusedContainerColor = Color(0xFFF0EEFF),
                                 focusedContainerColor   = Color(0xFFF0EEFF),
@@ -308,36 +324,15 @@ fun PlanBody() {
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Box(modifier = Modifier.fillMaxWidth()) {
-                            Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFF0EEFF),
-                                modifier = Modifier.fillMaxWidth().height(52.dp).clickable { subjectDropdown = true }) {
-                                Row(modifier = Modifier.padding(horizontal = 14.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text(selectedSubject, color = Color(0xFF1A1A2E),
-                                        fontWeight = FontWeight.Medium, fontSize = 14.sp)
-                                    Icon(painter = painterResource(R.drawable.baseline_more_horiz_24),
-                                        contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))
-                                }
-                            }
-                            DropdownMenu(expanded = subjectDropdown, onDismissRequest = { subjectDropdown = false }) {
-                                subjects.forEach { subject ->
-                                    DropdownMenuItem(text = { Text(subject) },
-                                        onClick = { selectedSubject = subject; subjectDropdown = false })
-                                }
-                            }
-                        }
-
                         Spacer(modifier = Modifier.height(14.dp))
 
                         Button(
                             onClick = {
-                                val trimmed = taskTitle.trim()
-                                if (trimmed.isNotEmpty()) {
-                                    tasks.add(Task(trimmed, taskDate, selectedPriority, selectedSubject))
+                                val trimmedTitle = taskTitle.trim()
+                                if (trimmedTitle.isNotEmpty()) {
+                                    tasks.add(Task(trimmedTitle, taskDescription.trim(), taskDate, selectedPriority))
                                     taskTitle = ""
+                                    taskDescription = ""
                                     taskDate  = ""
                                 }
                             },
