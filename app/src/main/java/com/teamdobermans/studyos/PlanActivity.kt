@@ -119,6 +119,11 @@ fun PlanBody() {
     var currentFilterSubjectId by remember { mutableStateOf("ALL_FILTER") }
     val dynamicNoteSubjects = StudyDataRepository.dynamicSubjects
 
+    var subjectDropdownExpanded by remember { mutableStateOf(false) }
+    var selectedSubjectState by remember {
+        mutableStateOf(dynamicNoteSubjects.firstOrNull() ?: NoteSubject("sub_fallback", "General Study"))
+    }
+
     var displayDueDate   by remember { mutableStateOf(today.format(dateFormatter)) }
     var showDatePicker   by remember { mutableStateOf(false) }
 
@@ -371,7 +376,7 @@ fun PlanBody() {
                                 onValueChange = {},
                                 readOnly = true,
                                 modifier = Modifier
-                                    .weight(1.3f)
+                                    .weight(1.1f)
                                     .clickable { showDatePicker = true },
                                 enabled = false,
                                 shape = RoundedCornerShape(12.dp),
@@ -393,6 +398,37 @@ fun PlanBody() {
                                     disabledTrailingIconColor = StudyPurple
                                 )
                             )
+
+                            Box(modifier = Modifier.weight(0.9f).align(Alignment.Bottom)) {
+                                Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFF0EEFF),
+                                    modifier = Modifier.fillMaxWidth().height(52.dp).clickable { subjectDropdownExpanded = true }) {
+                                    Column(
+                                        modifier = Modifier.padding(horizontal = 12.dp),
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Text("Linked Subject", fontSize = 10.sp, color = StudyPurple)
+                                        Row(modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Text(selectedSubjectState.name, color = Color(0xFF1A1A2E), fontWeight = FontWeight.Medium, fontSize = 12.sp, maxLines = 1)
+                                            Icon(painter = painterResource(R.drawable.baseline_more_horiz_24),
+                                                contentDescription = null, tint = Color.Gray, modifier = Modifier.size(14.dp))
+                                        }
+                                    }
+                                }
+                                DropdownMenu(expanded = subjectDropdownExpanded, onDismissRequest = { subjectDropdownExpanded = false }) {
+                                    dynamicNoteSubjects.forEach { subject ->
+                                        DropdownMenuItem(
+                                            text = { Text(subject.name) },
+                                            onClick = {
+                                                selectedSubjectState = subject
+                                                subjectDropdownExpanded = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
                             Box(modifier = Modifier.weight(0.7f).align(Alignment.Bottom)) {
                                 Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFF0EEFF),
                                     modifier = Modifier.fillMaxWidth().height(52.dp).clickable { priorityDropdown = true }) {
@@ -429,7 +465,16 @@ fun PlanBody() {
                             onClick = {
                                 val trimmedTitle = taskTitle.trim()
                                 if (trimmedTitle.isNotEmpty()) {
-                                    tasks.add(Task(trimmedTitle, taskDescription.trim(), displayDueDate, selectedPriority, "sub_gen", "General Study"))
+                                    tasks.add(
+                                        Task(
+                                            title = trimmedTitle,
+                                            description = taskDescription.trim(),
+                                            dueDate = displayDueDate,
+                                            priority = selectedPriority,
+                                            subjectId = selectedSubjectState.id,
+                                            subjectName = selectedSubjectState.name
+                                        )
+                                    )
                                     taskTitle = ""
                                     taskDescription = ""
                                     displayDueDate = today.format(dateFormatter)
