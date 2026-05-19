@@ -121,6 +121,14 @@ fun PomodoroBody() {
         }
     }
 
+    LaunchedEffect(selectedTab) {
+        timeRemaining = when (selectedTab) {
+            PomodoroTab.FOCUS       -> focusMinutes.toInt() * 60
+            PomodoroTab.SHORT_BREAK -> shortMinutes.toInt() * 60
+            PomodoroTab.LONG_BREAK  -> longMinutes.toInt()  * 60
+        }
+    }
+
     val progress by animateFloatAsState(
         targetValue = if (totalSeconds > 0) timeRemaining.toFloat() / totalSeconds else 1f,
         animationSpec = tween(500),
