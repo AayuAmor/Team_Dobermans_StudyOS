@@ -521,13 +521,30 @@ fun PlanBody() {
                             Spacer(modifier = Modifier.width(10.dp))
 
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    task.title,
-                                    color = if (task.done) Color.Gray else Color(0xFF1A1A2E),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
-                                    textDecoration = if (task.done) TextDecoration.LineThrough else TextDecoration.None
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        task.title,
+                                        color = if (task.done) Color.Gray else Color(0xFF1A1A2E),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        textDecoration = if (task.done) TextDecoration.LineThrough else TextDecoration.None
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = StudyPurple.copy(alpha = 0.1f)
+                                    ) {
+                                        Text(
+                                            task.subjectName,
+                                            color = StudyPurple,
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                                            maxLines = 1
+                                        )
+                                    }
+                                }
                                 if (task.description.isNotEmpty()) {
                                     Text(
                                         task.description,
