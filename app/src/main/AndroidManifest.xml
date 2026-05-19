@@ -12,6 +12,17 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.StudyOS">
         <activity
+            android:name=".StudyDataRepository"
+            android:exported="true"
+            android:label="@string/title_activity_study_data_repository"
+            android:theme="@style/Theme.StudyOS">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".BrainGameScreen"
             android:exported="true"
             android:label="@string/title_activity_brain_game"
