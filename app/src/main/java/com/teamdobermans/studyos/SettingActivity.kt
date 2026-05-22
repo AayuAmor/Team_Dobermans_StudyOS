@@ -209,7 +209,7 @@ fun SettingsBody() {
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp).clickable {
 
                                     context.
-                                    getSharedPreferences(PREFS_SESSIONS, Context.MODE_PRIVATE)
+                                    getSharedPreferences("StudyOSPrefs", Context.MODE_PRIVATE)
                                         .edit().clear().apply()
 
 
