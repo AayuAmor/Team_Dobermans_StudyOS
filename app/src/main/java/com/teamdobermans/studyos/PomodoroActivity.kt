@@ -89,7 +89,7 @@ class PomodoroActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // ── Read optional task info passed via Intent ──────────────────────
+
         val taskName = intent.getStringExtra(EXTRA_TASK_NAME)
         val taskId   = intent.getStringExtra(EXTRA_TASK_ID)
 
@@ -144,7 +144,7 @@ fun PomodoroBody(
     var longMinutes   by remember { mutableFloatStateOf(15f) }
     var isRunning     by remember { mutableStateOf(false) }
 
-    // ── Load sessions from prefs so count persists across app restarts ─────
+
     var sessionsToday by remember { mutableIntStateOf(getTodaySessionCount(context)) }
 
     var editingSlider by remember { mutableStateOf(EditingSlider.NONE) }
