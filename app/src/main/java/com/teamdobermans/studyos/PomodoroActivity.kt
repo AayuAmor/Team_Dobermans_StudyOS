@@ -511,7 +511,7 @@ fun PomodoroBody(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // ── Sessions today card ───────────────────────────────────
+
                 Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White)) {
                     Column(modifier = Modifier
@@ -522,7 +522,7 @@ fun PomodoroBody(
                         Spacer(modifier = Modifier.height(4.dp))
                         Text("$sessionsToday", color = StudyPurple, fontSize = 36.sp,
                             fontWeight = FontWeight.Bold)
-                        // ── NEW: Show linked task under session count ──────
+
                         if (!linkedTaskName.isNullOrBlank()) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text("for \"$linkedTaskName\"",
@@ -538,7 +538,7 @@ fun PomodoroBody(
     }
 }
 
-// ── DurationSlider (unchanged) ────────────────────────────────────────────
+
 @Composable
 fun DurationSlider(
     label: String,
