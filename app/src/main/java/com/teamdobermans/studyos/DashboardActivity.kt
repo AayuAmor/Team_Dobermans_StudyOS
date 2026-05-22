@@ -51,6 +51,12 @@ fun DashboardBody(viewModel: DashboardViewModel) {
     val timerRunning by viewModel.timerRunning.collectAsState()
     val timeLeft by viewModel.timeLeft.collectAsState()
 
+    LaunchedEffect(Unit) {
+        viewModel.onSessionComplete = {
+            Toast.makeText(context, "Session complete! 🎉", Toast.LENGTH_LONG).show()
+        }
+    }
+
     val minutes = timeLeft / 60
     val seconds = timeLeft % 60
     val timeText = "%02d:%02d".format(minutes, seconds)

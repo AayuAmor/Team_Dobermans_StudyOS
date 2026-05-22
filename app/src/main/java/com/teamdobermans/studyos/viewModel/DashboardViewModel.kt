@@ -19,6 +19,8 @@ class DashboardViewModel : ViewModel() {
 
     private var countDownTimer: CountDownTimer? = null
 
+    var onSessionComplete: (() -> Unit)? = null
+
     fun toggleTimer() {
         if (_timerRunning.value) {
             pauseTimer()
@@ -37,6 +39,7 @@ class DashboardViewModel : ViewModel() {
             override fun onFinish() {
                 _timerRunning.value = false
                 _timeLeft.value = 25 * 60L
+                onSessionComplete?.invoke()
             }
         }.start()
     }
