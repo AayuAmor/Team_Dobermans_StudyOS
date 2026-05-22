@@ -76,7 +76,7 @@ import java.util.Locale
 const val EXTRA_TASK_NAME = "extra_task_name"
 const val EXTRA_TASK_ID   = "extra_task_id"
 
-// ── SharedPreferences key for saved sessions ───────────────────────────────
+
 const val PREFS_SESSIONS      = "pomodoro_sessions"
 const val KEY_SESSIONS_TODAY  = "sessions_today"
 const val KEY_LAST_SESSION_DATE = "last_session_date"
