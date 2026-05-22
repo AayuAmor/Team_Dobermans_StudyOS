@@ -46,6 +46,8 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -96,16 +98,17 @@ class PomodoroActivity : ComponentActivity() {
 }
 
 // ── Helper: save a completed session to SharedPreferences ─────────────────
-fun saveSessionToPrefs(context: Context, taskName: String?) {
+fun saveSessionToPrefs(context: Context, taskName: String?): Int {
     val prefs = context.getSharedPreferences(PREFS_SESSIONS, Context.MODE_PRIVATE)
     val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
     // Reset count if it's a new day
     val lastDate = prefs.getString(KEY_LAST_SESSION_DATE, "")
     val currentCount = if (lastDate == today) prefs.getInt(KEY_SESSIONS_TODAY, 0) else 0
+    val newCount = currentCount + 1
 
     prefs.edit()
-        .putInt(KEY_SESSIONS_TODAY, currentCount + 1)
+        .putInt(KEY_SESSIONS_TODAY, newCount)
         .putString(KEY_LAST_SESSION_DATE, today)
         // Save last completed task name for Progress screen
         .putString("last_task_name", taskName ?: "")
@@ -116,6 +119,7 @@ fun saveSessionToPrefs(context: Context, taskName: String?) {
                     "\n${today} | ${taskName ?: "No task"} | ${SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())}"
         )
         .apply()
+    return newCount
 }
 
 // ── Read today's session count from SharedPreferences ─────────────────────
@@ -135,13 +139,13 @@ fun PomodoroBody(
     val activity = context as? Activity
 
     var selectedTab   by remember { mutableStateOf(PomodoroTab.FOCUS) }
-    var focusMinutes  by remember { mutableStateOf(25f) }
-    var shortMinutes  by remember { mutableStateOf(5f) }
-    var longMinutes   by remember { mutableStateOf(15f) }
+    var focusMinutes  by remember { mutableFloatStateOf(25f) }
+    var shortMinutes  by remember { mutableFloatStateOf(5f) }
+    var longMinutes   by remember { mutableFloatStateOf(15f) }
     var isRunning     by remember { mutableStateOf(false) }
 
     // ── Load sessions from prefs so count persists across app restarts ─────
-    var sessionsToday by remember { mutableStateOf(getTodaySessionCount(context)) }
+    var sessionsToday by remember { mutableIntStateOf(getTodaySessionCount(context)) }
 
     var editingSlider by remember { mutableStateOf(EditingSlider.NONE) }
     var dialogInput   by remember { mutableStateOf("") }
@@ -153,21 +157,23 @@ fun PomodoroBody(
     }
 
     var timeRemaining by remember(selectedTab, focusMinutes, shortMinutes, longMinutes) {
-        mutableStateOf(totalSeconds)
+        mutableIntStateOf(totalSeconds)
     }
 
     LaunchedEffect(isRunning) {
-        while (isRunning && timeRemaining > 0) {
-            delay(1000L)
-            timeRemaining--
-        }
-        if (timeRemaining == 0 && isRunning) {
-            isRunning = false
-            if (selectedTab == PomodoroTab.FOCUS) {
-                // ── Save session to SharedPreferences ──────────────────────
-                saveSessionToPrefs(context, linkedTaskName)
-                sessionsToday = getTodaySessionCount(context)
+        if (isRunning && timeRemaining > 0) {
+            while (timeRemaining > 0) {
+                delay(1000L)
+                timeRemaining--
             }
+            // Timer reached zero naturally while running
+            if (selectedTab == PomodoroTab.FOCUS) {
+                // Save session and update local count state
+                sessionsToday = saveSessionToPrefs(context, linkedTaskName)
+            }
+            isRunning = false
+        } else if (isRunning && timeRemaining <= 0) {
+            isRunning = false
         }
     }
 
@@ -368,7 +374,7 @@ fun PomodoroBody(
                     Row(modifier = Modifier
                         .fillMaxWidth()
                         .padding(4.dp)) {
-                        PomodoroTab.values().forEach { tab ->
+                        PomodoroTab.entries.forEach { tab ->
                             val isSelected = tab == selectedTab
                             Surface(shape = RoundedCornerShape(50.dp),
                                 color = if (isSelected) StudyPurple else Color.Transparent,
@@ -433,7 +439,7 @@ fun PomodoroBody(
                                 Text(
                                     text = when {
                                         isRunning            -> "Pause"
-                                        timeRemaining < totalSeconds && timeRemaining > 0 -> "Resume"
+                                        timeRemaining in 1 until totalSeconds -> "Resume"
                                         else                 -> "Start"
                                     },
                                     color = Color.White,
