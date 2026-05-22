@@ -72,7 +72,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// ── Intent extras ──────────────────────────────────────────────────────────
+
 const val EXTRA_TASK_NAME = "extra_task_name"
 const val EXTRA_TASK_ID   = "extra_task_id"
 
