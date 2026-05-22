@@ -45,6 +45,8 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -100,11 +102,11 @@ fun PomodoroBody(
     val activity = context as? Activity
 
     var selectedTab  by remember { mutableStateOf(PomodoroTab.FOCUS) }
-    var focusMinutes  by remember { mutableStateOf(25f) }
-    var shortMinutes  by remember { mutableStateOf(5f) }
-    var longMinutes   by remember { mutableStateOf(15f) }
+    var focusMinutes  by remember { mutableFloatStateOf(25f) }
+    var shortMinutes  by remember { mutableFloatStateOf(5f) }
+    var longMinutes   by remember { mutableFloatStateOf(15f) }
     var isRunning     by remember { mutableStateOf(false) }
-    var sessionsToday by remember { mutableStateOf(0) }
+    var sessionsToday by remember { mutableIntStateOf(0) }
 
     var editingSlider by remember { mutableStateOf(EditingSlider.NONE) }
     var dialogInput   by remember { mutableStateOf("") }
@@ -116,7 +118,7 @@ fun PomodoroBody(
     }
 
     var timeRemaining by remember(selectedTab, focusMinutes, shortMinutes, longMinutes) {
-        mutableStateOf(totalSeconds)
+        mutableIntStateOf(totalSeconds)
     }
 
     LaunchedEffect(isRunning) {
@@ -301,7 +303,7 @@ fun PomodoroBody(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.baseline_task_alt_24),
+                            painter = painterResource(R.drawable.baseline_check_24),
                             contentDescription = "Linked Task Indicator",
                             tint = StudyPurple,
                             modifier = Modifier.size(20.dp)
@@ -319,7 +321,7 @@ fun PomodoroBody(
                 Surface(shape = RoundedCornerShape(50.dp), color = Color.White,
                     modifier = Modifier.fillMaxWidth()) {
                     Row(modifier = Modifier.fillMaxWidth().padding(4.dp)) {
-                        PomodoroTab.values().forEach { tab ->
+                        PomodoroTab.entries.forEach { tab ->
                             val isSelected = tab == selectedTab
                             Surface(shape = RoundedCornerShape(50.dp),
                                 color = if (isSelected) StudyPurple else Color.Transparent,
@@ -414,3 +416,83 @@ fun PomodoroBody(
                             range = 1f..15f,
                             onValueChange = {
                                 shortMinutes = it
+                                if (selectedTab == PomodoroTab.SHORT_BREAK && !isRunning)
+                                    timeRemaining = it.toInt() * 60
+                            },
+                            onValueTap = {
+                                dialogInput   = shortMinutes.toInt().toString()
+                                editingSlider = EditingSlider.SHORT
+                            }
+                        )
+                        DurationSlider(
+                            label = "Long",
+                            value = longMinutes,
+                            range = 10f..30f,
+                            onValueChange = {
+                                longMinutes = it
+                                if (selectedTab == PomodoroTab.LONG_BREAK && !isRunning)
+                                    timeRemaining = it.toInt() * 60
+                            },
+                            onValueTap = {
+                                dialogInput   = longMinutes.toInt().toString()
+                                editingSlider = EditingSlider.LONG
+                            }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("Sessions Completed Today", color = Color.Gray, fontSize = 12.sp)
+                        Text("$sessionsToday", color = StudyPurple, fontSize = 32.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+                Spacer(modifier = Modifier.height(80.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun DurationSlider(
+    label: String,
+    value: Float,
+    range: ClosedFloatingPointRange<Float>,
+    onValueChange: (Float) -> Unit,
+    onValueTap: () -> Unit
+) {
+    Column(modifier = Modifier.padding(vertical = 8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(label, color = Color.Gray, fontSize = 14.sp)
+            Text(
+                text = "${value.toInt()} min",
+                color = StudyPurple,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                modifier = Modifier.clickable { onValueTap() }
+            )
+        }
+        Slider(
+            value = value,
+            onValueChange = onValueChange,
+            valueRange = range,
+            colors = SliderDefaults.colors(
+                thumbColor = StudyPurple,
+                activeTrackColor = StudyPurple,
+                inactiveTrackColor = StudyPurple.copy(alpha = 0.2f)
+            )
+        )
+    }
+}
