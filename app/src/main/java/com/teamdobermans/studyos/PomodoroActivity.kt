@@ -2,6 +2,7 @@ package com.teamdobermans.studyos
 
 import com.teamdobermans.studyos.ui.theme.StudyPurple
 import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
+import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 import android.app.Activity
 import android.os.Bundle
 import android.util.Log
@@ -493,6 +494,31 @@ fun DurationSlider(
                 activeTrackColor = StudyPurple,
                 inactiveTrackColor = StudyPurple.copy(alpha = 0.2f)
             )
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PomodoroBodyPreview() {
+    StudyOSTheme {
+        PomodoroBody(
+            taskId = "sample_task",
+            taskName = "Pomodoro Study Session"
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun DurationSliderPreview() {
+    StudyOSTheme {
+        DurationSlider(
+            label = "Focus",
+            value = 25f,
+            range = 5f..60f,
+            onValueChange = {},
+            onValueTap = {}
         )
     }
 }
