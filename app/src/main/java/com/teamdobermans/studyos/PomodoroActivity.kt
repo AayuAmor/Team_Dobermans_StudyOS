@@ -424,10 +424,10 @@ fun PomodoroBody(
                         }
                         Spacer(modifier = Modifier.height(24.dp))
 
-                        // ── Start/Pause + Reset buttons ───────────────────
+
                         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                             Button(
-                                // Toggles between Start → Pause → Resume
+
                                 onClick = { isRunning = !isRunning },
                                 modifier = Modifier
                                     .weight(1f)
