@@ -1,5 +1,6 @@
 package com.teamdobermans.studyos
 
+import android.os.CountDownTimer
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,4 +16,25 @@ class DashboardViewModel : ViewModel() {
 
     private val _timeLeft = MutableStateFlow(25 * 60L)
     val timeLeft: StateFlow<Long> = _timeLeft.asStateFlow()
+
+    private var countDownTimer: CountDownTimer? = null
+
+    fun startTimer() {
+        _timerRunning.value = true
+        countDownTimer = object : CountDownTimer(_timeLeft.value * 1000, 1000) {
+            override fun onTick(millisUntilFinished: Long) {
+                _timeLeft.value = millisUntilFinished / 1000
+            }
+
+            override fun onFinish() {
+                _timerRunning.value = false
+                _timeLeft.value = 25 * 60L
+            }
+        }.start()
+    }
+
+    fun pauseTimer() {
+        countDownTimer?.cancel()
+        _timerRunning.value = false
+    }
 }
