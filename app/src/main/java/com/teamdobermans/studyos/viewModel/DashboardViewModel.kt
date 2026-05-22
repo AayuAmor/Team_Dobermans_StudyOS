@@ -19,7 +19,15 @@ class DashboardViewModel : ViewModel() {
 
     private var countDownTimer: CountDownTimer? = null
 
-    fun startTimer() {
+    fun toggleTimer() {
+        if (_timerRunning.value) {
+            pauseTimer()
+        } else {
+            startTimer()
+        }
+    }
+
+    private fun startTimer() {
         _timerRunning.value = true
         countDownTimer = object : CountDownTimer(_timeLeft.value * 1000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
@@ -33,7 +41,7 @@ class DashboardViewModel : ViewModel() {
         }.start()
     }
 
-    fun pauseTimer() {
+    private fun pauseTimer() {
         countDownTimer?.cancel()
         _timerRunning.value = false
     }
