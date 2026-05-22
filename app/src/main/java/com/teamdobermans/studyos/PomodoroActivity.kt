@@ -97,7 +97,7 @@ class PomodoroActivity : ComponentActivity() {
     }
 }
 
-// ── Helper: save a completed session to SharedPreferences ─────────────────
+
 fun saveSessionToPrefs(context: Context, taskName: String?): Int {
     val prefs = context.getSharedPreferences(PREFS_SESSIONS, Context.MODE_PRIVATE)
     val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
@@ -122,7 +122,7 @@ fun saveSessionToPrefs(context: Context, taskName: String?): Int {
     return newCount
 }
 
-// ── Read today's session count from SharedPreferences ─────────────────────
+
 fun getTodaySessionCount(context: Context): Int {
     val prefs = context.getSharedPreferences(PREFS_SESSIONS, Context.MODE_PRIVATE)
     val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
@@ -190,7 +190,7 @@ fun PomodoroBody(
         PomodoroTab.LONG_BREAK  -> "LONG BREAK"
     }
 
-    // ── Duration edit dialog ───────────────────────────────────────────────
+
     if (editingSlider != EditingSlider.NONE) {
         val dialogTitle = when (editingSlider) {
             EditingSlider.FOCUS -> "Focus duration"
@@ -294,7 +294,7 @@ fun PomodoroBody(
             .background(StudyPurple)
             .padding(bottom = innerPadding.calculateBottomPadding())) {
 
-            // ── Top bar ───────────────────────────────────────────────────
+
             Column(modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
@@ -328,7 +328,6 @@ fun PomodoroBody(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                // ── NEW: Linked Task Banner ────────────────────────────────
                 if (!linkedTaskName.isNullOrBlank()) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -368,7 +367,7 @@ fun PomodoroBody(
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                // ── Tab row ───────────────────────────────────────────────
+
                 Surface(shape = RoundedCornerShape(50.dp), color = Color.White,
                     modifier = Modifier.fillMaxWidth()) {
                     Row(modifier = Modifier
@@ -464,7 +463,7 @@ fun PomodoroBody(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // ── Customize durations card ──────────────────────────────
+
                 Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White)) {
                     Column(modifier = Modifier.padding(16.dp)) {
