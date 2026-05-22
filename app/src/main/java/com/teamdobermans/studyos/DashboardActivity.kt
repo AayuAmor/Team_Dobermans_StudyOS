@@ -51,9 +51,6 @@ fun DashboardBody(viewModel: DashboardViewModel) {
     val timerRunning by viewModel.timerRunning.collectAsState()
     val timeLeft by viewModel.timeLeft.collectAsState()
 
-    var localTimerRunning by remember { mutableStateOf(false) }
-    var localTimeLeft by remember { mutableLongStateOf(25 * 60L) }
-
     val minutes = timeLeft / 60
     val seconds = timeLeft % 60
     val timeText = "%02d:%02d".format(minutes, seconds)
@@ -225,14 +222,14 @@ fun DashboardBody(viewModel: DashboardViewModel) {
                 ) {
                     Column {
                         Text(
-                            text = if (localTimerRunning) "Running..." else "Focus Session",
+                            text = if (timerRunning) "Running..." else "Focus Session",
                             style = TextStyle(
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.7f)
                             )
                         )
                         Text(
-                            text = "%02d:%02d".format(localTimeLeft / 60, localTimeLeft % 60),
+                            text = timeText,
                             style = TextStyle(
                                 fontSize = 26.sp,
                                 fontWeight = FontWeight.Bold,
@@ -243,7 +240,7 @@ fun DashboardBody(viewModel: DashboardViewModel) {
                     }
                     Image(
                         painter = painterResource(
-                            id = if (localTimerRunning) R.drawable.baseline_pause_24 else R.drawable.baseline_play_arrow_24
+                            id = if (timerRunning) R.drawable.baseline_pause_24 else R.drawable.baseline_play_arrow_24
                         ),
                         contentDescription = "Play/Pause",
                         modifier = Modifier
@@ -252,7 +249,7 @@ fun DashboardBody(viewModel: DashboardViewModel) {
                             .background(Color.White)
                             .padding(8.dp)
                             .clickable {
-                                localTimerRunning = !localTimerRunning
+                                viewModel.toggleTimer()
                             }
                     )
                 }
