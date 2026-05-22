@@ -48,4 +48,9 @@ class DashboardViewModel : ViewModel() {
         countDownTimer?.cancel()
         _timerRunning.value = false
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        countDownTimer?.cancel()
+    }
 }
