@@ -166,9 +166,9 @@ fun PomodoroBody(
                 delay(1000L)
                 timeRemaining--
             }
-            // Timer reached zero naturally while running
+
             if (selectedTab == PomodoroTab.FOCUS) {
-                // Save session and update local count state
+
                 sessionsToday = saveSessionToPrefs(context, linkedTaskName)
             }
             isRunning = false
