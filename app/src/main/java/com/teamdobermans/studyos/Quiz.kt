@@ -40,13 +40,13 @@ class QuizScreen : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            QuizUI()
+            QuizScreenUI()
         }
     }
 }
 
 @Composable
-fun QuizUI() {
+fun QuizScreenUI() {
     val context = LocalContext.current
 
     Scaffold(
@@ -200,6 +200,6 @@ fun OptionCard(
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewQuizUI() {
-    QuizUI()
+fun PreviewQuizScreenUI() {
+    QuizScreenUI()
 }
