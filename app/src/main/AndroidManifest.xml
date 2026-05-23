@@ -89,6 +89,17 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".PomodoroActivity"
+            android:exported="true"
+            android:label="Pomodoro"
+            android:theme="@style/Theme.StudyOS">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"

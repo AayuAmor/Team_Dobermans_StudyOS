@@ -62,6 +62,7 @@ import com.teamdobermans.studyos.ui.theme.StudyPurpleDeep
 import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.focus.focusModifier
+import android.content.Context
 
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -206,13 +207,21 @@ fun SettingsBody() {
 
                             Box(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp).clickable {
+
+                                    context.
+                                    getSharedPreferences("StudyOSPrefs", Context.MODE_PRIVATE)
+                                        .edit().clear().apply()
+
+
+                                    try { context.deleteFile("user_data.txt") } catch (e: Exception) { e.printStackTrace() }
+
+
                                     val intent = Intent(context, LoginActivity::class.java)
-                                    intent.flags =
-                                        Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                                     context.startActivity(intent)
                                 },
                                 contentAlignment = Alignment.Center
-                            ){
+                            ) {
                                 Text("Sign Out", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                             }
                         }
