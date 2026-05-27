@@ -13,12 +13,7 @@
           "package_name": "com.teamdobermans.studyos"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "561766544003-5ft59rkoko5e4h2n29o95tii37q85lgf.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
           "current_key": "AIzaSyAM2f_kX0Oj7nWZH4cY-yQhCxISU2SDZdg"
@@ -26,12 +21,7 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "561766544003-5ft59rkoko5e4h2n29o95tii37q85lgf.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }
