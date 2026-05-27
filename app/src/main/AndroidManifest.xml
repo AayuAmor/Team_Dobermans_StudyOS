@@ -23,7 +23,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".QuizScreen"
+            android:name=".BrainGameScreen"
             android:exported="true"
             android:label="@string/title_activity_quiz"
             android:theme="@style/Theme.StudyOS">
@@ -81,6 +81,17 @@
             android:name=".DashboardActivity"
             android:exported="true"
             android:label="@string/title_activity_dashboard"
+            android:theme="@style/Theme.StudyOS">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".PomodoroActivity"
+            android:exported="true"
+            android:label="Pomodoro"
             android:theme="@style/Theme.StudyOS">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

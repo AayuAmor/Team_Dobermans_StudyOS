@@ -1,11 +1,12 @@
 package com.teamdobermans.studyos
 
+import android.content.Intent
 import android.os.Bundle
-import android.os.CountDownTimer
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,26 +29,33 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material3.Scaffold
-import android.content.Intent
 
 class DashboardActivity : ComponentActivity() {
+
+    private val dashboardViewModel: DashboardViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            DashboardBody()
+            DashboardBody(viewModel = dashboardViewModel)
         }
     }
 }
 
 @Composable
-fun DashboardBody() {
+fun DashboardBody(viewModel: DashboardViewModel) {
     val context = LocalContext.current
-    var progress by remember { mutableFloatStateOf(65f) }
-    var timerRunning by remember { mutableStateOf(false) }
-    var timeLeft by remember { mutableLongStateOf(25 * 60L) }
-    var timer by remember { mutableStateOf<CountDownTimer?>(null) }
+
+    val progress by viewModel.progress.collectAsState()
+    val timerRunning by viewModel.timerRunning.collectAsState()
+    val timeLeft by viewModel.timeLeft.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.onSessionComplete = {
+            Toast.makeText(context, "Session complete! 🎉", Toast.LENGTH_LONG).show()
+        }
+    }
 
     val minutes = timeLeft / 60
     val seconds = timeLeft % 60
@@ -108,7 +116,6 @@ fun DashboardBody() {
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
-
 
                 Row(
                     modifier = Modifier
@@ -239,10 +246,7 @@ fun DashboardBody() {
                     }
                     Image(
                         painter = painterResource(
-                            id = if (timerRunning)
-                                R.drawable.baseline_pause_24
-                            else
-                                R.drawable.baseline_play_arrow_24
+                            id = if (timerRunning) R.drawable.baseline_pause_24 else R.drawable.baseline_play_arrow_24
                         ),
                         contentDescription = "Play/Pause",
                         modifier = Modifier
@@ -251,20 +255,7 @@ fun DashboardBody() {
                             .background(Color.White)
                             .padding(8.dp)
                             .clickable {
-                                if (timerRunning) {
-                                    timer?.cancel()
-                                    timerRunning = false
-                                } else {
-                                    timerRunning = true
-                                    timer = object : CountDownTimer(timeLeft * 1000, 1000) {
-                                        override fun onTick(ms: Long) { timeLeft = ms / 1000 }
-                                        override fun onFinish() {
-                                            timerRunning = false
-                                            timeLeft = 25 * 60L
-                                            Toast.makeText(context, "Session complete! 🎉", Toast.LENGTH_LONG).show()
-                                        }
-                                    }.start()
-                                }
+                                viewModel.toggleTimer()
                             }
                     )
                 }
@@ -365,7 +356,6 @@ fun DashboardBody() {
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
-
 }
 
 @Composable
@@ -423,5 +413,5 @@ fun ToolCard(
 @Preview
 @Composable
 fun DashboardPreview() {
-    DashboardBody()
+    DashboardBody(viewModel = DashboardViewModel())
 }

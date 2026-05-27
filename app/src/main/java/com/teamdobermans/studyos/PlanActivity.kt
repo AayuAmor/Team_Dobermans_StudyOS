@@ -76,7 +76,15 @@ import java.time.format.TextStyle as JavaTextStyle
 
 enum class Priority { HIGH, MEDIUM, LOW }
 
-data class Task(val title: String, val description: String, val dueDate: String, val priority: Priority, var done: Boolean = false)
+data class Task(
+    val title: String,
+    val description: String,
+    val dueDate: String,
+    val priority: Priority,
+    val subjectId: String,
+    val subjectName: String,
+    var done: Boolean = false
+)
 
 class PlanActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -107,17 +115,27 @@ fun PlanBody() {
     var priorityDropdown by remember { mutableStateOf(false) }
     var selectedPriority by remember { mutableStateOf(Priority.MEDIUM) }
 
+    var filterDropdownExpanded by remember { mutableStateOf(false) }
+    var currentFilterSubjectId by remember { mutableStateOf("ALL_FILTER") }
+    val dynamicNoteSubjects = StudyDataRepository.dynamicSubjects
+
+    var subjectDropdownExpanded by remember { mutableStateOf(false) }
+    var selectedSubjectState by remember {
+        mutableStateOf(dynamicNoteSubjects.firstOrNull() ?: NoteSubject("sub_fallback", "General Study"))
+    }
+
     var displayDueDate   by remember { mutableStateOf(today.format(dateFormatter)) }
     var showDatePicker   by remember { mutableStateOf(false) }
 
     val tasks            = remember {
         mutableStateListOf(
-            Task("Read Chapter 5", "Focusing on cellular structures", "May 22, 2026", Priority.HIGH, done = true),
-            Task("Project Work of English", "Draft introduction segment", "May 25, 2026 - May 28, 2026", Priority.MEDIUM)
+            Task("Read Chapter 5", "Focusing on cellular structures", "May 22, 2026", Priority.HIGH, "sub_gen", "General Study", done = true),
+            Task("Project Work of English", "Draft introduction segment", "May 25, 2026 - May 28, 2026", Priority.MEDIUM, "sub_eng_comp", "Advanced Technical Writing")
         )
     }
 
-    val pendingCount = tasks.count { !it.done }
+    val filteredTasks = if (currentFilterSubjectId == "ALL_FILTER") tasks else tasks.filter { it.subjectId == currentFilterSubjectId }
+    val pendingCount = filteredTasks.count { !it.done }
 
     if (showDatePicker) {
         val dateRangePickerState = rememberDateRangePickerState()
@@ -202,9 +220,29 @@ fun PlanBody() {
                             Text("Back", color = Color.White, fontSize = 14.sp)
                         }
                     }
-                    Surface(shape = RoundedCornerShape(10.dp), color = Color.White.copy(alpha = 0.2f)) {
-                        Text("All", color = Color.White, fontSize = 13.sp,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+
+                    Box {
+                        val selectedFilterLabel = if (currentFilterSubjectId == "ALL_FILTER") "All" else dynamicNoteSubjects.find { it.id == currentFilterSubjectId }?.name ?: "Unknown"
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color.White.copy(alpha = 0.2f),
+                            modifier = Modifier.clickable { filterDropdownExpanded = true }
+                        ) {
+                            Text(selectedFilterLabel, color = Color.White, fontSize = 13.sp,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                        }
+                        DropdownMenu(expanded = filterDropdownExpanded, onDismissRequest = { filterDropdownExpanded = false }) {
+                            DropdownMenuItem(text = { Text("All") }, onClick = { currentFilterSubjectId = "ALL_FILTER"; filterDropdownExpanded = false })
+                            dynamicNoteSubjects.forEach { subject ->
+                                DropdownMenuItem(
+                                    text = { Text(subject.name) },
+                                    onClick = {
+                                        currentFilterSubjectId = subject.id
+                                        filterDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -338,7 +376,7 @@ fun PlanBody() {
                                 onValueChange = {},
                                 readOnly = true,
                                 modifier = Modifier
-                                    .weight(1.3f)
+                                    .weight(1.1f)
                                     .clickable { showDatePicker = true },
                                 enabled = false,
                                 shape = RoundedCornerShape(12.dp),
@@ -360,6 +398,37 @@ fun PlanBody() {
                                     disabledTrailingIconColor = StudyPurple
                                 )
                             )
+
+                            Box(modifier = Modifier.weight(0.9f).align(Alignment.Bottom)) {
+                                Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFF0EEFF),
+                                    modifier = Modifier.fillMaxWidth().height(52.dp).clickable { subjectDropdownExpanded = true }) {
+                                    Column(
+                                        modifier = Modifier.padding(horizontal = 12.dp),
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Text("Linked Subject", fontSize = 10.sp, color = StudyPurple)
+                                        Row(modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Text(selectedSubjectState.name, color = Color(0xFF1A1A2E), fontWeight = FontWeight.Medium, fontSize = 12.sp, maxLines = 1)
+                                            Icon(painter = painterResource(R.drawable.baseline_more_horiz_24),
+                                                contentDescription = null, tint = Color.Gray, modifier = Modifier.size(14.dp))
+                                        }
+                                    }
+                                }
+                                DropdownMenu(expanded = subjectDropdownExpanded, onDismissRequest = { subjectDropdownExpanded = false }) {
+                                    dynamicNoteSubjects.forEach { subject ->
+                                        DropdownMenuItem(
+                                            text = { Text(subject.name) },
+                                            onClick = {
+                                                selectedSubjectState = subject
+                                                subjectDropdownExpanded = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
                             Box(modifier = Modifier.weight(0.7f).align(Alignment.Bottom)) {
                                 Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFF0EEFF),
                                     modifier = Modifier.fillMaxWidth().height(52.dp).clickable { priorityDropdown = true }) {
@@ -396,7 +465,16 @@ fun PlanBody() {
                             onClick = {
                                 val trimmedTitle = taskTitle.trim()
                                 if (trimmedTitle.isNotEmpty()) {
-                                    tasks.add(Task(trimmedTitle, taskDescription.trim(), displayDueDate, selectedPriority))
+                                    tasks.add(
+                                        Task(
+                                            title = trimmedTitle,
+                                            description = taskDescription.trim(),
+                                            dueDate = displayDueDate,
+                                            priority = selectedPriority,
+                                            subjectId = selectedSubjectState.id,
+                                            subjectName = selectedSubjectState.name
+                                        )
+                                    )
                                     taskTitle = ""
                                     taskDescription = ""
                                     displayDueDate = today.format(dateFormatter)
@@ -414,7 +492,7 @@ fun PlanBody() {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                tasks.forEach { task ->
+                filteredTasks.forEach { task ->
                     Surface(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                         shape = RoundedCornerShape(14.dp),
@@ -443,13 +521,30 @@ fun PlanBody() {
                             Spacer(modifier = Modifier.width(10.dp))
 
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    task.title,
-                                    color = if (task.done) Color.Gray else Color(0xFF1A1A2E),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
-                                    textDecoration = if (task.done) TextDecoration.LineThrough else TextDecoration.None
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        task.title,
+                                        color = if (task.done) Color.Gray else Color(0xFF1A1A2E),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        textDecoration = if (task.done) TextDecoration.LineThrough else TextDecoration.None
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = StudyPurple.copy(alpha = 0.1f)
+                                    ) {
+                                        Text(
+                                            task.subjectName,
+                                            color = StudyPurple,
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                                            maxLines = 1
+                                        )
+                                    }
+                                }
                                 if (task.description.isNotEmpty()) {
                                     Text(
                                         task.description,

@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -67,7 +66,6 @@ import kotlinx.coroutines.delay
 import androidx.compose.material3.Scaffold
 
 private enum class PomodoroTab { FOCUS, SHORT_BREAK, LONG_BREAK }
-
 private enum class EditingSlider { FOCUS, SHORT, LONG, NONE }
 
 class PomodoroActivity : ComponentActivity() {
@@ -80,7 +78,6 @@ class PomodoroActivity : ComponentActivity() {
 
 @Composable
 fun PomodoroBody() {
-
     val context  = LocalContext.current
     val activity = context as? Activity
 
@@ -110,8 +107,22 @@ fun PomodoroBody() {
             timeRemaining--
         }
         if (timeRemaining == 0) {
-            isRunning = false
-            if (selectedTab == PomodoroTab.FOCUS) sessionsToday++
+            if (selectedTab == PomodoroTab.FOCUS) {
+                sessionsToday++
+                selectedTab = if (sessionsToday % 4 == 0) PomodoroTab.LONG_BREAK else PomodoroTab.SHORT_BREAK
+                isRunning = true
+            } else {
+                selectedTab = PomodoroTab.FOCUS
+                isRunning = false
+            }
+        }
+    }
+
+    LaunchedEffect(selectedTab) {
+        timeRemaining = when (selectedTab) {
+            PomodoroTab.FOCUS       -> focusMinutes.toInt() * 60
+            PomodoroTab.SHORT_BREAK -> shortMinutes.toInt() * 60
+            PomodoroTab.LONG_BREAK  -> longMinutes.toInt()  * 60
         }
     }
 
@@ -129,7 +140,6 @@ fun PomodoroBody() {
     }
 
     if (editingSlider != EditingSlider.NONE) {
-
         val dialogTitle = when (editingSlider) {
             EditingSlider.FOCUS -> "Focus duration"
             EditingSlider.SHORT -> "Short break duration"
@@ -148,21 +158,10 @@ fun PomodoroBody() {
 
         AlertDialog(
             onDismissRequest = { editingSlider = EditingSlider.NONE },
-            title = {
-                Text(
-                    dialogTitle,
-                    color = Color(0xFF1A1A2E),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-            },
+            title = { Text(dialogTitle, color = Color(0xFF1A1A2E), fontWeight = FontWeight.Bold, fontSize = 16.sp) },
             text = {
                 Column {
-                    Text(
-                        "${dialogRange.first}–${dialogRange.last} minutes",
-                        color = Color.Gray,
-                        fontSize = 13.sp
-                    )
+                    Text("${dialogRange.first}–${dialogRange.last} minutes", color = Color.Gray, fontSize = 13.sp)
                     Spacer(modifier = Modifier.height(12.dp))
                     OutlinedTextField(
                         value = dialogInput,
@@ -175,18 +174,15 @@ fun PomodoroBody() {
                                 when (editingSlider) {
                                     EditingSlider.FOCUS -> {
                                         focusMinutes = clamped
-                                        if (selectedTab == PomodoroTab.FOCUS && !isRunning)
-                                            timeRemaining = clamped.toInt() * 60
+                                        if (selectedTab == PomodoroTab.FOCUS && !isRunning) timeRemaining = clamped.toInt() * 60
                                     }
                                     EditingSlider.SHORT -> {
                                         shortMinutes = clamped
-                                        if (selectedTab == PomodoroTab.SHORT_BREAK && !isRunning)
-                                            timeRemaining = clamped.toInt() * 60
+                                        if (selectedTab == PomodoroTab.SHORT_BREAK && !isRunning) timeRemaining = clamped.toInt() * 60
                                     }
                                     EditingSlider.LONG -> {
                                         longMinutes = clamped
-                                        if (selectedTab == PomodoroTab.LONG_BREAK && !isRunning)
-                                            timeRemaining = clamped.toInt() * 60
+                                        if (selectedTab == PomodoroTab.LONG_BREAK && !isRunning) timeRemaining = clamped.toInt() * 60
                                     }
                                     EditingSlider.NONE -> {}
                                 }
@@ -215,18 +211,12 @@ fun PomodoroBody() {
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = { editingSlider = EditingSlider.NONE },
-                    enabled = isValid,
-                    colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)
-                ) {
+                Button(onClick = { editingSlider = EditingSlider.NONE }, enabled = isValid, colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)) {
                     Text("Set", color = Color.White, fontWeight = FontWeight.SemiBold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { editingSlider = EditingSlider.NONE }) {
-                    Text("Cancel", color = Color.Gray)
-                }
+                TextButton(onClick = { editingSlider = EditingSlider.NONE }) { Text("Cancel", color = Color.Gray) }
             },
             containerColor = Color.White,
             shape = RoundedCornerShape(20.dp)
@@ -236,47 +226,29 @@ fun PomodoroBody() {
     Scaffold(
         bottomBar = { StudyOSBottomNav(currentRoute = NavRoute.STUDY, context = context) }
     ) { innerPadding ->
-
-        Column(modifier = Modifier.fillMaxSize().background(StudyPurple)
-            .padding(bottom = innerPadding.calculateBottomPadding())) {
-
-            Column(modifier = Modifier.fillMaxWidth().statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 12.dp)) {
-                Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.25f),
-                    modifier = Modifier.clickable { activity?.finish() }) {
-                    Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically) {
-                        Icon(painter = painterResource(R.drawable.baseline_arrow_back_24),
-                            contentDescription = "Back", tint = Color.White, modifier = Modifier.size(18.dp))
+        Column(modifier = Modifier.fillMaxSize().background(StudyPurple).padding(bottom = innerPadding.calculateBottomPadding())) {
+            Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.25f), modifier = Modifier.clickable { activity?.finish() }) {
+                    Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(painter = painterResource(R.drawable.baseline_arrow_back_24), contentDescription = "Back", tint = Color.White, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Back", color = Color.White, fontSize = 14.sp)
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
-                Text("Pomodoro Timer",
-                    style = TextStyle(color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold))
-                Text("Notifications silenced during focus",
-                    color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp)
+                Text("Pomodoro Timer", style = TextStyle(color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold))
+                Text("Notifications silenced during focus", color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp)
             }
 
             Column(
-                modifier = Modifier.fillMaxSize()
-                    .clip(RoundedCornerShape(0.dp))
-                    .background(StudyPurpleLight)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(0.dp)).background(StudyPurpleLight).verticalScroll(rememberScrollState()).padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-
-                Surface(shape = RoundedCornerShape(50.dp), color = Color.White,
-                    modifier = Modifier.fillMaxWidth()) {
+                Surface(shape = RoundedCornerShape(50.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
                     Row(modifier = Modifier.fillMaxWidth().padding(4.dp)) {
                         PomodoroTab.values().forEach { tab ->
                             val isSelected = tab == selectedTab
-                            Surface(shape = RoundedCornerShape(50.dp),
-                                color = if (isSelected) StudyPurple else Color.Transparent,
-                                modifier = Modifier.weight(1f).clickable {
-                                    selectedTab = tab; isRunning = false }) {
+                            Surface(shape = RoundedCornerShape(50.dp), color = if (isSelected) StudyPurple else Color.Transparent, modifier = Modifier.weight(1f).clickable { selectedTab = tab; isRunning = false }) {
                                 Text(
                                     text = when (tab) {
                                         PomodoroTab.FOCUS       -> "Focus"
@@ -296,37 +268,24 @@ fun PomodoroBody() {
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                    Column(modifier = Modifier.fillMaxWidth().padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally) {
+                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                    Column(modifier = Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.size(200.dp)) {
                             Canvas(modifier = Modifier.fillMaxSize()) {
                                 drawCircle(color = Color(0xFFEEEBFF), style = Stroke(width = 14.dp.toPx()))
-                                drawArc(color = StudyPurple, startAngle = -90f,
-                                    sweepAngle = 360f * progress, useCenter = false,
-                                    style = Stroke(width = 14.dp.toPx(), cap = StrokeCap.Round))
+                                drawArc(color = StudyPurple, startAngle = -90f, sweepAngle = 360f * progress, useCenter = false, style = Stroke(width = 14.dp.toPx(), cap = StrokeCap.Round))
                             }
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(timeLabel, style = TextStyle(color = Color(0xFF1A1A2E),
-                                    fontSize = 40.sp, fontWeight = FontWeight.Bold))
-                                Text(modeLabel, color = Color.Gray, fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium)
+                                Text(timeLabel, style = TextStyle(color = Color(0xFF1A1A2E), fontSize = 40.sp, fontWeight = FontWeight.Bold))
+                                Text(modeLabel, color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Medium)
                             }
                         }
                         Spacer(modifier = Modifier.height(24.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                            Button(onClick = { isRunning = !isRunning },
-                                modifier = Modifier.weight(1f).height(46.dp),
-                                shape = RoundedCornerShape(23.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)) {
-                                Text(if (isRunning) "Pause" else "Start",
-                                    color = Color.White, fontWeight = FontWeight.SemiBold)
+                            Button(onClick = { isRunning = !isRunning }, modifier = Modifier.weight(1f).height(46.dp), shape = RoundedCornerShape(23.dp), colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)) {
+                                Text(if (isRunning) "Pause" else "Start", color = Color.White, fontWeight = FontWeight.SemiBold)
                             }
-                            Button(onClick = { isRunning = false; timeRemaining = totalSeconds },
-                                modifier = Modifier.weight(1f).height(46.dp),
-                                shape = RoundedCornerShape(23.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFEBEB))) {
+                            Button(onClick = { isRunning = false; timeRemaining = totalSeconds }, modifier = Modifier.weight(1f).height(46.dp), shape = RoundedCornerShape(23.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFEBEB))) {
                                 Text("Reset", color = Color(0xFFE53935), fontWeight = FontWeight.SemiBold)
                             }
                         }
@@ -335,111 +294,41 @@ fun PomodoroBody() {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Customize durations", fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp, color = Color(0xFF1A1A2E))
+                        Text("Customize durations", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFF1A1A2E))
                         Spacer(modifier = Modifier.height(8.dp))
-                        DurationSlider(
-                            label = "Focus",
-                            value = focusMinutes,
-                            range = 5f..60f,
-                            onValueChange = {
-                                focusMinutes = it
-                                if (selectedTab == PomodoroTab.FOCUS && !isRunning)
-                                    timeRemaining = it.toInt() * 60
-                            },
-                            onValueTap = {
-                                dialogInput   = focusMinutes.toInt().toString()
-                                editingSlider = EditingSlider.FOCUS
-                            }
-                        )
-                        DurationSlider(
-                            label = "Short",
-                            value = shortMinutes,
-                            range = 1f..15f,
-                            onValueChange = {
-                                shortMinutes = it
-                                if (selectedTab == PomodoroTab.SHORT_BREAK && !isRunning)
-                                    timeRemaining = it.toInt() * 60
-                            },
-                            onValueTap = {
-                                dialogInput   = shortMinutes.toInt().toString()
-                                editingSlider = EditingSlider.SHORT
-                            }
-                        )
-                        DurationSlider(
-                            label = "Long",
-                            value = longMinutes,
-                            range = 10f..30f,
-                            onValueChange = {
-                                longMinutes = it
-                                if (selectedTab == PomodoroTab.LONG_BREAK && !isRunning)
-                                    timeRemaining = it.toInt() * 60
-                            },
-                            onValueTap = {
-                                dialogInput   = longMinutes.toInt().toString()
-                                editingSlider = EditingSlider.LONG
-                            }
-                        )
+                        DurationSlider(label = "Focus", value = focusMinutes, range = 5f..60f, onValueChange = { focusMinutes = it; if (selectedTab == PomodoroTab.FOCUS && !isRunning) timeRemaining = it.toInt() * 60 }, onValueTap = { dialogInput = focusMinutes.toInt().toString(); editingSlider = EditingSlider.FOCUS })
+                        DurationSlider(label = "Short", value = shortMinutes, range = 1f..15f, onValueChange = { shortMinutes = it; if (selectedTab == PomodoroTab.SHORT_BREAK && !isRunning) timeRemaining = it.toInt() * 60 }, onValueTap = { dialogInput = shortMinutes.toInt().toString(); editingSlider = EditingSlider.SHORT })
+                        DurationSlider(label = "Long", value = longMinutes, range = 10f..30f, onValueChange = { longMinutes = it; if (selectedTab == PomodoroTab.LONG_BREAK && !isRunning) timeRemaining = it.toInt() * 60 }, onValueTap = { dialogInput = longMinutes.toInt().toString(); editingSlider = EditingSlider.LONG })
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                    Column(modifier = Modifier.fillMaxWidth().padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally) {
+                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                    Column(modifier = Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("Sessions today", color = Color.Gray, fontSize = 14.sp)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("$sessionsToday", color = StudyPurple, fontSize = 36.sp,
-                            fontWeight = FontWeight.Bold)
+                        Text("$sessionsToday", color = StudyPurple, fontSize = 36.sp, fontWeight = FontWeight.Bold)
                     }
                 }
-
                 Spacer(modifier = Modifier.height(80.dp))
             }
         }
     }
-
 }
 
 @Composable
-fun DurationSlider(
-    label: String,
-    value: Float,
-    onValueChange: (Float) -> Unit,
-    range: ClosedFloatingPointRange<Float>,
-    onValueTap: () -> Unit
-) {
+fun DurationSlider(label: String, value: Float, onValueChange: (Float) -> Unit, range: ClosedFloatingPointRange<Float>, onValueTap: () -> Unit) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(label, modifier = Modifier.width(44.dp), fontSize = 13.sp, color = Color.DarkGray)
         Slider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = range,
-            modifier = Modifier.weight(1f),
-            colors = SliderDefaults.colors(
-                thumbColor = StudyPurple,
-                activeTrackColor = StudyPurple,
-                inactiveTrackColor = Color(0xFFD0CBFF)
-            )
+            value = value, onValueChange = onValueChange, valueRange = range, modifier = Modifier.weight(1f),
+            colors = SliderDefaults.colors(thumbColor = StudyPurple, activeTrackColor = StudyPurple, inactiveTrackColor = Color(0xFFD0CBFF))
         )
-        Surface(
-            shape = RoundedCornerShape(6.dp),
-            color = Color(0xFFF0EEFF),
-            modifier = Modifier.width(36.dp).clickable { onValueTap() }
-        ) {
-            Text(
-                "${value.toInt()}m",
-                modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
-                fontSize = 13.sp,
-                color = StudyPurple,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
+        Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFFF0EEFF), modifier = Modifier.width(36.dp).clickable { onValueTap() }) {
+            Text("${value.toInt()}m", modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp), fontSize = 13.sp, color = StudyPurple, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
         }
     }
 }
