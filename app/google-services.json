@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "561766544003",
+    "firebase_url": "https://studyos-3f215-default-rtdb.firebaseio.com",
+    "project_id": "studyos-3f215",
+    "storage_bucket": "studyos-3f215.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:561766544003:android:2ae4500be0b1ef615721b6",
+        "android_client_info": {
+          "package_name": "com.teamdobermans.studyos"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAM2f_kX0Oj7nWZH4cY-yQhCxISU2SDZdg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
