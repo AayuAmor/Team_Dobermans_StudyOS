@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -230,27 +231,34 @@ fun SignUpBody() {
                 Button(
                     onClick = {
                         if (fullName.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty()) {
-                            val sharedPref = context.getSharedPreferences("StudyOSPrefs", Context.MODE_PRIVATE)
-                            with(sharedPref.edit()) {
-                                putString("USER_NAME", fullName)
-                                putString("USER_EMAIL", email)
-                                putString("USER_PASSWORD", password)
-                                apply()
-                            }
+                            FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, password)
+                                .addOnCompleteListener { task ->
+                                    if (task.isSuccessful) {
+                                        val sharedPref = context.getSharedPreferences("StudyOSPrefs", Context.MODE_PRIVATE)
+                                        with(sharedPref.edit()) {
+                                            putString("USER_NAME", fullName)
+                                            putString("USER_EMAIL", email)
+                                            putString("USER_PASSWORD", password)
+                                            apply()
+                                        }
 
-                            try {
-                                val fileContents = "Welcome to StudyOS, $fullName!"
-                                context.openFileOutput("user_data.txt", Context.MODE_PRIVATE).use { output ->
-                                    output.write(fileContents.toByteArray())
+                                        try {
+                                            val fileContents = "Welcome to StudyOS, $fullName!"
+                                            context.openFileOutput("user_data.txt", Context.MODE_PRIVATE).use { output ->
+                                                output.write(fileContents.toByteArray())
+                                            }
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
+
+                                        Toast.makeText(context, "Registration Successful!", Toast.LENGTH_SHORT).show()
+                                        val intent = Intent(context, LoginActivity::class.java)
+                                        context.startActivity(intent)
+                                        activity?.finish()
+                                    } else {
+                                        Toast.makeText(context, "Registration Failed: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                                    }
                                 }
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
-
-                            Toast.makeText(context, "Registration Successful!", Toast.LENGTH_SHORT).show()
-                            val intent = Intent(context, LoginActivity::class.java)
-                            context.startActivity(intent)
-                            activity?.finish()
                         } else {
                             Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
                         }

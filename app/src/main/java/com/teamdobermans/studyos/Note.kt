@@ -1,7 +1,7 @@
 package com.teamdobermans.studyos
 
-import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -15,36 +15,27 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.firebase.auth.FirebaseAuth
+import com.teamdobermans.studyos.Model.NoteModel
 import com.teamdobermans.studyos.ui.theme.BrandPurple
-import com.teamdobermans.studyos.ui.theme.LightPurpleBg
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
-import androidx.compose.ui.platform.LocalContext
-import com.teamdobermans.studyos.NavRoute
-import com.teamdobermans.studyos.StudyOSBottomNav
-
-data class Note(
-    val id: Int,
-    val title: String,
-    val body: String,
-    val folder: String
-)
-
-data class NavTab(
-    val label: String,
-    val iconResId: Int
-)
+import com.teamdobermans.studyos.viewModel.NoteViewModel
 
 private val BrandPurpleLight = Color(0xFF7C6CEF)
 private val BackgroundGray = Color(0xFFF0EFF5)
@@ -56,12 +47,7 @@ class NotesPage : ComponentActivity() {
         setContent {
             StudyOSTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    NotesScreen(
-                        onBackClick = { finish() },
-                        onAddClick = {
-                            startActivity(Intent(this, VideotoNotes::class.java))
-                        }
-                    )
+                    NotesScreen(onBackClick = { finish() })
                 }
             }
         }
@@ -71,84 +57,421 @@ class NotesPage : ComponentActivity() {
 @Composable
 fun NotesScreen(
     modifier: Modifier = Modifier,
-    onBackClick: () -> Unit = {},
-    onAddClick: () -> Unit = {},
-    onNoteClick: (Note) -> Unit = {},
-    onNavClick: (String) -> Unit = {}
+    onBackClick: () -> Unit = {}
 ) {
-    var activeFolder by remember { mutableStateOf("Science") }
-    var searchQuery by remember { mutableStateOf("") }
+    val viewModel: NoteViewModel = viewModel()
+    val allNotes by viewModel.notes.collectAsState()
+    val saveResult by viewModel.saveResult.collectAsState()
+    val context = LocalContext.current
 
-    val folders = listOf(
-        stringResource(R.string.folder_science),
-        stringResource(R.string.folder_social),
-        stringResource(R.string.folder_english)
+    var currentUser by remember { mutableStateOf(FirebaseAuth.getInstance().currentUser) }
+
+    DisposableEffect(Unit) {
+        val auth = FirebaseAuth.getInstance()
+        val listener = FirebaseAuth.AuthStateListener { currentUser = it.currentUser }
+        auth.addAuthStateListener(listener)
+        onDispose { auth.removeAuthStateListener(listener) }
+    }
+
+    if (currentUser == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = BrandPurple)
+        }
+        return
+    }
+
+    LaunchedEffect(saveResult) {
+        saveResult?.let { result ->
+            val message = if (result == "SUCCESS") "✓ Note saved!" else "✗ $result"
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            viewModel.clearSaveResult()
+        }
+    }
+
+    NotesScreenContent(
+        modifier = modifier,
+        allNotes = allNotes,
+        onBackClick = onBackClick,
+        onCreateNote = { title, body, folder -> viewModel.createNote(title, body, folder) },
+        onUpdateNote = { note -> viewModel.updateNote(note) },
+        onDeleteNote = { id -> viewModel.deleteNote(id) }
     )
+}
 
-    val sampleNotes = listOf(
-        Note(
-            1,
-            stringResource(R.string.note_periodic_table_title),
-            stringResource(R.string.note_periodic_table_body),
-            stringResource(R.string.folder_science)
-        ),
-        Note(
-            2,
-            stringResource(R.string.note_mitochondria_title),
-            stringResource(R.string.note_mitochondria_body),
-            stringResource(R.string.folder_science)
-        )
-    )
+@Composable
+fun NotesScreenContent(
+    modifier: Modifier = Modifier,
+    allNotes: List<NoteModel>,
+    onBackClick: () -> Unit,
+    onCreateNote: (String, String, String) -> Unit,
+    onUpdateNote: (NoteModel) -> Unit,
+    onDeleteNote: (String) -> Unit
+) {
+    val defaultFolders = listOf("Science", "Social", "English")
+    var extraFolders by rememberSaveable { mutableStateOf(listOf<String>()) }
+    val folders = defaultFolders + extraFolders
 
-    var visibleNotes by remember(activeFolder, searchQuery) {
-        mutableStateOf(
-            sampleNotes.filter { note ->
-                note.folder == activeFolder &&
-                        (searchQuery.isEmpty() ||
-                                note.title.contains(searchQuery, ignoreCase = true) ||
-                                note.body.contains(searchQuery, ignoreCase = true))
+    var activeFolder by rememberSaveable { mutableStateOf("Science") }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var selectedNote by remember { mutableStateOf<NoteModel?>(null) }
+    var showEditor by rememberSaveable { mutableStateOf(false) }
+    var showNewFolderDialog by rememberSaveable { mutableStateOf(false) }
+    var newFolderName by rememberSaveable { mutableStateOf("") }
+
+    if (showNewFolderDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showNewFolderDialog = false
+                newFolderName = ""
+            },
+            title = { Text("New Folder", fontWeight = FontWeight.Bold) },
+            text = {
+                OutlinedTextField(
+                    value = newFolderName,
+                    onValueChange = { newFolderName = it },
+                    label = { Text("Folder name") },
+                    placeholder = { Text("e.g. Computer, Math...") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = BrandPurple,
+                        focusedLabelColor = BrandPurple,
+                        cursorColor = BrandPurple
+                    )
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val name = newFolderName.trim()
+                        if (name.isNotEmpty() && !folders.contains(name)) {
+                            extraFolders = extraFolders + name
+                            activeFolder = name
+                        }
+                        showNewFolderDialog = false
+                        newFolderName = ""
+                    },
+                    enabled = newFolderName.isNotBlank(),
+                    colors = ButtonDefaults.buttonColors(containerColor = BrandPurple)
+                ) {
+                    Text("Create", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showNewFolderDialog = false
+                    newFolderName = ""
+                }) { Text("Cancel") }
             }
         )
     }
 
-    Scaffold(
-        modifier = modifier,
-        containerColor = BackgroundGray,
-        bottomBar = { StudyOSBottomNav(currentRoute = NavRoute.STUDY, context = LocalContext.current) }
-    ) { innerPadding ->
+    if (showEditor) {
+        CreateEditNoteScreen(
+            existingNote = selectedNote,
+            folders = folders,
+            defaultFolder = activeFolder,
+            onSave = { title, body, folder ->
+                if (selectedNote != null) {
+                    onUpdateNote(selectedNote!!.copy(title = title, body = body, folder = folder))
+                } else {
+                    onCreateNote(title, body, folder)
+                }
+                showEditor = false
+                selectedNote = null
+            },
+            onDelete = { noteId ->
+                onDeleteNote(noteId)
+                showEditor = false
+                selectedNote = null
+            },
+            onBack = {
+                showEditor = false
+                selectedNote = null
+            }
+        )
+    } else {
+        val visibleNotes = if (searchQuery.isNotEmpty()) {
+            allNotes.filter { note ->
+                note.title.contains(searchQuery, ignoreCase = true) ||
+                        note.body.contains(searchQuery, ignoreCase = true)
+            }
+        } else {
+            allNotes.filter { note -> note.folder == activeFolder }
+        }
+
+        Scaffold(
+            modifier = modifier.fillMaxSize(),
+            containerColor = BackgroundGray,
+            bottomBar = {
+                StudyOSBottomNav(
+                    currentRoute = NavRoute.STUDY,
+                    context = LocalContext.current
+                )
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = {
+                        selectedNote = null
+                        showEditor = true
+                    },
+                    modifier = Modifier.padding(bottom = 16.dp),
+                    containerColor = BrandPurple,
+                    shape = CircleShape
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Note",
+                        tint = Color.White
+                    )
+                }
+            }
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                NotesHeader(
+                    searchQuery = searchQuery,
+                    onSearchChange = { searchQuery = it },
+                    onBackClick = onBackClick,
+                    onAddClick = { showNewFolderDialog = true }
+                )
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 16.dp,
+                        bottom = 16.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    if (searchQuery.isEmpty()) {
+                        item {
+                            FoldersSection(
+                                folders = folders,
+                                activeFolder = activeFolder,
+                                onFolderClick = { activeFolder = it },
+                                onNewFolder = { showNewFolderDialog = true }
+                            )
+                        }
+                    } else {
+                        item {
+                            Text(
+                                text = "Results for \"$searchQuery\"",
+                                color = BrandPurple,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    items(visibleNotes, key = { it.id }) { note ->
+                        NoteCard(
+                            note = note,
+                            onClick = {
+                                selectedNote = note
+                                showEditor = true
+                            },
+                            onClose = { onDeleteNote(note.id) }
+                        )
+                    }
+
+                    if (visibleNotes.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 48.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = if (searchQuery.isNotEmpty())
+                                            "No notes found for \"$searchQuery\""
+                                        else
+                                            "No notes in $activeFolder yet.",
+                                        color = Color.Gray,
+                                        fontSize = 15.sp
+                                    )
+                                    if (searchQuery.isEmpty()) {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = "Tap the purple + button to write one!",
+                                            color = Color.Gray,
+                                            fontSize = 13.sp
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CreateEditNoteScreen(
+    existingNote: NoteModel? = null,
+    folders: List<String> = listOf("Science", "Social", "English"),
+    defaultFolder: String = "Science",
+    onSave: (title: String, body: String, folder: String) -> Unit,
+    onDelete: ((noteId: String) -> Unit)? = null,
+    onBack: () -> Unit
+) {
+    var title by remember { mutableStateOf(existingNote?.title ?: "") }
+    var body by remember { mutableStateOf(existingNote?.body ?: "") }
+    var folder by remember { mutableStateOf(existingNote?.folder ?: defaultFolder) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    val isEditing = existingNote != null
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Note") },
+            text = { Text("Are you sure you want to delete this note?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteDialog = false
+                    existingNote?.let { onDelete?.invoke(it.id) }
+                }) { Text("Delete", color = Color.Red) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BackgroundGray)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(BrandPurple)
+                .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 20.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(BrandPurpleLight)
+                        .clickable { onBack() }
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.baseline_arrow_back_24),
+                            contentDescription = "Back",
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Back", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                    }
+                }
+                Text(
+                    text = if (isEditing) "Edit Note" else "New Note",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            NotesHeader(
-                searchQuery = searchQuery,
-                onSearchChange = { searchQuery = it },
-                onBackClick = onBackClick,
-                onAddClick = onAddClick
+            Text("Folder", color = BrandPurple, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                folders.forEach { f ->
+                    FolderChip(label = f, isActive = f == folder, onClick = { folder = f })
+                }
+            }
+
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                label = { Text("Title") },
+                placeholder = { Text("Note title...") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = BrandPurple,
+                    focusedLabelColor = BrandPurple,
+                    cursorColor = BrandPurple
+                )
             )
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item {
-                    FoldersSection(
-                        folders = folders,
-                        activeFolder = activeFolder,
-                        onFolderClick = { activeFolder = it }
-                    )
-                }
+            OutlinedTextField(
+                value = body,
+                onValueChange = { body = it },
+                label = { Text("Content") },
+                placeholder = { Text("Write your note here...") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                maxLines = Int.MAX_VALUE,
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = BrandPurple,
+                    focusedLabelColor = BrandPurple,
+                    cursorColor = BrandPurple
+                )
+            )
 
-                items(visibleNotes, key = { it.id }) { note ->
-                    NoteCard(
-                        note = note,
-                        onClick = { onNoteClick(note) },
-                        onClose = {
-                            visibleNotes = visibleNotes.filter { it != note }
-                        }
-                    )
+            Button(
+                onClick = { onSave(title.trim(), body.trim(), folder) },
+                enabled = title.isNotBlank(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = BrandPurple,
+                    disabledContainerColor = Color.Gray
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = if (isEditing) "Update Note" else "Save Note",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            if (isEditing && onDelete != null) {
+                Button(
+                    onClick = { showDeleteDialog = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE53935)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Delete Note", color = Color.White, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -188,12 +511,7 @@ fun NotesHeader(
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = stringResource(R.string.back),
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+                    Text("Back", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                 }
             }
 
@@ -205,24 +523,12 @@ fun NotesHeader(
                     .clickable { onAddClick() },
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "+",
-                    color = Color.White,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Light
-                )
+                Text("+", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Light)
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = stringResource(R.string.notes_title),
-            color = Color.White,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold
-        )
-
+        Text("Notes", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(16.dp))
 
         TextField(
@@ -233,11 +539,7 @@ fun NotesHeader(
                 .height(52.dp)
                 .clip(RoundedCornerShape(26.dp)),
             placeholder = {
-                Text(
-                    text = stringResource(R.string.search_placeholder),
-                    color = Color(0xFF9988CC),
-                    fontSize = 14.sp
-                )
+                Text("Search notes...", color = Color(0xFF9988CC), fontSize = 14.sp)
             },
             leadingIcon = {
                 Icon(
@@ -271,13 +573,12 @@ fun FoldersSection(
 ) {
     Column {
         Text(
-            text = stringResource(R.string.folders_title),
+            text = "Folders",
             color = BrandPurple,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 12.dp)
         )
-
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -291,24 +592,13 @@ fun FoldersSection(
                     onClick = { onFolderClick(folder) }
                 )
             }
+            FolderChip(label = "+ New Folder", isActive = false, onClick = onNewFolder)
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        FolderChip(
-            label = stringResource(R.string.new_folder),
-            isActive = false,
-            onClick = onNewFolder
-        )
     }
 }
 
 @Composable
-fun FolderChip(
-    label: String,
-    isActive: Boolean,
-    onClick: () -> Unit
-) {
+fun FolderChip(label: String, isActive: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(10.dp))
@@ -327,11 +617,7 @@ fun FolderChip(
 }
 
 @Composable
-fun NoteCard(
-    note: Note,
-    onClick: () -> Unit,
-    onClose: () -> Unit
-) {
+fun NoteCard(note: NoteModel, onClick: () -> Unit, onClose: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -350,35 +636,50 @@ fun NoteCard(
                     text = note.title,
                     color = BrandPurple,
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
                 )
                 Icon(
                     painter = painterResource(id = R.drawable.ic_clear),
-                    contentDescription = "Close",
+                    contentDescription = "Delete",
                     tint = Color.LightGray,
                     modifier = Modifier
                         .size(20.dp)
                         .clickable { onClose() }
                 )
             }
-
             Spacer(modifier = Modifier.height(12.dp))
-
             Text(
                 text = note.body,
                 color = Color.DarkGray,
                 fontSize = 15.sp,
-                lineHeight = 22.sp
+                lineHeight = 22.sp,
+                maxLines = 3
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = note.folder,
+                color = BrandPurple.copy(alpha = 0.6f),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium
             )
         }
     }
 }
 
-
 @Preview(showBackground = true)
 @Composable
 fun NotesScreenPreview() {
     StudyOSTheme {
-        NotesScreen()
+        NotesScreenContent(
+            allNotes = listOf(
+                NoteModel(id = "1", title = "Periodic Table", body = "Elements are organized by atomic number.", folder = "Science"),
+                NoteModel(id = "2", title = "Computer", body = "A computer is an electronic device.", folder = "Computer")
+            ),
+            onBackClick = {},
+            onCreateNote = { _, _, _ -> },
+            onUpdateNote = {},
+            onDeleteNote = {}
+        )
     }
 }

@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -46,6 +47,18 @@ class DashboardActivity : ComponentActivity() {
 @Composable
 fun DashboardBody(viewModel: DashboardViewModel) {
     val context = LocalContext.current
+    val auth = FirebaseAuth.getInstance()
+    val user = auth.currentUser
+
+    if (user == null) {
+        LaunchedEffect(Unit) {
+            val intent = Intent(context, MainActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            context.startActivity(intent)
+        }
+    }
+
+    val userName = user?.displayName ?: user?.email?.substringBefore("@") ?: "User"
 
     val progress by viewModel.progress.collectAsState()
     val timerRunning by viewModel.timerRunning.collectAsState()
@@ -94,7 +107,7 @@ fun DashboardBody(viewModel: DashboardViewModel) {
                             )
                         )
                         Text(
-                            text = "Ditya 👋",
+                            text = "$userName 👋",
                             style = TextStyle(
                                 fontSize = 17.sp,
                                 fontWeight = FontWeight.Bold,
