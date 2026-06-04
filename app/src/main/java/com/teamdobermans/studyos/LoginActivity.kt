@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -247,36 +248,27 @@ fun LoginBody() {
 
                 Button(
                     onClick = {
-                        val sharedPref = context.getSharedPreferences("StudyOSPrefs", Context.MODE_PRIVATE)
-                        val savedEmail = sharedPref.getString("USER_EMAIL", "")
-                        val savedPassword = sharedPref.getString("USER_PASSWORD", "")
+                        if (email.isNotEmpty() && password.isNotEmpty()) {
+                            FirebaseAuth.getInstance().signInWithEmailAndPassword(email, password)
+                                .addOnCompleteListener { task ->
+                                    if (task.isSuccessful) {
+                                        val sharedPref = context.getSharedPreferences("StudyOSPrefs", Context.MODE_PRIVATE)
+                                        with(sharedPref.edit()) {
+                                            putBoolean("IS_REMEMBERED", rememberMe)
+                                            apply()
+                                        }
 
-                        if (email == savedEmail && password == savedPassword && email.isNotEmpty()) {
-                            with(sharedPref.edit()) {
-                                putBoolean("IS_REMEMBERED", rememberMe)
-                                apply()
-                            }
-
-                            try {
-                                context.openFileInput("user_data.txt").use { input ->
-                                    val reader = BufferedReader(InputStreamReader(input))
-                                    val sb = java.lang.StringBuilder()
-                                    var line: String?
-                                    while (reader.readLine().also { line = it } != null) {
-                                        sb.append(line)
+                                        Toast.makeText(context, "Login Successful!", Toast.LENGTH_SHORT).show()
+                                        val intent = Intent(context, DashboardActivity::class.java)
+                                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                        context.startActivity(intent)
+                                        activity?.finish()
+                                    } else {
+                                        Toast.makeText(context, "Login Failed: ${task.exception?.message}", Toast.LENGTH_LONG).show()
                                     }
                                 }
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
-
-                            Toast.makeText(context, "Login Successful!", Toast.LENGTH_SHORT).show()
-                            val intent = Intent(context, DashboardActivity::class.java)
-                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                            context.startActivity(intent)
-                            activity?.finish()
                         } else {
-                            Toast.makeText(context, "Invalid credentials", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Please enter email and password", Toast.LENGTH_SHORT).show()
                         }
                     },
                     modifier = Modifier

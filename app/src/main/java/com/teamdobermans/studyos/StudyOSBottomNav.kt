@@ -45,7 +45,7 @@ fun StudyOSBottomNav(currentRoute: NavRoute, context: Context) {
             selected = currentRoute == NavRoute.STUDY,
             onClick = {
                 if (currentRoute != NavRoute.STUDY) {
-                    context.startActivity(Intent(context, Flashcards::class.java))
+                    context.startActivity(Intent(context, NotesPage::class.java))
                 }
             },
             colors = navItemColors()

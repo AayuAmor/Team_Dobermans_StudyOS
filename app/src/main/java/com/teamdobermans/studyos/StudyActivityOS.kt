@@ -1,11 +1,13 @@
 package com.teamdobermans.studyos
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -163,6 +165,9 @@ fun StudyUI() {
                         .padding(vertical = 6.dp)
                         .clip(RoundedCornerShape(15.dp))
                         .background(Color.White.copy(alpha = 0.15f))
+                        .clickable {
+                            context.startActivity(Intent(context, NotesPage::class.java))
+                        }
                         .padding(15.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
