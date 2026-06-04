@@ -1,4 +1,4 @@
-package com.example.dobermans_team_studyos
+package com.teamdobermans.studyos
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
