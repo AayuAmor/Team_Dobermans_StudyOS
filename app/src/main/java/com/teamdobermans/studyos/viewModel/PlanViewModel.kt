@@ -6,12 +6,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.teamdobermans.studyos.model.Priority
+import com.teamdobermans.studyos.model.SubjectModel
 import com.teamdobermans.studyos.model.Task
 import com.teamdobermans.studyos.repo.TaskRepository
 import java.time.LocalDate
 
 class PlanViewModel : ViewModel() {
     private val repository = TaskRepository()
+
+    val dynamicSubjects = mutableStateListOf(
+        SubjectModel("sub_gen",     "General Study"),
+        SubjectModel("sub_cs_101",  "Computer Architecture"),
+        SubjectModel("sub_math_3",  "Linear Algebra"),
+        SubjectModel("sub_engcomp", "Advanced Technical Writing")
+    )
 
     val tasks = mutableStateListOf<Task>()
 

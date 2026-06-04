@@ -1,42 +1,19 @@
 package com.teamdobermans.studyos
 
-import android.app.Activity
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,14 +28,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 import com.teamdobermans.studyos.ui.theme.StudyPurple
-import com.teamdobermans.studyos.ui.theme.StudyPurpleDeep
 import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
+import com.teamdobermans.studyos.viewModel.ProfileViewModel
 
 class ProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent { ProfileBody() }
+        setContent { ProfileBody(viewModel = ProfileViewModel(), onBack = { finish() }) }
     }
 }
 
@@ -69,16 +46,22 @@ fun initials(name: String): String {
 }
 
 @Composable
-fun ProfileBody() {
+fun ProfileBody(
+    viewModel: ProfileViewModel = ProfileViewModel(),
+    onBack: () -> Unit = {}
+) {
+    val email      by viewModel.email.collectAsState()
+    val saveResult by viewModel.saveResult.collectAsState()
+    val context = LocalContext.current
 
-    val context  = LocalContext.current
-    val activity = context as? Activity
+    LaunchedEffect(saveResult) {
+        saveResult?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearResult()
+        }
+    }
 
-    val displayName  = "Ditya Adhikari"
-    val displayEmail = "dityaadhikari345@gmail.com"
-
-    var editName        by remember { mutableStateOf(displayName) }
-    var editEmail       by remember { mutableStateOf("") }
+    var editName        by remember { mutableStateOf("") }
     var newPassword     by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
@@ -87,7 +70,7 @@ fun ProfileBody() {
     Column(modifier = Modifier.fillMaxSize().background(StudyPurple)) {
 
         Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.25f), modifier = Modifier.clickable { activity?.finish() }) {
+            Surface(shape = RoundedCornerShape(20.dp), color = Color.White.copy(alpha = 0.25f), modifier = Modifier.clickable { onBack() }) {
                 Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(painter = painterResource(R.drawable.baseline_arrow_back_24), contentDescription = "Back", tint = Color.White, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(4.dp))
@@ -106,12 +89,12 @@ fun ProfileBody() {
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Column(modifier = Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(modifier = Modifier.size(72.dp).clip(CircleShape).background(Color(0xFFDDD8FF)), contentAlignment = Alignment.Center) {
-                        Text(initials(displayName), color = StudyPurple, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                        Text(if (email.isNotEmpty()) initials(email.substringBefore("@")) else "U", color = StudyPurple, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                     }
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(displayName, color = Color(0xFF1A1A2E), fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                    Text(email.substringBefore("@").ifEmpty { "User" }, color = Color(0xFF1A1A2E), fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text(displayEmail, color = Color.Gray, fontSize = 13.sp)
+                    Text(email, color = Color.Gray, fontSize = 13.sp)
                 }
             }
 
@@ -121,19 +104,18 @@ fun ProfileBody() {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Update preferences", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(12.dp))
-                    OutlinedTextField(value = editName, onValueChange = { editName = it }, modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp), singleLine = true,
-                        colors = TextFieldDefaults.colors(unfocusedContainerColor = Color(0xFFF0EEFF), focusedContainerColor = Color(0xFFF0EEFF), unfocusedIndicatorColor = Color.Transparent, focusedIndicatorColor = StudyPurple))
-                    Spacer(modifier = Modifier.height(10.dp))
-                    OutlinedTextField(value = editEmail, onValueChange = { editEmail = it }, modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp), singleLine = true,
-                        placeholder = { Text("Email", color = Color.Gray) },
-                        colors = TextFieldDefaults.colors(unfocusedContainerColor = Color(0xFFF0EEFF), focusedContainerColor = Color(0xFFF0EEFF), unfocusedIndicatorColor = Color.Transparent, focusedIndicatorColor = StudyPurple))
+                    OutlinedTextField(
+                        value = editName, onValueChange = { editName = it }, modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp), singleLine = true, placeholder = { Text("Display name", color = Color.Gray) },
+                        colors = TextFieldDefaults.colors(unfocusedContainerColor = Color(0xFFF0EEFF), focusedContainerColor = Color(0xFFF0EEFF), unfocusedIndicatorColor = Color.Transparent, focusedIndicatorColor = StudyPurple)
+                    )
                     Spacer(modifier = Modifier.height(14.dp))
-                    Button(onClick = { /* TODO: save changes */ }, modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)) {
-                        Text("Save Changes", color = Color.White, fontWeight = FontWeight.SemiBold)
-                    }
+                    Button(
+                        onClick  = { if (editName.isNotBlank()) viewModel.updateDisplayName(editName) },
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape    = RoundedCornerShape(12.dp),
+                        colors   = ButtonDefaults.buttonColors(containerColor = StudyPurple)
+                    ) { Text("Save Changes", color = Color.White, fontWeight = FontWeight.SemiBold) }
                 }
             }
 
@@ -141,78 +123,46 @@ fun ProfileBody() {
 
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Column(modifier = Modifier.padding(16.dp)) {
-
                     Text("Password reset", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-
                     Spacer(modifier = Modifier.height(12.dp))
-
                     OutlinedTextField(
-                        value = newPassword,
-                        onValueChange = { newPassword = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        singleLine = true,
+                        value = newPassword, onValueChange = { newPassword = it }, modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp), singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         placeholder = { Text("New password", color = Color.Gray) },
-                        colors = TextFieldDefaults.colors(
-                            unfocusedContainerColor = Color(0xFFF0EEFF),
-                            focusedContainerColor   = Color(0xFFF0EEFF),
-                            unfocusedIndicatorColor = Color.Transparent,
-                            focusedIndicatorColor   = StudyPurple,
-                        )
+                        colors = TextFieldDefaults.colors(unfocusedContainerColor = Color(0xFFF0EEFF), focusedContainerColor = Color(0xFFF0EEFF), unfocusedIndicatorColor = Color.Transparent, focusedIndicatorColor = StudyPurple)
                     )
-
                     Spacer(modifier = Modifier.height(10.dp))
-
                     OutlinedTextField(
-                        value = confirmPassword,
-                        onValueChange = { confirmPassword = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        singleLine = true,
+                        value = confirmPassword, onValueChange = { confirmPassword = it }, modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp), singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         isError = confirmPassword.isNotEmpty() && !passwordsMatch,
                         placeholder = { Text("Confirm password", color = Color.Gray) },
-                        colors = TextFieldDefaults.colors(
-                            unfocusedContainerColor = Color(0xFFF0EEFF),
-                            focusedContainerColor   = Color(0xFFF0EEFF),
-                            unfocusedIndicatorColor = Color.Transparent,
-                            focusedIndicatorColor   = StudyPurple,
-                        )
+                        colors = TextFieldDefaults.colors(unfocusedContainerColor = Color(0xFFF0EEFF), focusedContainerColor = Color(0xFFF0EEFF), unfocusedIndicatorColor = Color.Transparent, focusedIndicatorColor = StudyPurple)
                     )
-
                     if (confirmPassword.isNotEmpty() && !passwordsMatch) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text("Passwords do not match", color = Color(0xFFE53935), fontSize = 11.sp)
                     }
-
                     Spacer(modifier = Modifier.height(14.dp))
-
                     Button(
-                        onClick = { /* TODO: update password */ },
-                        enabled = passwordsMatch,
+                        onClick  = { if (passwordsMatch) viewModel.updatePassword(newPassword) },
+                        enabled  = passwordsMatch,
                         modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)
-                    ) {
-                        Text("Update password", color = Color.White, fontWeight = FontWeight.SemiBold)
-                    }
+                        shape    = RoundedCornerShape(12.dp),
+                        colors   = ButtonDefaults.buttonColors(containerColor = StudyPurple)
+                    ) { Text("Update password", color = Color.White, fontWeight = FontWeight.SemiBold) }
                 }
             }
 
             Spacer(modifier = Modifier.height(80.dp))
         }
     }
-
-//    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-//        StudyBottomNav(selected = 0)
-//    }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun ProfilePreview() {
-    StudyOSTheme {
-        ProfileBody()
-    }
+    StudyOSTheme { ProfileBody(viewModel = ProfileViewModel(), onBack = {}) }
 }

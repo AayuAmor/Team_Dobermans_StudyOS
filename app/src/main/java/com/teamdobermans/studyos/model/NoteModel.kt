@@ -1,11 +1,10 @@
 package com.teamdobermans.studyos.model
 
 data class NoteModel(
-
-    var id : String = "",
-
-    var title : String = "",
-
-    var description : String = ""
-
+    val id: String = "",
+    val title: String = "",
+    val body: String = "",
+    val folder: String = "Science",
+    val timestamp: Long = 0L,
+    val userId: String = ""
 )

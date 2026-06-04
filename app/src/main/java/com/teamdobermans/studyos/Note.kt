@@ -30,9 +30,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.firebase.auth.FirebaseAuth
-import com.teamdobermans.studyos.Model.NoteModel
+import com.teamdobermans.studyos.model.NoteModel
 import com.teamdobermans.studyos.ui.theme.BrandPurple
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 import com.teamdobermans.studyos.viewModel.NoteViewModel
@@ -57,44 +55,29 @@ class NotesPage : ComponentActivity() {
 @Composable
 fun NotesScreen(
     modifier: Modifier = Modifier,
+    viewModel: NoteViewModel? = null,
     onBackClick: () -> Unit = {}
 ) {
-    val viewModel: NoteViewModel = viewModel()
-    val allNotes by viewModel.notes.collectAsState()
-    val saveResult by viewModel.saveResult.collectAsState()
+    val resolvedVm: NoteViewModel = viewModel ?: androidx.lifecycle.viewmodel.compose.viewModel()
+    val allNotes    by resolvedVm.notes.collectAsState()
+    val saveResult  by resolvedVm.saveResult.collectAsState()
     val context = LocalContext.current
-
-    var currentUser by remember { mutableStateOf(FirebaseAuth.getInstance().currentUser) }
-
-    DisposableEffect(Unit) {
-        val auth = FirebaseAuth.getInstance()
-        val listener = FirebaseAuth.AuthStateListener { currentUser = it.currentUser }
-        auth.addAuthStateListener(listener)
-        onDispose { auth.removeAuthStateListener(listener) }
-    }
-
-    if (currentUser == null) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = BrandPurple)
-        }
-        return
-    }
 
     LaunchedEffect(saveResult) {
         saveResult?.let { result ->
-            val message = if (result == "SUCCESS") "✓ Note saved!" else "✗ $result"
+            val message = if (result == "SUCCESS") "Note saved!" else "$result"
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-            viewModel.clearSaveResult()
+            resolvedVm.clearSaveResult()
         }
     }
 
     NotesScreenContent(
-        modifier = modifier,
-        allNotes = allNotes,
-        onBackClick = onBackClick,
-        onCreateNote = { title, body, folder -> viewModel.createNote(title, body, folder) },
-        onUpdateNote = { note -> viewModel.updateNote(note) },
-        onDeleteNote = { id -> viewModel.deleteNote(id) }
+        modifier     = modifier,
+        allNotes     = allNotes,
+        onBackClick  = onBackClick,
+        onCreateNote = { title, body, folder -> resolvedVm.createNote(title, body, folder) },
+        onUpdateNote = { note -> resolvedVm.updateNote(note) },
+        onDeleteNote = { id -> resolvedVm.deleteNote(id) }
     )
 }
 
@@ -111,19 +94,16 @@ fun NotesScreenContent(
     var extraFolders by rememberSaveable { mutableStateOf(listOf<String>()) }
     val folders = defaultFolders + extraFolders
 
-    var activeFolder by rememberSaveable { mutableStateOf("Science") }
-    var searchQuery by rememberSaveable { mutableStateOf("") }
-    var selectedNote by remember { mutableStateOf<NoteModel?>(null) }
-    var showEditor by rememberSaveable { mutableStateOf(false) }
+    var activeFolder       by rememberSaveable { mutableStateOf("Science") }
+    var searchQuery        by rememberSaveable { mutableStateOf("") }
+    var selectedNote       by remember { mutableStateOf<NoteModel?>(null) }
+    var showEditor         by rememberSaveable { mutableStateOf(false) }
     var showNewFolderDialog by rememberSaveable { mutableStateOf(false) }
-    var newFolderName by rememberSaveable { mutableStateOf("") }
+    var newFolderName      by rememberSaveable { mutableStateOf("") }
 
     if (showNewFolderDialog) {
         AlertDialog(
-            onDismissRequest = {
-                showNewFolderDialog = false
-                newFolderName = ""
-            },
+            onDismissRequest = { showNewFolderDialog = false; newFolderName = "" },
             title = { Text("New Folder", fontWeight = FontWeight.Bold) },
             text = {
                 OutlinedTextField(
@@ -135,8 +115,8 @@ fun NotesScreenContent(
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = BrandPurple,
-                        focusedLabelColor = BrandPurple,
-                        cursorColor = BrandPurple
+                        focusedLabelColor  = BrandPurple,
+                        cursorColor        = BrandPurple
                     )
                 )
             },
@@ -153,23 +133,18 @@ fun NotesScreenContent(
                     },
                     enabled = newFolderName.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(containerColor = BrandPurple)
-                ) {
-                    Text("Create", color = Color.White)
-                }
+                ) { Text("Create", color = Color.White) }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    showNewFolderDialog = false
-                    newFolderName = ""
-                }) { Text("Cancel") }
+                TextButton(onClick = { showNewFolderDialog = false; newFolderName = "" }) { Text("Cancel") }
             }
         )
     }
 
     if (showEditor) {
         CreateEditNoteScreen(
-            existingNote = selectedNote,
-            folders = folders,
+            existingNote  = selectedNote,
+            folders       = folders,
             defaultFolder = activeFolder,
             onSave = { title, body, folder ->
                 if (selectedNote != null) {
@@ -201,61 +176,39 @@ fun NotesScreenContent(
         }
 
         Scaffold(
-            modifier = modifier.fillMaxSize(),
+            modifier       = modifier.fillMaxSize(),
             containerColor = BackgroundGray,
-            bottomBar = {
-                StudyOSBottomNav(
-                    currentRoute = NavRoute.STUDY,
-                    context = LocalContext.current
-                )
-            },
             floatingActionButton = {
                 FloatingActionButton(
-                    onClick = {
-                        selectedNote = null
-                        showEditor = true
-                    },
-                    modifier = Modifier.padding(bottom = 16.dp),
+                    onClick        = { selectedNote = null; showEditor = true },
+                    modifier       = Modifier.padding(bottom = 16.dp),
                     containerColor = BrandPurple,
-                    shape = CircleShape
+                    shape          = CircleShape
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Add Note",
-                        tint = Color.White
-                    )
+                    Icon(imageVector = Icons.Default.Add, contentDescription = "Add Note", tint = Color.White)
                 }
             }
         ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
+            Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
                 NotesHeader(
-                    searchQuery = searchQuery,
+                    searchQuery    = searchQuery,
                     onSearchChange = { searchQuery = it },
-                    onBackClick = onBackClick,
-                    onAddClick = { showNewFolderDialog = true }
+                    onBackClick    = onBackClick,
+                    onAddClick     = { showNewFolderDialog = true }
                 )
 
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = 16.dp,
-                        bottom = 16.dp
-                    ),
+                    modifier       = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     if (searchQuery.isEmpty()) {
                         item {
                             FoldersSection(
-                                folders = folders,
+                                folders      = folders,
                                 activeFolder = activeFolder,
                                 onFolderClick = { activeFolder = it },
-                                onNewFolder = { showNewFolderDialog = true }
+                                onNewFolder   = { showNewFolderDialog = true }
                             )
                         }
                     } else {
@@ -271,11 +224,8 @@ fun NotesScreenContent(
 
                     items(visibleNotes, key = { it.id }) { note ->
                         NoteCard(
-                            note = note,
-                            onClick = {
-                                selectedNote = note
-                                showEditor = true
-                            },
+                            note    = note,
+                            onClick = { selectedNote = note; showEditor = true },
                             onClose = { onDeleteNote(note.id) }
                         )
                     }
@@ -283,9 +233,7 @@ fun NotesScreenContent(
                     if (visibleNotes.isEmpty()) {
                         item {
                             Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 48.dp),
+                                modifier = Modifier.fillMaxWidth().padding(top = 48.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -334,7 +282,7 @@ fun CreateEditNoteScreen(
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text("Delete Note") },
-            text = { Text("Are you sure you want to delete this note?") },
+            text  = { Text("Are you sure you want to delete this note?") },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteDialog = false
@@ -347,11 +295,7 @@ fun CreateEditNoteScreen(
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(BackgroundGray)
-    ) {
+    Column(modifier = Modifier.fillMaxSize().background(BackgroundGray)) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -391,17 +335,13 @@ fun CreateEditNoteScreen(
         }
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxSize().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text("Folder", color = BrandPurple, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
 
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 folders.forEach { f ->
@@ -420,8 +360,8 @@ fun CreateEditNoteScreen(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = BrandPurple,
-                    focusedLabelColor = BrandPurple,
-                    cursorColor = BrandPurple
+                    focusedLabelColor  = BrandPurple,
+                    cursorColor        = BrandPurple
                 )
             )
 
@@ -430,26 +370,22 @@ fun CreateEditNoteScreen(
                 onValueChange = { body = it },
                 label = { Text("Content") },
                 placeholder = { Text("Write your note here...") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
+                modifier = Modifier.fillMaxWidth().weight(1f),
                 maxLines = Int.MAX_VALUE,
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = BrandPurple,
-                    focusedLabelColor = BrandPurple,
-                    cursorColor = BrandPurple
+                    focusedLabelColor  = BrandPurple,
+                    cursorColor        = BrandPurple
                 )
             )
 
             Button(
-                onClick = { onSave(title.trim(), body.trim(), folder) },
-                enabled = title.isNotBlank(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = BrandPurple,
+                onClick  = { onSave(title.trim(), body.trim(), folder) },
+                enabled  = title.isNotBlank(),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                colors   = ButtonDefaults.buttonColors(
+                    containerColor         = BrandPurple,
                     disabledContainerColor = Color.Gray
                 ),
                 shape = RoundedCornerShape(12.dp)
@@ -464,12 +400,10 @@ fun CreateEditNoteScreen(
 
             if (isEditing && onDelete != null) {
                 Button(
-                    onClick = { showDeleteDialog = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE53935)),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                    shape = RoundedCornerShape(12.dp)
+                    onClick  = { showDeleteDialog = true },
+                    colors   = ButtonDefaults.buttonColors(containerColor = Color(0xFFE53935)),
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    shape    = RoundedCornerShape(12.dp)
                 ) {
                     Text("Delete Note", color = Color.White, fontWeight = FontWeight.SemiBold)
                 }
@@ -534,13 +468,8 @@ fun NotesHeader(
         TextField(
             value = searchQuery,
             onValueChange = onSearchChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp)
-                .clip(RoundedCornerShape(26.dp)),
-            placeholder = {
-                Text("Search notes...", color = Color(0xFF9988CC), fontSize = 14.sp)
-            },
+            modifier = Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(26.dp)),
+            placeholder = { Text("Search notes...", color = Color(0xFF9988CC), fontSize = 14.sp) },
             leadingIcon = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_search),
@@ -552,13 +481,13 @@ fun NotesHeader(
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.White.copy(alpha = 0.15f),
+                focusedContainerColor   = Color.White.copy(alpha = 0.15f),
                 unfocusedContainerColor = Color.White.copy(alpha = 0.15f),
-                focusedIndicatorColor = Color.Transparent,
+                focusedIndicatorColor   = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
-                cursorColor = Color.White,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White
+                cursorColor             = Color.White,
+                focusedTextColor        = Color.White,
+                unfocusedTextColor      = Color.White
             )
         )
     }
@@ -580,17 +509,11 @@ fun FoldersSection(
             modifier = Modifier.padding(bottom = 12.dp)
         )
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             folders.forEach { folder ->
-                FolderChip(
-                    label = folder,
-                    isActive = folder == activeFolder,
-                    onClick = { onFolderClick(folder) }
-                )
+                FolderChip(label = folder, isActive = folder == activeFolder, onClick = { onFolderClick(folder) })
             }
             FolderChip(label = "+ New Folder", isActive = false, onClick = onNewFolder)
         }
@@ -619,11 +542,9 @@ fun FolderChip(label: String, isActive: Boolean, onClick: () -> Unit) {
 @Composable
 fun NoteCard(note: NoteModel, onClick: () -> Unit, onClose: () -> Unit) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        shape    = RoundedCornerShape(16.dp),
+        colors   = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
@@ -643,26 +564,13 @@ fun NoteCard(note: NoteModel, onClick: () -> Unit, onClose: () -> Unit) {
                     painter = painterResource(id = R.drawable.ic_clear),
                     contentDescription = "Delete",
                     tint = Color.LightGray,
-                    modifier = Modifier
-                        .size(20.dp)
-                        .clickable { onClose() }
+                    modifier = Modifier.size(20.dp).clickable { onClose() }
                 )
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = note.body,
-                color = Color.DarkGray,
-                fontSize = 15.sp,
-                lineHeight = 22.sp,
-                maxLines = 3
-            )
+            Text(text = note.body, color = Color.DarkGray, fontSize = 15.sp, lineHeight = 22.sp, maxLines = 3)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = note.folder,
-                color = BrandPurple.copy(alpha = 0.6f),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium
-            )
+            Text(text = note.folder, color = BrandPurple.copy(alpha = 0.6f), fontSize = 12.sp, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -676,7 +584,7 @@ fun NotesScreenPreview() {
                 NoteModel(id = "1", title = "Periodic Table", body = "Elements are organized by atomic number.", folder = "Science"),
                 NoteModel(id = "2", title = "Computer", body = "A computer is an electronic device.", folder = "Computer")
             ),
-            onBackClick = {},
+            onBackClick  = {},
             onCreateNote = { _, _, _ -> },
             onUpdateNote = {},
             onDeleteNote = {}

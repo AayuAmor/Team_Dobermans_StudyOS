@@ -23,113 +23,23 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".NotesPage"
-            android:exported="true"
-            android:label="My Notes"
-            android:theme="@style/Theme.StudyOS" />
-
-        <activity
-            android:name=".BrainGameScreen"
-            android:exported="true"
-            android:label="Brain Game"
-            android:theme="@style/Theme.StudyOS" />
-
-        <activity
-            android:name=".BrainGameActivity"
-            android:exported="true"
-            android:label="Brain Game Pro"
-            android:theme="@style/Theme.StudyOS" />
-
-        <activity
-            android:name=".StudyActivity"
-            android:exported="true"
-            android:label="Study"
-            android:theme="@style/Theme.StudyOS" />
-
-        <activity
-            android:name=".SettingsActivity"
-            android:exported="true"
-            android:label="Settings"
-            android:theme="@style/Theme.StudyOS" />
-
-        <activity
-            android:name=".PlanActivity"
-            android:exported="true"
-            android:label="Study Plan"
-            android:theme="@style/Theme.StudyOS" />
-
-        <activity
-            android:name=".SignUpActivity"
-            android:exported="true"
-            android:label="Sign Up"
-            android:theme="@style/Theme.StudyOS" />
-
-        <activity
-            android:name=".DashboardActivity"
-            android:exported="true"
-            android:label="Dashboard"
-            android:theme="@style/Theme.StudyOS" />
-
-        <activity
-            android:name=".PomodoroActivity"
-            android:exported="true"
-            android:label="Pomodoro"
-            android:theme="@style/Theme.StudyOS" />
-
-        <activity
-            android:name=".LoginActivity"
-            android:exported="true"
-            android:label="Login"
-            android:theme="@style/Theme.StudyOS" />
-
-        <activity
-            android:name=".ProfileActivity"
-            android:exported="true"
-            android:label="Profile"
-            android:theme="@style/Theme.StudyOS" />
-
-        <activity
-            android:name=".ProgressActivity"
-            android:exported="true"
-            android:label="Progress"
-            android:theme="@style/Theme.StudyOS" />
-
-        <activity
-            android:name=".VisionBoardActivity"
-            android:exported="true"
-            android:label="Vision Board"
-            android:theme="@style/Theme.StudyOS" />
-
-        <activity
-            android:name=".WelcomePage"
-            android:exported="true"
-            android:label="Welcome"
-            android:theme="@style/Theme.StudyOS" />
-
-        <activity
-            android:name=".MockTestActivity"
-            android:exported="true"
-            android:label="Mock Test"
-            android:theme="@style/Theme.StudyOS" />
-
-        <activity
-            android:name=".Flashcards"
-            android:exported="true"
-            android:label="Flashcards"
-            android:theme="@style/Theme.StudyOS" />
-
-        <activity
-            android:name=".QuizScreen"
-            android:exported="true"
-            android:label="Quiz"
-            android:theme="@style/Theme.StudyOS" />
-
-        <activity
-            android:name=".VideotoNotes"
-            android:exported="true"
-            android:label="Video to Notes"
-            android:theme="@style/Theme.StudyOS" />
+        <activity android:name=".NotesPage"              android:exported="false" android:theme="@style/Theme.StudyOS" />
+        <activity android:name=".BrainGameActivityShell" android:exported="false" android:theme="@style/Theme.StudyOS" />
+        <activity android:name=".BrainGameActivity"      android:exported="false" android:theme="@style/Theme.StudyOS" />
+        <activity android:name=".StudyActivity"          android:exported="false" android:theme="@style/Theme.StudyOS" />
+        <activity android:name=".SettingsActivity"       android:exported="false" android:theme="@style/Theme.StudyOS" />
+        <activity android:name=".PlanActivity"           android:exported="false" android:theme="@style/Theme.StudyOS" />
+        <activity android:name=".SignUpActivity"         android:exported="false" android:theme="@style/Theme.StudyOS" />
+        <activity android:name=".DashboardActivity"      android:exported="false" android:theme="@style/Theme.StudyOS" />
+        <activity android:name=".PomodoroActivity"       android:exported="false" android:theme="@style/Theme.StudyOS" />
+        <activity android:name=".LoginActivity"          android:exported="false" android:theme="@style/Theme.StudyOS" />
+        <activity android:name=".ProfileActivity"        android:exported="false" android:theme="@style/Theme.StudyOS" />
+        <activity android:name=".ProgressActivity"       android:exported="false" android:theme="@style/Theme.StudyOS" />
+        <activity android:name=".VisionBoardActivity"    android:exported="false" android:theme="@style/Theme.StudyOS" />
+        <activity android:name=".MockTestActivity"       android:exported="false" android:theme="@style/Theme.StudyOS" />
+        <activity android:name=".Flashcards"             android:exported="false" android:theme="@style/Theme.StudyOS" />
+        <activity android:name=".QuizScreen"             android:exported="false" android:theme="@style/Theme.StudyOS" />
+        <activity android:name=".VideotoNotes"           android:exported="false" android:theme="@style/Theme.StudyOS" />
 
     </application>
 

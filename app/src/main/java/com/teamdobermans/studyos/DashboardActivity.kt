@@ -1,13 +1,11 @@
 package com.teamdobermans.studyos
 
-import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -30,6 +28,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
+import com.teamdobermans.studyos.viewModel.DashboardViewModel
 
 class DashboardActivity : ComponentActivity() {
 
@@ -45,329 +45,271 @@ class DashboardActivity : ComponentActivity() {
 }
 
 @Composable
-fun DashboardBody(viewModel: DashboardViewModel) {
+fun DashboardBody(
+    viewModel: DashboardViewModel,
+    onNavigatePomodoro: () -> Unit = {},
+    onNavigateVisionBoard: () -> Unit = {},
+    onNavigateProfile: () -> Unit = {}
+) {
     val context = LocalContext.current
-    val auth = FirebaseAuth.getInstance()
-    val user = auth.currentUser
-
-    if (user == null) {
-        LaunchedEffect(Unit) {
-            val intent = Intent(context, MainActivity::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            context.startActivity(intent)
-        }
-    }
-
+    val user = FirebaseAuth.getInstance().currentUser
     val userName = user?.displayName ?: user?.email?.substringBefore("@") ?: "User"
 
-    val progress by viewModel.progress.collectAsState()
+    val progress     by viewModel.progress.collectAsState()
     val timerRunning by viewModel.timerRunning.collectAsState()
-    val timeLeft by viewModel.timeLeft.collectAsState()
+    val timeLeft     by viewModel.timeLeft.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.onSessionComplete = {
-            Toast.makeText(context, "Session complete! 🎉", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "Session complete!", Toast.LENGTH_LONG).show()
         }
     }
 
-    val minutes = timeLeft / 60
-    val seconds = timeLeft % 60
+    val minutes  = timeLeft / 60
+    val seconds  = timeLeft % 60
     val timeText = "%02d:%02d".format(minutes, seconds)
 
-    Scaffold(
-        bottomBar = { StudyOSBottomNav(currentRoute = NavRoute.HOME, context = context) }
-    ) { innerPadding ->
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF4F3FF))
+            .verticalScroll(rememberScrollState())
+    ) {
 
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFFF4F3FF))
-                .verticalScroll(rememberScrollState())
-                .padding(bottom = innerPadding.calculateBottomPadding())
+                .fillMaxWidth()
+                .background(Color(0xFF6B63D5))
+                .padding(20.dp)
         ) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Good Morning",
+                        style = TextStyle(fontSize = 11.sp, color = Color.White.copy(alpha = 0.8f))
+                    )
+                    Text(
+                        text = "$userName",
+                        style = TextStyle(fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    )
+                }
+                Image(
+                    painter = painterResource(id = R.drawable.baseline_person_24),
+                    contentDescription = "Profile",
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.25f))
+                        .clickable { onNavigateProfile() }
+                )
+            }
 
-            Column(
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF6B63D5))
-                    .padding(20.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color.White.copy(alpha = 0.18f))
+                    .clickable {
+                        Toast.makeText(context, "15 day streak! Keep going", Toast.LENGTH_SHORT).show()
+                    }
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "Study Streak", style = TextStyle(fontSize = 13.sp, color = Color.White))
+                }
+                Text(
+                    text = "15 days",
+                    style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                )
+            }
+        }
+
+        Text(
+            text = "Today's Progress",
+            style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1A1A2E)),
+            modifier = Modifier.padding(start = 14.dp, top = 14.dp, bottom = 8.dp)
+        )
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
-                        Text(
-                            text = "Good Morning",
-                            style = TextStyle(
-                                fontSize = 11.sp,
-                                color = Color.White.copy(alpha = 0.8f)
-                            )
-                        )
-                        Text(
-                            text = "$userName 👋",
-                            style = TextStyle(
-                                fontSize = 17.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        )
-                    }
-                    Image(
-                        painter = painterResource(id = R.drawable.baseline_person_24),
-                        contentDescription = "Profile",
-                        modifier = Modifier
-                            .size(34.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.25f))
-                            .clickable {
-                                context.startActivity(Intent(context, ProfileActivity::class.java))
-                            }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(Color.White.copy(alpha = 0.18f))
-                        .clickable {
-                            Toast.makeText(context, "15 day streak! Keep going 🔥", Toast.LENGTH_SHORT).show()
-                        }
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = "🔥", fontSize = 16.sp)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Study Streak",
-                            style = TextStyle(fontSize = 13.sp, color = Color.White)
-                        )
-                    }
                     Text(
-                        text = "15 days",
-                        style = TextStyle(
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
+                        text = "Software Development",
+                        style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1A1A2E))
+                    )
+                    Text(
+                        text = "${progress.toInt()}%",
+                        style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF6B63D5))
                     )
                 }
-            }
-
-            Text(
-                text = "Today's Progress",
-                style = TextStyle(
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF1A1A2E)
-                ),
-                modifier = Modifier.padding(start = 14.dp, top = 14.dp, bottom = 8.dp)
-            )
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Software Development",
-                            style = TextStyle(
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF1A1A2E)
-                            )
-                        )
-                        Text(
-                            text = "${progress.toInt()}%",
-                            style = TextStyle(
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF6B63D5)
-                            )
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LinearProgressIndicator(
-                        progress = { progress / 100f },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(8.dp)
-                            .clip(RoundedCornerShape(8.dp)),
-                        color = Color(0xFF6B63D5),
-                        trackColor = Color(0xFFEEEEEE)
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                }
-            }
-
-            Text(
-                text = "Pomodoro Timer",
-                style = TextStyle(
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF1A1A2E)
-                ),
-                modifier = Modifier.padding(start = 14.dp, top = 14.dp, bottom = 8.dp)
-            )
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF6B63D5))
-            ) {
-                Row(
+                Spacer(modifier = Modifier.height(8.dp))
+                LinearProgressIndicator(
+                    progress = { progress / 100f },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = if (timerRunning) "Running..." else "Focus Session",
-                            style = TextStyle(
-                                fontSize = 11.sp,
-                                color = Color.White.copy(alpha = 0.7f)
-                            )
-                        )
-                        Text(
-                            text = timeText,
-                            style = TextStyle(
-                                fontSize = 26.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                letterSpacing = 1.sp
-                            )
-                        )
-                    }
-                    Image(
-                        painter = painterResource(
-                            id = if (timerRunning) R.drawable.baseline_pause_24 else R.drawable.baseline_play_arrow_24
-                        ),
-                        contentDescription = "Play/Pause",
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .background(Color.White)
-                            .padding(8.dp)
-                            .clickable {
-                                viewModel.toggleTimer()
-                            }
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    color = Color(0xFF6B63D5),
+                    trackColor = Color(0xFFEEEEEE)
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+        }
+
+        Text(
+            text = "Pomodoro Timer",
+            style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1A1A2E)),
+            modifier = Modifier.padding(start = 14.dp, top = 14.dp, bottom = 8.dp)
+        )
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp)
+                .clickable { onNavigatePomodoro() },
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF6B63D5))
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = if (timerRunning) "Running..." else "Focus Session",
+                        style = TextStyle(fontSize = 11.sp, color = Color.White.copy(alpha = 0.7f))
+                    )
+                    Text(
+                        text = timeText,
+                        style = TextStyle(fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White, letterSpacing = 1.sp)
                     )
                 }
-            }
-
-            Text(
-                text = "Study Tools",
-                style = TextStyle(
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF1A1A2E)
-                ),
-                modifier = Modifier.padding(start = 14.dp, top = 14.dp, bottom = 8.dp)
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                ToolCard(
-                    modifier = Modifier.weight(1f),
-                    iconRes = R.drawable.baseline_credit_card_24,
-                    iconBg = Color(0xFFFFF0E0),
-                    iconTint = Color(0xFFE07B39),
-                    name = "Flash Cards",
-                    subtitle = "8 sets",
-                    onClick = { context.startActivity(Intent(context, Flashcards::class.java)) }
-                )
-                ToolCard(
-                    modifier = Modifier.weight(1f),
-                    iconRes = R.drawable.baseline_quiz_24,
-                    iconBg = Color(0xFFF0E8FF),
-                    iconTint = Color(0xFF7B4FE0),
-                    name = "Quiz Mode",
-                    subtitle = "13 questions",
-                    onClick = { context.startActivity(Intent(context, QuizScreen::class.java)) }
+                Image(
+                    painter = painterResource(
+                        id = if (timerRunning) R.drawable.baseline_pause_24 else R.drawable.baseline_play_arrow_24
+                    ),
+                    contentDescription = "Play/Pause",
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(Color.White)
+                        .padding(8.dp)
+                        .clickable { viewModel.toggleTimer() }
                 )
             }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                ToolCard(
-                    modifier = Modifier.weight(1f),
-                    iconRes = R.drawable.baseline_sports_esports_24,
-                    iconBg = Color(0xFFFFE8EE),
-                    iconTint = Color(0xFFE04F7B),
-                    name = "Brain Game",
-                    subtitle = "6 min break",
-                    onClick = { context.startActivity(Intent(context, BrainGameScreen::class.java)) }
-                )
-                ToolCard(
-                    modifier = Modifier.weight(1f),
-                    iconRes = R.drawable.baseline_video_library_24,
-                    iconBg = Color(0xFFE8F4FF),
-                    iconTint = Color(0xFF3A82E0),
-                    name = "Videos to Notes",
-                    subtitle = "Convert into notes",
-                    onClick = { context.startActivity(Intent(context, VideotoNotes::class.java)) }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                ToolCard(
-                    modifier = Modifier.weight(1f),
-                    iconRes = R.drawable.baseline_assignment_24,
-                    iconBg = Color(0xFFE8FFF4),
-                    iconTint = Color(0xFF1D9E75),
-                    name = "Mock Test",
-                    subtitle = "10 min",
-                    onClick = { context.startActivity(Intent(context, MockTestActivity::class.java)) }
-                )
-                ToolCard(
-                    modifier = Modifier.weight(1f),
-                    iconRes = R.drawable.baseline_bar_chart_24,
-                    iconBg = Color(0xFFE8EAFF),
-                    iconTint = Color(0xFF4B5BE0),
-                    name = "Vision Board",
-                    subtitle = "Your goals",
-                    onClick = { context.startActivity(Intent(context, VisionBoardActivity::class.java)) }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
+
+        Text(
+            text = "Study Tools",
+            style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1A1A2E)),
+            modifier = Modifier.padding(start = 14.dp, top = 14.dp, bottom = 8.dp)
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            ToolCard(
+                modifier = Modifier.weight(1f),
+                iconRes = R.drawable.baseline_credit_card_24,
+                iconBg = Color(0xFFFFF0E0),
+                iconTint = Color(0xFFE07B39),
+                name = "Flash Cards",
+                subtitle = "8 sets",
+                onClick = {}
+            )
+            ToolCard(
+                modifier = Modifier.weight(1f),
+                iconRes = R.drawable.baseline_quiz_24,
+                iconBg = Color(0xFFF0E8FF),
+                iconTint = Color(0xFF7B4FE0),
+                name = "Quiz Mode",
+                subtitle = "13 questions",
+                onClick = {}
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            ToolCard(
+                modifier = Modifier.weight(1f),
+                iconRes = R.drawable.baseline_sports_esports_24,
+                iconBg = Color(0xFFFFE8EE),
+                iconTint = Color(0xFFE04F7B),
+                name = "Brain Game",
+                subtitle = "6 min break",
+                onClick = {}
+            )
+            ToolCard(
+                modifier = Modifier.weight(1f),
+                iconRes = R.drawable.baseline_video_library_24,
+                iconBg = Color(0xFFE8F4FF),
+                iconTint = Color(0xFF3A82E0),
+                name = "Videos to Notes",
+                subtitle = "Convert into notes",
+                onClick = {}
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            ToolCard(
+                modifier = Modifier.weight(1f),
+                iconRes = R.drawable.baseline_assignment_24,
+                iconBg = Color(0xFFE8FFF4),
+                iconTint = Color(0xFF1D9E75),
+                name = "Mock Test",
+                subtitle = "10 min",
+                onClick = {}
+            )
+            ToolCard(
+                modifier = Modifier.weight(1f),
+                iconRes = R.drawable.baseline_bar_chart_24,
+                iconBg = Color(0xFFE8EAFF),
+                iconTint = Color(0xFF4B5BE0),
+                name = "Vision Board",
+                subtitle = "Your goals",
+                onClick = { onNavigateVisionBoard() }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -404,21 +346,8 @@ fun ToolCard(
                     colorFilter = ColorFilter.tint(iconTint)
                 )
             }
-            Text(
-                text = name,
-                style = TextStyle(
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF1A1A2E)
-                )
-            )
-            Text(
-                text = subtitle,
-                style = TextStyle(
-                    fontSize = 10.sp,
-                    color = Color.Gray
-                )
-            )
+            Text(text = name, style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1A1A2E)))
+            Text(text = subtitle, style = TextStyle(fontSize = 10.sp, color = Color.Gray))
         }
     }
 }
@@ -426,5 +355,10 @@ fun ToolCard(
 @Preview
 @Composable
 fun DashboardPreview() {
-    DashboardBody(viewModel = DashboardViewModel())
+    DashboardBody(
+        viewModel             = DashboardViewModel(),
+        onNavigatePomodoro    = {},
+        onNavigateVisionBoard = {},
+        onNavigateProfile     = {}
+    )
 }

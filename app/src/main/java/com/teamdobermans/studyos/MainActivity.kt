@@ -1,10 +1,9 @@
 package com.teamdobermans.studyos
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.google.firebase.auth.FirebaseAuth
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -15,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -25,28 +23,22 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
+import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        // Check if user is already logged in
-        if (FirebaseAuth.getInstance().currentUser != null) {
-            startActivity(Intent(this, DashboardActivity::class.java))
-            finish()
-            return
+        enableEdgeToEdge()
+        val startDestination = if (FirebaseAuth.getInstance().currentUser != null) {
+            AppRoutes.Dashboard.route
+        } else {
+            AppRoutes.Auth.route
         }
-
         setContent {
-            val context = LocalContext.current
-            AuthScreen(
-                onSignUpClick = { 
-                    context.startActivity(Intent(context, SignUpActivity::class.java))
-                },
-                onSignInClick = { 
-                    context.startActivity(Intent(context, LoginActivity::class.java))
-                }
-            )
+            StudyOSTheme {
+                StudyOSNavGraph(startDestination = startDestination)
+            }
         }
     }
 }
@@ -68,10 +60,8 @@ fun AuthScreen(
                 .padding(horizontal = 40.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            // ── Logo Card ──────────────────────────────────────
             Card(
-                shape = RoundedCornerShape(20.dp),
+                shape  = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 modifier = Modifier.size(130.dp)
             ) {
@@ -80,16 +70,12 @@ fun AuthScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    // Replace with your actual drawable:
-                    // Image(painterResource(R.drawable.ic_graduation_cap), ...)
-                    Image(painter = painterResource(R.drawable.logo),
-                        contentDescription = "Logo",)
+                    Image(painter = painterResource(R.drawable.logo), contentDescription = "Logo")
                 }
             }
 
             Spacer(modifier = Modifier.height(44.dp))
 
-            // ── Tagline ────────────────────────────────────────
             Text(
                 text = buildAnnotatedString {
                     withStyle(SpanStyle(color = Color.White, fontWeight = FontWeight.Bold)) {
@@ -99,65 +85,39 @@ fun AuthScreen(
                         append("Together")
                     }
                 },
-                fontSize = 35.sp,
-                textAlign = TextAlign.Center,
+                fontSize   = 35.sp,
+                textAlign  = TextAlign.Center,
                 lineHeight = 30.sp
             )
 
             Spacer(modifier = Modifier.height(44.dp))
 
-            // ── Sign Up Button ─────────────────────────────────
             Button(
-                onClick = onSignUpClick,
+                onClick  = onSignUpClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
-                    .border(
-                        width = 1.5.dp,
-                        color = Color.White.copy(alpha = 0.6f),
-                        shape = RoundedCornerShape(30.dp)
-                    ),
-                shape = RoundedCornerShape(30.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White.copy(alpha = 0.2f)
-                ),
+                    .border(width = 1.5.dp, color = Color.White.copy(alpha = 0.6f), shape = RoundedCornerShape(30.dp)),
+                shape    = RoundedCornerShape(30.dp),
+                colors   = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.2f)),
                 elevation = ButtonDefaults.buttonElevation(0.dp)
             ) {
-                Text(
-                    text = "Sign Up",
-                    color = Color.White,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 0.3.sp
-                )
+                Text("Sign Up", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.3.sp)
             }
 
             Spacer(modifier = Modifier.height(30.dp))
 
-            // ── Sign In Button ─────────────────────────────────
             Button(
-                onClick = onSignInClick,
+                onClick  = onSignInClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
-                    .border(
-                        width = 1.5.dp,
-                        color = Color.White.copy(alpha = 0.35f),
-                        shape = RoundedCornerShape(30.dp)
-                    ),
-                shape = RoundedCornerShape(30.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White.copy(alpha = 0.12f)
-                ),
+                    .border(width = 1.5.dp, color = Color.White.copy(alpha = 0.35f), shape = RoundedCornerShape(30.dp)),
+                shape    = RoundedCornerShape(30.dp),
+                colors   = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.12f)),
                 elevation = ButtonDefaults.buttonElevation(0.dp)
             ) {
-                Text(
-                    text = "Sign In",
-                    color = Color.White,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 0.3.sp
-                )
+                Text("Sign In", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.3.sp)
             }
         }
     }

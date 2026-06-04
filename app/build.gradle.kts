@@ -55,6 +55,8 @@ android {
         implementation(libs.androidx.material3)
         implementation(libs.androidx.compose.foundation.layout)
 
+        implementation(libs.androidx.navigation.compose)
+
         // Firebase
         implementation(platform(libs.firebase.bom))
         implementation(libs.firebase.auth)
@@ -68,4 +70,7 @@ android {
         debugImplementation(libs.androidx.compose.ui.test.manifest)
         debugImplementation(libs.androidx.compose.ui.tooling)
     }
+}
+dependencies {
+    implementation(libs.navigation.compose)
 }
