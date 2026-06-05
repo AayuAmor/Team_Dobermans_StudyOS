@@ -44,3 +44,4 @@ class VisionBoardViewModel : ViewModel() {
         _pinnedGoals.value = _pinnedGoals.value - goal
     }
 }
+

@@ -19,3 +19,4 @@ class ProfileRepository {
         auth.currentUser?.updatePassword(newPassword)?.await() ?: error("Not logged in")
     }
 }
+

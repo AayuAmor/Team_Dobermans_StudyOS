@@ -29,3 +29,4 @@ class MockTestViewModel : ViewModel() {
     fun setQuestionIndex(i: Int)        { _questionIndex.value = i }
     fun setDifficulty(d: Difficulty)    { _difficulty.value = d }
 }
+

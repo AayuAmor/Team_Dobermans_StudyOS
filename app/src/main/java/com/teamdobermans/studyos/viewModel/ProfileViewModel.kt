@@ -32,3 +32,4 @@ class ProfileViewModel : ViewModel() {
 
     fun clearResult() { _saveResult.value = null }
 }
+

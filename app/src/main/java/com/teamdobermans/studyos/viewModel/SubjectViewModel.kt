@@ -23,3 +23,4 @@ class SubjectViewModel : ViewModel() {
         _subjects.value = _subjects.value + SubjectModel(id, name)
     }
 }
+

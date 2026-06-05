@@ -24,6 +24,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
+import com.teamdobermans.studyos.navigation.AppRoutes
+import com.teamdobermans.studyos.navigation.StudyOSNavGraph
 import com.teamdobermans.studyos.ui.theme.*
 
 class MainActivity : ComponentActivity() {
@@ -31,7 +33,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val startDestination = if (FirebaseAuth.getInstance().currentUser != null) {
-            AppRoutes.Dashboard.route
+            AppRoutes.Home.route
         } else {
             AppRoutes.Auth.route
         }
@@ -148,3 +150,4 @@ fun AuthScreen(
 fun AuthScreenPreview() {
     AuthScreen(onSignUpClick = {}, onSignInClick = {})
 }
+

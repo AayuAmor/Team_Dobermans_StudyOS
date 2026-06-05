@@ -6,3 +6,4 @@ data class VisionGoalModel(
     val targetValue: String,
     val subject: String
 )
+

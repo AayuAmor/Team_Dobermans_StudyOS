@@ -82,7 +82,7 @@ class NoteRepoImpl {
         try {
             notesCollection.document(noteId).delete().await()
         } catch (e: Exception) {
-            // handle silently
+
         }
     }
 }

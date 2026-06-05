@@ -10,13 +10,13 @@ data class Task(
     val title: String,
     val description: String,
     val startDate: LocalDate,
-    val endDate: LocalDate?, // Null if it's a single day deadline
+    val endDate: LocalDate?,
     val priority: Priority,
     val subjectId: String,
     val subjectName: String,
     val done: Boolean = false
 ) {
-    // Business logic checking if task is overdue relative to a given date
+
     fun isOverdue(compareDate: LocalDate = LocalDate.now()): Boolean {
         if (done) return false
         val finalDeadline = endDate ?: startDate

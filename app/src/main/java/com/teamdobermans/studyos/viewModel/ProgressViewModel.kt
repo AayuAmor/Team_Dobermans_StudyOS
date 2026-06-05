@@ -20,3 +20,4 @@ class ProgressViewModel : ViewModel() {
 
     val heatData: Array<IntArray> = Array(4) { IntArray(36) { Random.nextInt(0, 5) } }
 }
+

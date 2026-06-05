@@ -25,3 +25,4 @@ class SettingsViewModel : ViewModel() {
         _signedOut.value = true
     }
 }
+
