@@ -30,10 +30,12 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.ui.draw.shadow
 import com.teamdobermans.studyos.model.Priority
 import com.teamdobermans.studyos.model.SubjectModel
 import com.teamdobermans.studyos.model.Task
-import com.teamdobermans.studyos.ui.theme.StudyOSTheme
+import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.viewModel.PlanViewModel
 import java.time.Instant
 import java.time.LocalDate
@@ -112,7 +114,7 @@ fun PlanBody(viewModel: PlanViewModel) {
                         }
                         showDatePicker = false
                     }
-                ) { Text("Select", color = Color(0xFF6200EE), fontWeight = FontWeight.Bold) }
+                ) { Text("Select", color = StudyPurple, fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) { Text("Cancel", color = Color.Gray) }
@@ -126,9 +128,9 @@ fun PlanBody(viewModel: PlanViewModel) {
                 headline = { Text("Choose Dates", modifier = Modifier.padding(start = 24.dp), fontSize = 14.sp) },
                 showModeToggle = false,
                 colors = DatePickerDefaults.colors(
-                    selectedDayContainerColor         = Color(0xFF6200EE),
-                    dayInSelectionRangeContainerColor = Color(0xFF6200EE).copy(alpha = 0.15f),
-                    todayDateBorderColor              = Color(0xFF6200EE)
+                    selectedDayContainerColor         = StudyPurple,
+                    dayInSelectionRangeContainerColor = StudyPurpleLight,
+                    todayDateBorderColor              = StudyPurple
                 )
             )
         }
@@ -137,7 +139,8 @@ fun PlanBody(viewModel: PlanViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF6200EE))
+            .background(StudyPurpleDeep)
+            .imePadding()
     ) {
         Column(
             modifier = Modifier
@@ -177,20 +180,20 @@ fun PlanBody(viewModel: PlanViewModel) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF5F5F5))
+                .background(StudyPurpleFaint)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().shadow(4.dp, RoundedCornerShape(16.dp)),
                 shape    = RoundedCornerShape(16.dp),
                 colors   = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Row(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                     Column(modifier = Modifier.width(80.dp)) {
-                        Text(selectedDateCalendarView.month.getDisplayName(JavaTextStyle.SHORT, currentLocale), color = Color(0xFF6200EE), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                        Text(selectedDateCalendarView.dayOfWeek.getDisplayName(JavaTextStyle.FULL, currentLocale), color = Color(0xFF1A1A2E), fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                        Text("${selectedDateCalendarView.dayOfMonth}", color = Color(0xFF6200EE), fontWeight = FontWeight.ExtraBold, fontSize = 48.sp)
+                        Text(selectedDateCalendarView.month.getDisplayName(JavaTextStyle.SHORT, currentLocale), color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                        Text(selectedDateCalendarView.dayOfWeek.getDisplayName(JavaTextStyle.FULL, currentLocale), color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                        Text("${selectedDateCalendarView.dayOfMonth}", color = StudyPurple, fontWeight = FontWeight.ExtraBold, fontSize = 48.sp)
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
@@ -216,9 +219,9 @@ fun PlanBody(viewModel: PlanViewModel) {
                                                 .padding(2.dp)
                                                 .aspectRatio(1f)
                                                 .clip(CircleShape)
-                                                .background(if (isSelected) Color(0xFF6200EE) else Color.Transparent)
+                                                .background(if (isSelected) StudyPurple else Color.Transparent)
                                                 .border(
-                                                    border = if (isToday && !isSelected) BorderStroke(1.5.dp, Color(0xFF6200EE)) else BorderStroke(0.dp, Color.Transparent),
+                                                    border = if (isToday && !isSelected) BorderStroke(1.5.dp, StudyPurple) else BorderStroke(0.dp, Color.Transparent),
                                                     shape  = CircleShape
                                                 )
                                                 .clickable(enabled = !isPast) {
@@ -235,8 +238,8 @@ fun PlanBody(viewModel: PlanViewModel) {
                                                 color = when {
                                                     isSelected -> Color.White
                                                     isPast     -> Color.LightGray
-                                                    isToday    -> Color(0xFF6200EE)
-                                                    else       -> Color(0xFF1A1A2E)
+                                                    isToday    -> StudyPurple
+                                                    else       -> TextPrimary
                                                 }
                                             )
                                         }
@@ -253,7 +256,7 @@ fun PlanBody(viewModel: PlanViewModel) {
             Spacer(modifier = Modifier.height(12.dp))
 
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().shadow(4.dp, RoundedCornerShape(16.dp)),
                 shape    = RoundedCornerShape(16.dp),
                 colors   = CardDefaults.cardColors(containerColor = Color.White)
             ) {
@@ -266,7 +269,7 @@ fun PlanBody(viewModel: PlanViewModel) {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Editing Task Properties", color = Color(0xFF6200EE), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("Editing Task Properties", color = StudyPurple, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             Text("Cancel", color = Color.Red, fontSize = 12.sp, modifier = Modifier.clickable { viewModel.cancelEditing() })
                         }
                     }
@@ -279,8 +282,8 @@ fun PlanBody(viewModel: PlanViewModel) {
                         singleLine = true,
                         placeholder = { Text("Task Title.....", color = Color.Gray) },
                         colors = TextFieldDefaults.colors(
-                            unfocusedContainerColor = Color(0xFFF0EEFF), focusedContainerColor = Color(0xFFF0EEFF),
-                            unfocusedIndicatorColor = Color.Transparent, focusedIndicatorColor = Color(0xFF6200EE)
+                            unfocusedContainerColor = Color.White, focusedContainerColor = Color.White,
+                            unfocusedIndicatorColor = StudyPurpleLight, focusedIndicatorColor = StudyPurple
                         )
                     )
 
@@ -294,8 +297,8 @@ fun PlanBody(viewModel: PlanViewModel) {
                         placeholder = { Text("Description / Category Details.....", color = Color.Gray) },
                         maxLines = 3,
                         colors = TextFieldDefaults.colors(
-                            unfocusedContainerColor = Color(0xFFF0EEFF), focusedContainerColor = Color(0xFFF0EEFF),
-                            unfocusedIndicatorColor = Color.Transparent, focusedIndicatorColor = Color(0xFF6200EE)
+                            unfocusedContainerColor = Color.White, focusedContainerColor = Color.White,
+                            unfocusedIndicatorColor = StudyPurpleLight, focusedIndicatorColor = StudyPurple
                         )
                     )
 
@@ -310,30 +313,30 @@ fun PlanBody(viewModel: PlanViewModel) {
                             enabled = false,
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true,
-                            label = { Text("Due Date / Range", fontSize = 11.sp, color = Color(0xFF6200EE)) },
+                            label = { Text("Due Date / Range", fontSize = 11.sp, color = StudyPurple) },
                             trailingIcon = {
                                 Icon(
                                     painter = painterResource(R.drawable.baseline_more_horiz_24),
                                     contentDescription = "Open Range Calendar Picker",
-                                    tint = Color(0xFF6200EE),
+                                    tint = StudyPurple,
                                     modifier = Modifier.size(18.dp).clickable { showDatePicker = true }
                                 )
                             },
                             colors = TextFieldDefaults.colors(
-                                disabledContainerColor = Color(0xFFF0EEFF), disabledTextColor = Color(0xFF1A1A2E),
-                                disabledLabelColor = Color(0xFF6200EE), disabledIndicatorColor = Color.Transparent, disabledTrailingIconColor = Color(0xFF6200EE)
+                                disabledContainerColor = StudyPurpleLight, disabledTextColor = TextPrimary,
+                                disabledLabelColor = StudyPurple, disabledIndicatorColor = Color.Transparent, disabledTrailingIconColor = StudyPurple
                             )
                         )
 
                         Box(modifier = Modifier.weight(0.9f).align(Alignment.Bottom)) {
                             Surface(
-                                shape = RoundedCornerShape(12.dp), color = Color(0xFFF0EEFF),
+                                shape = RoundedCornerShape(12.dp), color = StudyPurpleLight,
                                 modifier = Modifier.fillMaxWidth().height(52.dp).clickable { subjectDropdownExpanded = true }
                             ) {
                                 Column(modifier = Modifier.padding(horizontal = 12.dp), verticalArrangement = Arrangement.Center) {
-                                    Text("Linked Subject", fontSize = 10.sp, color = Color(0xFF6200EE))
+                                    Text("Linked Subject", fontSize = 10.sp, color = StudyPurple)
                                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                                        Text(selectedSubjectState.name, color = Color(0xFF1A1A2E), fontWeight = FontWeight.Medium, fontSize = 12.sp, maxLines = 1)
+                                        Text(selectedSubjectState.name, color = TextPrimary, fontWeight = FontWeight.Medium, fontSize = 12.sp, maxLines = 1)
                                         Icon(painter = painterResource(R.drawable.baseline_more_horiz_24), contentDescription = null, tint = Color.Gray, modifier = Modifier.size(14.dp))
                                     }
                                 }
@@ -347,7 +350,7 @@ fun PlanBody(viewModel: PlanViewModel) {
 
                         Box(modifier = Modifier.weight(0.7f).align(Alignment.Bottom)) {
                             Surface(
-                                shape = RoundedCornerShape(12.dp), color = Color(0xFFF0EEFF),
+                                shape = RoundedCornerShape(12.dp), color = StudyPurpleLight,
                                 modifier = Modifier.fillMaxWidth().height(52.dp).clickable { priorityDropdown = true }
                             ) {
                                 Row(modifier = Modifier.padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
@@ -376,9 +379,9 @@ fun PlanBody(viewModel: PlanViewModel) {
                     Button(
                         onClick  = { viewModel.handleAddOrUpdateTask(selectedSubjectState.id, selectedSubjectState.name) },
                         enabled  = viewModel.taskTitle.trim().isNotEmpty(),
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape    = RoundedCornerShape(12.dp),
-                        colors   = ButtonDefaults.buttonColors(containerColor = Color(0xFF6200EE))
+                        modifier = Modifier.fillMaxWidth().height(48.dp).shadow(6.dp, RoundedCornerShape(24.dp)),
+                        shape    = RoundedCornerShape(24.dp),
+                        colors   = ButtonDefaults.buttonColors(containerColor = StudyPurple)
                     ) {
                         Text(if (viewModel.editingTaskId != null) "Update Details" else "+ Add Task", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                     }
@@ -399,7 +402,7 @@ fun PlanBody(viewModel: PlanViewModel) {
                     Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier.size(22.dp).clip(CircleShape)
-                                .background(if (task.done) Color(0xFF6200EE) else if (isOverdue) Color(0xFFFFEBEE) else Color(0xFFEEEBFF))
+                                .background(if (task.done) StudyPurple else if (isOverdue) PriorityHighBg else StudyPurpleLight)
                                 .clickable { viewModel.toggleTaskCompletion(task) },
                             contentAlignment = Alignment.Center
                         ) {
@@ -411,14 +414,14 @@ fun PlanBody(viewModel: PlanViewModel) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     task.title,
-                                    color = if (task.done) Color.Gray else Color(0xFF1A1A2E),
+                                    color = if (task.done) Color.Gray else TextPrimary,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp,
                                     textDecoration = if (task.done) TextDecoration.LineThrough else TextDecoration.None
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFF6200EE).copy(alpha = 0.1f)) {
-                                    Text(task.subjectName, color = Color(0xFF6200EE), fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp), maxLines = 1)
+                                Surface(shape = RoundedCornerShape(4.dp), color = StudyPurple.copy(alpha = 0.1f)) {
+                                    Text(task.subjectName, color = StudyPurple, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp), maxLines = 1)
                                 }
                             }
                             if (task.description.isNotEmpty()) {
@@ -432,7 +435,7 @@ fun PlanBody(viewModel: PlanViewModel) {
 
                             Text(
                                 text = if (isOverdue) "Overdue: $formattedDeadLineString" else "Due: $formattedDeadLineString",
-                                color = if (isOverdue) Color(0xFFD32F2F) else Color(0xFF6200EE).copy(alpha = 0.8f),
+                                color = if (isOverdue) PriorityHigh else StudyPurple.copy(alpha = 0.8f),
                                 fontSize = 10.sp,
                                 fontWeight = if (isOverdue) FontWeight.Bold else FontWeight.Light
                             )

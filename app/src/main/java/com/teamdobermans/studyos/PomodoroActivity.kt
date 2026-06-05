@@ -1,7 +1,6 @@
 package com.teamdobermans.studyos
 
-import com.teamdobermans.studyos.ui.theme.StudyPurple
-import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
+import com.teamdobermans.studyos.ui.theme.*
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -32,6 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.teamdobermans.studyos.model.EditingSlider
 import com.teamdobermans.studyos.model.PomodoroTab
 import com.teamdobermans.studyos.viewModel.PomodoroViewModel
@@ -40,15 +40,15 @@ class PomodoroActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent { PomodoroBody(viewModel = PomodoroViewModel(), onBack = { finish() }) }
+        setContent { PomodoroBody(onBack = { finish() }) }
     }
 }
 
 @Composable
 fun PomodoroBody(
-    viewModel: PomodoroViewModel = PomodoroViewModel(),
     onBack: () -> Unit = {}
 ) {
+    val viewModel: PomodoroViewModel = viewModel()
     val selectedTab   by viewModel.selectedTab.collectAsState()
     val focusMinutes  by viewModel.focusMinutes.collectAsState()
     val shortMinutes  by viewModel.shortMinutes.collectAsState()
@@ -97,7 +97,7 @@ fun PomodoroBody(
 
         AlertDialog(
             onDismissRequest = { editingSlider = EditingSlider.NONE },
-            title = { Text(dialogTitle, color = Color(0xFF1A1A2E), fontWeight = FontWeight.Bold, fontSize = 16.sp) },
+            title = { Text(dialogTitle, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp) },
             text = {
                 Column {
                     Text("${dialogRange.first}-${dialogRange.last} minutes", color = Color.Gray, fontSize = 13.sp)
@@ -132,8 +132,8 @@ fun PomodoroBody(
                             })
                         },
                         colors = TextFieldDefaults.colors(
-                            unfocusedContainerColor = Color(0xFFF5F3FF),
-                            focusedContainerColor   = Color(0xFFF5F3FF),
+                            unfocusedContainerColor = StudyPurpleFaint,
+                            focusedContainerColor   = StudyPurpleFaint,
                             unfocusedIndicatorColor = Color.Transparent,
                             focusedIndicatorColor   = StudyPurple
                         )
@@ -204,11 +204,11 @@ fun PomodoroBody(
                 Column(modifier = Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.size(200.dp)) {
                         Canvas(modifier = Modifier.fillMaxSize()) {
-                            drawCircle(color = Color(0xFFEEEBFF), style = Stroke(width = 14.dp.toPx()))
+                            drawCircle(color = StudyPurpleLight, style = Stroke(width = 14.dp.toPx()))
                             drawArc(color = StudyPurple, startAngle = -90f, sweepAngle = 360f * progress, useCenter = false, style = Stroke(width = 14.dp.toPx(), cap = StrokeCap.Round))
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(timeLabel, style = TextStyle(color = Color(0xFF1A1A2E), fontSize = 40.sp, fontWeight = FontWeight.Bold))
+                            Text(timeLabel, style = TextStyle(color = TextPrimary, fontSize = 40.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp))
                             Text(modeLabel, color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Medium)
                         }
                     }
@@ -217,8 +217,8 @@ fun PomodoroBody(
                         Button(onClick = { viewModel.toggleTimer() }, modifier = Modifier.weight(1f).height(46.dp), shape = RoundedCornerShape(23.dp), colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)) {
                             Text(if (isRunning) "Pause" else "Start", color = Color.White, fontWeight = FontWeight.SemiBold)
                         }
-                        Button(onClick = { viewModel.resetTimer() }, modifier = Modifier.weight(1f).height(46.dp), shape = RoundedCornerShape(23.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFEBEB))) {
-                            Text("Reset", color = Color(0xFFE53935), fontWeight = FontWeight.SemiBold)
+                        Button(onClick = { viewModel.resetTimer() }, modifier = Modifier.weight(1f).height(46.dp), shape = RoundedCornerShape(23.dp), colors = ButtonDefaults.buttonColors(containerColor = PriorityHighBg)) {
+                            Text("Reset", color = PriorityHigh, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
@@ -228,7 +228,7 @@ fun PomodoroBody(
 
             Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Customize durations", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFF1A1A2E))
+                    Text("Customize durations", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = TextPrimary)
                     Spacer(modifier = Modifier.height(8.dp))
                     DurationSlider(
                         label = "Focus", value = focusMinutes, range = 5f..60f,
@@ -250,11 +250,36 @@ fun PomodoroBody(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                Column(modifier = Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Sessions today", color = Color.Gray, fontSize = 14.sp)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape    = RoundedCornerShape(16.dp),
+                colors   = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        "Sessions today",
+                        color        = TextSecondary,
+                        fontSize     = 12.sp,
+                        fontWeight   = FontWeight.SemiBold,
+                        letterSpacing = 0.3.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        repeat(4) { index ->
+                            Box(
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .clip(androidx.compose.foundation.shape.CircleShape)
+                                    .background(if (index < sessionsToday) StudyPurple else StudyPurpleLight)
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("$sessionsToday", color = StudyPurple, fontSize = 36.sp, fontWeight = FontWeight.Bold)
+                    Text("$sessionsToday of 4 sessions", color = TextHint, fontSize = 11.sp)
                 }
             }
             Spacer(modifier = Modifier.height(80.dp))
@@ -268,9 +293,9 @@ fun DurationSlider(label: String, value: Float, onValueChange: (Float) -> Unit, 
         Text(label, modifier = Modifier.width(44.dp), fontSize = 13.sp, color = Color.DarkGray)
         Slider(
             value = value, onValueChange = onValueChange, valueRange = range, modifier = Modifier.weight(1f),
-            colors = SliderDefaults.colors(thumbColor = StudyPurple, activeTrackColor = StudyPurple, inactiveTrackColor = Color(0xFFD0CBFF))
+            colors = SliderDefaults.colors(thumbColor = StudyPurple, activeTrackColor = StudyPurple, inactiveTrackColor = StudyPurpleLight)
         )
-        Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFFF0EEFF), modifier = Modifier.width(36.dp).clickable { onValueTap() }) {
+        Surface(shape = RoundedCornerShape(6.dp), color = StudyPurpleLight, modifier = Modifier.width(36.dp).clickable { onValueTap() }) {
             Text("${value.toInt()}m", modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp), fontSize = 13.sp, color = StudyPurple, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
         }
     }
@@ -279,5 +304,5 @@ fun DurationSlider(label: String, value: Float, onValueChange: (Float) -> Unit, 
 @Preview(showBackground = true)
 @Composable
 fun PomodoroPreview() {
-    PomodoroBody(viewModel = PomodoroViewModel(), onBack = {})
+    PomodoroBody(onBack = {})
 }

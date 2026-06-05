@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -16,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -25,9 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.teamdobermans.studyos.ui.theme.StudyOSTheme
-import com.teamdobermans.studyos.ui.theme.StudyPurple
-import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
+import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.viewModel.VisionBoardViewModel
 
 class VisionBoardActivity : ComponentActivity() {
@@ -55,7 +55,7 @@ fun VisionBoardBody(
 
     var subjectDropdown by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize().background(StudyPurple)) {
+    Column(modifier = Modifier.fillMaxSize().background(StudyPurple).imePadding()) {
 
         Column(
             modifier = Modifier.fillMaxWidth().statusBarsPadding()
@@ -79,11 +79,11 @@ fun VisionBoardBody(
 
         Column(
             modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(0.dp))
-                .background(StudyPurpleLight)
+                .background(StudyPurpleFaint)
                 .verticalScroll(rememberScrollState()).padding(16.dp)
         ) {
 
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+            Card(modifier = Modifier.fillMaxWidth().shadow(4.dp, RoundedCornerShape(16.dp)), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Add goal", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(10.dp))
@@ -91,14 +91,18 @@ fun VisionBoardBody(
                     OutlinedTextField(
                         value = goalText,
                         onValueChange = { viewModel.setGoalText(it) },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().shadow(4.dp, RoundedCornerShape(12.dp)),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
-                        placeholder = { Text("Your goal or dream...", color = Color.White.copy(alpha = 0.7f)) },
-                        colors = TextFieldDefaults.colors(
-                            unfocusedContainerColor = StudyPurple, focusedContainerColor = StudyPurple,
-                            unfocusedIndicatorColor = Color.Transparent, focusedIndicatorColor = Color.Transparent,
-                            unfocusedTextColor = Color.White, focusedTextColor = Color.White
+                        placeholder = { Text("Your goal or dream...", color = TextHint) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor      = StudyPurple,
+                            unfocusedBorderColor    = StudyPurpleLight,
+                            focusedContainerColor   = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            cursorColor             = StudyPurple,
+                            focusedTextColor        = TextPrimary,
+                            unfocusedTextColor      = TextPrimary
                         )
                     )
 
@@ -108,7 +112,7 @@ fun VisionBoardBody(
                         emojiOptions.forEach { emoji ->
                             Surface(
                                 shape    = RoundedCornerShape(12.dp),
-                                color    = if (emoji == selectedEmoji) StudyPurple.copy(alpha = 0.15f) else Color(0xFFF5F3FF),
+                                color    = if (emoji == selectedEmoji) StudyPurple.copy(alpha = 0.15f) else StudyPurpleFaint,
                                 modifier = Modifier.size(44.dp).clickable { viewModel.setEmoji(emoji) }
                             ) {
                                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -119,63 +123,70 @@ fun VisionBoardBody(
                     }
 
                     Spacer(modifier = Modifier.height(14.dp))
-                    Text("Subject-level goal", color = Color.Gray, fontSize = 12.sp)
-                    Spacer(modifier = Modifier.height(8.dp))
 
-                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Box(modifier = Modifier.weight(1f)) {
-                            Surface(
-                                shape    = RoundedCornerShape(10.dp),
-                                color    = Color(0xFFF0EEFF),
-                                modifier = Modifier.fillMaxWidth().clickable { subjectDropdown = true }
-                            ) {
-                                Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text(selectedSubject, color = StudyPurple, fontWeight = FontWeight.Medium, fontSize = 14.sp)
-                                    Icon(painter = painterResource(R.drawable.baseline_more_horiz_24), contentDescription = null, tint = StudyPurple, modifier = Modifier.size(16.dp))
-                                }
-                            }
-                            DropdownMenu(expanded = subjectDropdown, onDismissRequest = { subjectDropdown = false }) {
-                                subjects.forEach { subject ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(subject,
-                                                fontWeight = if (subject == selectedSubject) FontWeight.Bold else FontWeight.Normal,
-                                                color = if (subject == selectedSubject) StudyPurple else Color(0xFF1A1A2E))
-                                        },
-                                        onClick = { viewModel.selectSubject(subject); subjectDropdown = false }
-                                    )
-                                }
-                                HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
-                                DropdownMenuItem(text = { Text("Add subject...", color = StudyPurple, fontWeight = FontWeight.SemiBold) }, onClick = { subjectDropdown = false })
+                    Text("Subject", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Surface(
+                            shape    = RoundedCornerShape(10.dp),
+                            color    = StudyPurpleLight,
+                            modifier = Modifier.fillMaxWidth().clickable { subjectDropdown = true }
+                        ) {
+                            Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(selectedSubject, color = StudyPurple, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                                Icon(painter = painterResource(R.drawable.baseline_more_horiz_24), contentDescription = null, tint = StudyPurple, modifier = Modifier.size(16.dp))
                             }
                         }
-                        OutlinedTextField(
-                            value = targetValue,
-                            onValueChange = { viewModel.setTargetValue(it.filter { c -> c.isDigit() || c == '%' }.take(5)) },
-                            modifier = Modifier.width(100.dp),
-                            shape = RoundedCornerShape(10.dp),
-                            singleLine = true,
-                            placeholder = { Text("Target", color = Color.Gray, fontSize = 13.sp) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            colors = TextFieldDefaults.colors(
-                                unfocusedContainerColor = Color(0xFFF0EEFF), focusedContainerColor = Color(0xFFF0EEFF),
-                                unfocusedIndicatorColor = Color.Transparent, focusedIndicatorColor = StudyPurple
-                            )
-                        )
-                        Button(onClick = { }, colors = ButtonDefaults.buttonColors(containerColor = StudyPurple), shape = RoundedCornerShape(10.dp)) {
-                            Text("Target", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        DropdownMenu(expanded = subjectDropdown, onDismissRequest = { subjectDropdown = false }) {
+                            subjects.forEach { subject ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(subject,
+                                            fontWeight = if (subject == selectedSubject) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (subject == selectedSubject) StudyPurple else TextPrimary)
+                                    },
+                                    onClick = { viewModel.selectSubject(subject); subjectDropdown = false }
+                                )
+                            }
+                            HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
+                            DropdownMenuItem(text = { Text("Add subject...", color = StudyPurple, fontWeight = FontWeight.SemiBold) }, onClick = { subjectDropdown = false })
                         }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), color = if (canPin) Color(0xFFEEEBFF) else Color(0xFFF5F5F5)) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp).clickable(enabled = canPin) { viewModel.pinGoal() },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("Pin to Board", color = if (canPin) StudyPurple else Color.Gray, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                        }
+                    Text("Target value", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    OutlinedTextField(
+                        value = targetValue,
+                        onValueChange = { viewModel.setTargetValue(it.filter { c -> c.isDigit() || c == '%' }.take(10)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        singleLine = true,
+                        placeholder = { Text("e.g. 100 pages, 90%", color = TextHint) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor      = StudyPurple,
+                            unfocusedBorderColor    = StudyPurple.copy(alpha = 0.4f),
+                            focusedContainerColor   = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            cursorColor             = StudyPurple
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(
+                        onClick  = { viewModel.pinGoal() },
+                        enabled  = canPin,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                            .shadow(6.dp, RoundedCornerShape(25.dp)),
+                        shape  = RoundedCornerShape(25.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)
+                    ) {
+                        Text("Pin to Board", color = Color.White, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -187,14 +198,14 @@ fun VisionBoardBody(
                 rows.forEach { rowGoals ->
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         rowGoals.forEach { goal ->
-                            Card(modifier = Modifier.weight(1f), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                            Card(modifier = Modifier.weight(1f).shadow(4.dp, RoundedCornerShape(16.dp)), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                                 Column(modifier = Modifier.padding(14.dp)) {
                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
                                         Text(goal.emoji, fontSize = 30.sp)
                                         Text("x", color = Color.Gray, fontSize = 16.sp, modifier = Modifier.clickable { viewModel.removeGoal(goal) })
                                     }
                                     Spacer(modifier = Modifier.height(6.dp))
-                                    Text(goal.text, color = Color(0xFF1A1A2E), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                    Text(goal.text, color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, letterSpacing = 0.1.sp)
                                     if (goal.targetValue.isNotEmpty()) {
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text("Target: ${goal.targetValue}", color = Color.Gray, fontSize = 11.sp)

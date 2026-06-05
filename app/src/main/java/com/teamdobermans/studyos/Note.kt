@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,6 +23,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -31,12 +33,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.teamdobermans.studyos.model.NoteModel
-import com.teamdobermans.studyos.ui.theme.BrandPurple
-import com.teamdobermans.studyos.ui.theme.StudyOSTheme
+import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.viewModel.NoteViewModel
 
 private val BrandPurpleLight = Color(0xFF7C6CEF)
-private val BackgroundGray = Color(0xFFF0EFF5)
+private val BackgroundGray = StudyPurpleFaint
 private val SelectedChipBg = Color(0xFFDED9FF)
 
 class NotesPage : ComponentActivity() {
@@ -295,12 +296,13 @@ fun CreateEditNoteScreen(
         )
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(BackgroundGray)) {
+    Column(modifier = Modifier.fillMaxSize().background(BackgroundGray).imePadding()) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(BrandPurple)
-                .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 20.dp)
+                .background(StudyPurpleDeep)
+                .statusBarsPadding()
+                .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 20.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -353,7 +355,6 @@ fun CreateEditNoteScreen(
                 value = title,
                 onValueChange = { title = it },
                 label = { Text("Title") },
-                placeholder = { Text("Note title...") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
@@ -369,7 +370,6 @@ fun CreateEditNoteScreen(
                 value = body,
                 onValueChange = { body = it },
                 label = { Text("Content") },
-                placeholder = { Text("Write your note here...") },
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 maxLines = Int.MAX_VALUE,
                 shape = RoundedCornerShape(12.dp),
@@ -383,7 +383,7 @@ fun CreateEditNoteScreen(
             Button(
                 onClick  = { onSave(title.trim(), body.trim(), folder) },
                 enabled  = title.isNotBlank(),
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                modifier = Modifier.fillMaxWidth().height(52.dp).shadow(6.dp, RoundedCornerShape(12.dp)),
                 colors   = ButtonDefaults.buttonColors(
                     containerColor         = BrandPurple,
                     disabledContainerColor = Color.Gray
@@ -401,7 +401,7 @@ fun CreateEditNoteScreen(
             if (isEditing && onDelete != null) {
                 Button(
                     onClick  = { showDeleteDialog = true },
-                    colors   = ButtonDefaults.buttonColors(containerColor = Color(0xFFE53935)),
+                    colors   = ButtonDefaults.buttonColors(containerColor = PriorityHigh),
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                     shape    = RoundedCornerShape(12.dp)
                 ) {
@@ -522,17 +522,22 @@ fun FoldersSection(
 
 @Composable
 fun FolderChip(label: String, isActive: Boolean, onClick: () -> Unit) {
+    val chipModifier = if (isActive) {
+        Modifier.shadow(4.dp, RoundedCornerShape(10.dp))
+    } else {
+        Modifier
+    }
     Box(
-        modifier = Modifier
+        modifier = chipModifier
             .clip(RoundedCornerShape(10.dp))
-            .background(if (isActive) SelectedChipBg else Color.White)
+            .background(if (isActive) BrandPurple else Color.White)
             .clickable { onClick() }
             .padding(horizontal = 24.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = label,
-            color = if (isActive) BrandPurple else Color.DarkGray,
+            color = if (isActive) Color.White else TextSecondary,
             fontSize = 15.sp,
             fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium
         )

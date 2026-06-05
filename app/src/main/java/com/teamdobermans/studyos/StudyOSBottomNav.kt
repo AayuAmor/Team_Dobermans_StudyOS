@@ -9,7 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.teamdobermans.studyos.ui.theme.BrandPurple
@@ -41,7 +43,7 @@ fun StudyOSBottomNav(navController: NavController) {
         bottomNavItems.forEach { item ->
             NavigationBarItem(
                 icon     = { Icon(painterResource(item.iconRes), contentDescription = null) },
-                label    = { Text(item.label) },
+                label    = { Text(item.label, fontSize = 10.sp, fontWeight = FontWeight.SemiBold) },
                 selected = currentRoute == item.route,
                 onClick  = {
                     if (currentRoute != item.route) {

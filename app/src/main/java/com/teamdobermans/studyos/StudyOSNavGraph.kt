@@ -1,16 +1,23 @@
 package com.teamdobermans.studyos
 
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.common.api.ApiException
+import com.google.firebase.auth.GoogleAuthProvider
 import com.teamdobermans.studyos.viewModel.AuthViewModel
 import com.teamdobermans.studyos.viewModel.DashboardViewModel
 import com.teamdobermans.studyos.viewModel.MockTestViewModel
@@ -61,7 +68,20 @@ fun StudyOSNavGraph(
             }
 
             composable(AppRoutes.Login.route) {
-                val vm = viewModel<AuthViewModel>()
+                val vm      = viewModel<AuthViewModel>()
+                val context = LocalContext.current
+                val launcher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.StartActivityForResult()
+                ) { result ->
+                    val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                    try {
+                        val account    = task.getResult(ApiException::class.java)
+                        val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+                        vm.signInWithCredential(credential)
+                    } catch (e: ApiException) {
+                        Toast.makeText(context, "Google error: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
                 LoginBody(
                     viewModel      = vm,
                     onLoginSuccess = {
@@ -69,12 +89,26 @@ fun StudyOSNavGraph(
                             popUpTo(AppRoutes.Auth.route) { inclusive = true }
                         }
                     },
-                    onBack = { navController.popBackStack() }
+                    onBack         = { navController.popBackStack() },
+                    onGoogleSignIn = { launcher.launch(GoogleSignInHelper.getSignInIntent(context)) }
                 )
             }
 
             composable(AppRoutes.SignUp.route) {
-                val vm = viewModel<AuthViewModel>()
+                val vm      = viewModel<AuthViewModel>()
+                val context = LocalContext.current
+                val launcher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.StartActivityForResult()
+                ) { result ->
+                    val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                    try {
+                        val account    = task.getResult(ApiException::class.java)
+                        val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+                        vm.signInWithCredential(credential)
+                    } catch (e: ApiException) {
+                        Toast.makeText(context, "Google error: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
                 SignUpBody(
                     viewModel       = vm,
                     onSignUpSuccess = {
@@ -82,7 +116,8 @@ fun StudyOSNavGraph(
                             popUpTo(AppRoutes.Auth.route) { inclusive = true }
                         }
                     },
-                    onBack = { navController.popBackStack() }
+                    onBack         = { navController.popBackStack() },
+                    onGoogleSignIn = { launcher.launch(GoogleSignInHelper.getSignInIntent(context)) }
                 )
             }
 
@@ -128,11 +163,7 @@ fun StudyOSNavGraph(
             }
 
             composable(AppRoutes.Pomodoro.route) {
-                val vm = viewModel<PomodoroViewModel>()
-                PomodoroBody(
-                    viewModel = vm,
-                    onBack    = { navController.popBackStack() }
-                )
+                PomodoroBody(onBack = { navController.popBackStack() })
             }
 
             composable(AppRoutes.MockTest.route) {

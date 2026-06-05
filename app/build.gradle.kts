@@ -73,4 +73,5 @@ android {
 }
 dependencies {
     implementation(libs.navigation.compose)
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
 }

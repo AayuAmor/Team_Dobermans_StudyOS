@@ -1,10 +1,12 @@
 package com.teamdobermans.studyos
 
+import android.content.Context
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,20 +28,58 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.teamdobermans.studyos.ui.theme.StudyCardBg
-import com.teamdobermans.studyos.ui.theme.StudyOSTheme
-import com.teamdobermans.studyos.ui.theme.StudyPurple
-import com.teamdobermans.studyos.ui.theme.StudyPurpleDeep
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.common.api.ApiException
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.GoogleAuthProvider
+import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.viewModel.AuthState
 import com.teamdobermans.studyos.viewModel.AuthViewModel
 
 class LoginActivity : ComponentActivity() {
+
+    private val googleLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account    = task.getResult(ApiException::class.java)
+            val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+            FirebaseAuth.getInstance().signInWithCredential(credential)
+                .addOnCompleteListener { authTask ->
+                    if (authTask.isSuccessful) {
+                        Toast.makeText(this, "Google Sign-In successful!", Toast.LENGTH_SHORT).show()
+                        val intent = android.content.Intent(this, DashboardActivity::class.java)
+                        intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                    } else {
+                        Toast.makeText(this, "Google Sign-In failed: ${authTask.exception?.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
+        } catch (e: ApiException) {
+            Toast.makeText(this, "Google error: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val sharedPref = getSharedPreferences("StudyOSPrefs", Context.MODE_PRIVATE)
+        if (sharedPref.getBoolean("IS_REMEMBERED", false)) {
+            startActivity(android.content.Intent(this, DashboardActivity::class.java))
+            finish()
+            return
+        }
+
         setContent {
             StudyOSTheme {
-                LoginBody(viewModel = AuthViewModel(), onLoginSuccess = {}, onBack = { finish() })
+                LoginBody(
+                    viewModel      = AuthViewModel(),
+                    onLoginSuccess = {},
+                    onBack         = { finish() },
+                    onGoogleSignIn = { googleLauncher.launch(GoogleSignInHelper.getSignInIntent(this)) }
+                )
             }
         }
     }
@@ -49,10 +89,11 @@ class LoginActivity : ComponentActivity() {
 fun LoginBody(
     viewModel: AuthViewModel,
     onLoginSuccess: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onGoogleSignIn: () -> Unit = {}
 ) {
-    var email          by remember { mutableStateOf("") }
-    var password       by remember { mutableStateOf("") }
+    var email           by remember { mutableStateOf("") }
+    var password        by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
     val authState by viewModel.authState.collectAsState()
@@ -91,13 +132,13 @@ fun LoginBody(
         Spacer(modifier = Modifier.height(40.dp))
 
         Card(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).shadow(18.dp, RoundedCornerShape(20.dp)),
-            shape    = RoundedCornerShape(20.dp),
-            colors   = CardDefaults.cardColors(containerColor = StudyCardBg),
+            modifier  = Modifier.fillMaxWidth().padding(horizontal = 20.dp).shadow(18.dp, RoundedCornerShape(20.dp)),
+            shape     = RoundedCornerShape(20.dp),
+            colors    = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(defaultElevation = 18.dp)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
-                Text("Email", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                Text("Email", color = StudyPurple, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 0.4.sp)
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = email,
@@ -107,12 +148,13 @@ fun LoginBody(
                     singleLine = true,
                     colors = TextFieldDefaults.colors(
                         unfocusedContainerColor = Color.White, focusedContainerColor = Color.White,
-                        unfocusedIndicatorColor = Color.Transparent, focusedIndicatorColor = StudyPurple
+                        unfocusedIndicatorColor = StudyPurpleLight, focusedIndicatorColor = StudyPurple,
+                    cursorColor = StudyPurple
                     )
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Password", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                Text("Password", color = StudyPurple, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 0.4.sp)
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = password,
@@ -131,7 +173,8 @@ fun LoginBody(
                     },
                     colors = TextFieldDefaults.colors(
                         unfocusedContainerColor = Color.White, focusedContainerColor = Color.White,
-                        unfocusedIndicatorColor = Color.Transparent, focusedIndicatorColor = StudyPurple
+                        unfocusedIndicatorColor = StudyPurpleLight, focusedIndicatorColor = StudyPurple,
+                    cursorColor = StudyPurple
                     )
                 )
 
@@ -161,14 +204,14 @@ fun LoginBody(
 
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     HorizontalDivider(modifier = Modifier.weight(1f), color = Color.Gray.copy(alpha = 0.3f))
-                    Text(" or ", color = Color.Gray, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 4.dp))
+                    Text(" or continue with ", color = TextHint, fontSize = 11.sp, letterSpacing = 0.3.sp, modifier = Modifier.padding(horizontal = 6.dp))
                     HorizontalDivider(modifier = Modifier.weight(1f), color = Color.Gray.copy(alpha = 0.3f))
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedButton(
-                    onClick  = {},
+                    onClick  = onGoogleSignIn,
                     modifier = Modifier.fillMaxWidth().height(50.dp).shadow(6.dp, RoundedCornerShape(25.dp)),
                     shape    = RoundedCornerShape(25.dp),
                     colors   = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
@@ -195,6 +238,6 @@ fun LoginBody(
 @Composable
 fun LoginPreview() {
     StudyOSTheme {
-        LoginBody(viewModel = AuthViewModel(), onLoginSuccess = {}, onBack = {})
+        LoginBody(viewModel = AuthViewModel(), onLoginSuccess = {}, onBack = {}, onGoogleSignIn = {})
     }
 }

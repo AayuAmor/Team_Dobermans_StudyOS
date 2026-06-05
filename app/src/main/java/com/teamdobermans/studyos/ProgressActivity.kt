@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,24 +14,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.teamdobermans.studyos.ui.theme.StudyOSTheme
-import com.teamdobermans.studyos.ui.theme.StudyPurple
-import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
+import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.viewModel.ProgressViewModel
 
 private fun heatColor(level: Int): Color = when (level) {
-    0    -> Color(0xFFE8E4FF)
-    1    -> Color(0xFFBDB5FF)
-    2    -> Color(0xFF9589F5)
-    3    -> Color(0xFF6C5DD3)
-    else -> Color(0xFF4A3EB8)
+    0    -> HeatL0
+    1    -> HeatL1
+    2    -> HeatL2
+    3    -> HeatL3
+    else -> HeatL4
 }
 
 class ProgressActivity : ComponentActivity() {
@@ -46,15 +42,11 @@ class ProgressActivity : ComponentActivity() {
 @Composable
 fun ProgressBody(viewModel: ProgressViewModel = ProgressViewModel()) {
     val subjectProgressList by viewModel.subjectProgress.collectAsState()
-    val heatData   = viewModel.heatData
-    val dayLabels  = listOf("Sun", "Tue", "Thu", "Sat")
+    val heatData    = viewModel.heatData
+    val dayLabels   = listOf("Sun", "Tue", "Thu", "Sat")
     val monthLabels = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep")
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(StudyPurple)
-    ) {
+    Column(modifier = Modifier.fillMaxSize().background(StudyPurpleDeep)) {
 
         Column(
             modifier = Modifier
@@ -63,7 +55,7 @@ fun ProgressBody(viewModel: ProgressViewModel = ProgressViewModel()) {
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Spacer(modifier = Modifier.height(12.dp))
-            Text("Progress", style = TextStyle(color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold))
+            Text("Progress", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                 listOf("Study Hours", "Streak", "Performance").forEach {
@@ -75,8 +67,8 @@ fun ProgressBody(viewModel: ProgressViewModel = ProgressViewModel()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(0.dp))
-                .background(StudyPurpleLight)
+                .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+                .background(StudyPurpleFaint)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
@@ -94,7 +86,7 @@ fun ProgressBody(viewModel: ProgressViewModel = ProgressViewModel()) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().shadow(4.dp, RoundedCornerShape(16.dp)),
                 shape    = RoundedCornerShape(16.dp),
                 colors   = CardDefaults.cardColors(containerColor = Color.White)
             ) {
@@ -102,11 +94,11 @@ fun ProgressBody(viewModel: ProgressViewModel = ProgressViewModel()) {
                     Text("Subject Progress", color = StudyPurple, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     Spacer(modifier = Modifier.height(14.dp))
                     if (subjectProgressList.isEmpty()) {
-                        Text("No subjects tracked yet", color = Color.Gray, fontSize = 13.sp)
+                        Text("No subjects tracked yet", color = TextHint, fontSize = 13.sp)
                     } else {
                         subjectProgressList.forEach { subject ->
                             SubjectBar(name = subject.name, percent = subject.percent, color = Color(subject.colorArgb))
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
                         }
                     }
                 }
@@ -115,20 +107,20 @@ fun ProgressBody(viewModel: ProgressViewModel = ProgressViewModel()) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().shadow(4.dp, RoundedCornerShape(16.dp)),
                 shape    = RoundedCornerShape(16.dp),
                 colors   = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Row(modifier = Modifier.padding(start = 32.dp)) {
                         monthLabels.forEach { month ->
-                            Text(month, fontSize = 9.sp, color = Color.Gray, modifier = Modifier.weight(1f))
+                            Text(month, fontSize = 9.sp, color = TextHint, modifier = Modifier.weight(1f))
                         }
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     dayLabels.forEachIndexed { rowIndex, dayLabel ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(dayLabel, fontSize = 9.sp, color = Color.Gray, modifier = Modifier.width(28.dp))
+                            Text(dayLabel, fontSize = 9.sp, color = TextHint, modifier = Modifier.width(28.dp))
                             heatData[rowIndex].forEach { level ->
                                 Box(modifier = Modifier.size(9.dp).padding(1.dp)
                                     .clip(RoundedCornerShape(2.dp)).background(heatColor(level)))
@@ -141,14 +133,14 @@ fun ProgressBody(viewModel: ProgressViewModel = ProgressViewModel()) {
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Less", fontSize = 9.sp, color = Color.Gray)
+                        Text("Less", fontSize = 9.sp, color = TextHint)
                         Spacer(modifier = Modifier.width(4.dp))
                         (0..4).forEach { lvl ->
                             Box(modifier = Modifier.size(9.dp).padding(1.dp)
                                 .clip(RoundedCornerShape(2.dp)).background(heatColor(lvl)))
                         }
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("More", fontSize = 9.sp, color = Color.Gray)
+                        Text("More", fontSize = 9.sp, color = TextHint)
                     }
                 }
             }
@@ -160,30 +152,53 @@ fun ProgressBody(viewModel: ProgressViewModel = ProgressViewModel()) {
 
 @Composable
 fun SubjectBar(name: String, percent: Float, color: Color) {
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(name, modifier = Modifier.width(70.dp), fontSize = 13.sp, color = Color.DarkGray)
-        Box(modifier = Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(4.dp))
-            .background(Color.Gray.copy(alpha = 0.15f))) {
-            Box(modifier = Modifier.fillMaxWidth(percent).height(8.dp)
-                .clip(RoundedCornerShape(4.dp)).background(color))
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(name, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+            Text("${(percent * 100).toInt()}%", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = color)
         }
-        Spacer(modifier = Modifier.width(8.dp))
-        Text("${(percent * 100).toInt()}%", color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(6.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(9.dp)
+                .clip(RoundedCornerShape(5.dp))
+                .background(StudyPurpleLight)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(percent)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(5.dp))
+                    .background(color)
+            )
+        }
     }
 }
 
 @Composable
 fun StatCard(modifier: Modifier = Modifier, label: String, value: String, unit: String = "") {
     Card(
-        modifier = modifier,
-        shape    = RoundedCornerShape(16.dp),
+        modifier = modifier.shadow(4.dp, RoundedCornerShape(12.dp)),
+        shape    = RoundedCornerShape(12.dp),
         colors   = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(label, color = Color.Gray, fontSize = 13.sp)
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(value, color = StudyPurple, fontSize = 30.sp, fontWeight = FontWeight.Bold)
-            if (unit.isNotEmpty()) Text(unit, color = Color.Gray, fontSize = 13.sp)
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                label,
+                color         = TextHint,
+                fontSize      = 11.sp,
+                fontWeight    = FontWeight.SemiBold,
+                letterSpacing = 0.3.sp
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(value, color = TextPrimary, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold)
+                if (unit.isNotEmpty()) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(unit, color = TextSecondary, fontSize = 12.sp, modifier = Modifier.padding(bottom = 3.dp))
+                }
+            }
         }
     }
 }
@@ -191,5 +206,5 @@ fun StatCard(modifier: Modifier = Modifier, label: String, value: String, unit: 
 @Preview(showBackground = true)
 @Composable
 fun ProgressPreview() {
-    StudyOSTheme { ProgressBody(viewModel = ProgressViewModel()) }
+    ProgressBody(viewModel = ProgressViewModel())
 }

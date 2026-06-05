@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,10 +43,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.teamdobermans.studyos.ui.theme.StudyOSTheme
-import com.teamdobermans.studyos.ui.theme.StudyPurple
-import com.teamdobermans.studyos.ui.theme.StudyPurpleDeep
-import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
+import androidx.compose.ui.draw.shadow
+import com.teamdobermans.studyos.ui.theme.*
 
 class OnboardingActivityWorksOffline : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -178,21 +177,45 @@ fun OnboardingBody() {
         Button(
             onClick = {
                 val intent = Intent(context, SignUpActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 context.startActivity(intent)
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp),
+                .height(52.dp)
+                .shadow(8.dp, RoundedCornerShape(14.dp)),
             shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.White.copy(alpha = 0.2f)
-            )
+            colors = ButtonDefaults.buttonColors(containerColor = Color.White)
         ) {
             Text(
                 "Create Account",
-                color = Color.White,
+                color = StudyPurpleDeep,
                 fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                "Already have an account? ",
+                color = Color.White.copy(alpha = 0.75f),
+                fontSize = 14.sp
+            )
+            Text(
+                "Sign In",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                modifier = Modifier.clickable {
+                    val intent = Intent(context, LoginActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    context.startActivity(intent)
+                }
             )
         }
 

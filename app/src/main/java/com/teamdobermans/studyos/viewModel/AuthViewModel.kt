@@ -2,6 +2,7 @@ package com.teamdobermans.studyos.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.AuthCredential
 import com.teamdobermans.studyos.repo.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,6 +35,13 @@ class AuthViewModel : ViewModel() {
         repository.signUp(email, password)
             .onSuccess { _authState.value = AuthState.Success }
             .onFailure { _authState.value = AuthState.Error(it.message ?: "Sign up failed") }
+    }
+
+    fun signInWithCredential(credential: AuthCredential) = viewModelScope.launch {
+        _authState.value = AuthState.Loading
+        repository.signInWithCredential(credential)
+            .onSuccess { _authState.value = AuthState.Success }
+            .onFailure { _authState.value = AuthState.Error(it.message ?: "Google sign-in failed") }
     }
 
     fun resetState() { _authState.value = AuthState.Idle }
