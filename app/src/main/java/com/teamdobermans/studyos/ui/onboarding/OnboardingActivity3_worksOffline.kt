@@ -1,6 +1,7 @@
 package com.teamdobermans.studyos.ui.onboarding
 import com.teamdobermans.studyos.R
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -175,6 +176,8 @@ fun OnboardingBody() {
 
         Button(
             onClick = {
+                context.getSharedPreferences("StudyOSPrefs", Context.MODE_PRIVATE)
+                    .edit().putBoolean("onboarding_completed", true).apply()
                 val intent = Intent(context, SignUpActivity::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 context.startActivity(intent)
@@ -211,6 +214,8 @@ fun OnboardingBody() {
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
                 modifier = Modifier.clickable {
+                    context.getSharedPreferences("StudyOSPrefs", Context.MODE_PRIVATE)
+                        .edit().putBoolean("onboarding_completed", true).apply()
                     val intent = Intent(context, LoginActivity::class.java)
                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     context.startActivity(intent)

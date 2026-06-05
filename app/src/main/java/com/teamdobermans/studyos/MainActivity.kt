@@ -1,5 +1,7 @@
 package com.teamdobermans.studyos
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -26,12 +28,19 @@ import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.teamdobermans.studyos.navigation.AppRoutes
 import com.teamdobermans.studyos.navigation.StudyOSNavGraph
+import com.teamdobermans.studyos.ui.onboarding.OnboardingActivity1_WelcomePage
 import com.teamdobermans.studyos.ui.theme.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val prefs = getSharedPreferences("StudyOSPrefs", Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("onboarding_completed", false)) {
+            startActivity(Intent(this, OnboardingActivity1_WelcomePage::class.java))
+            finish()
+            return
+        }
         val startDestination = if (FirebaseAuth.getInstance().currentUser != null) {
             AppRoutes.Home.route
         } else {

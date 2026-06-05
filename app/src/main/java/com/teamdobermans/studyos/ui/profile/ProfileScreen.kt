@@ -32,6 +32,7 @@ import com.teamdobermans.studyos.viewModel.ProfileViewModel
 fun ProfileScreenV2(
     viewModel: ProfileViewModel,
     onNavigateAnalytics: () -> Unit = {},
+    onNavigateVisionBoard: () -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
     val email      by viewModel.email.collectAsState()
@@ -64,6 +65,10 @@ fun ProfileScreenV2(
             Spacer(modifier = Modifier.height(12.dp))
 
             AnalyticsAccessCard(onClick = onNavigateAnalytics)
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            VisionBoardAccessCard(onClick = onNavigateVisionBoard)
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -203,6 +208,44 @@ private fun AnalyticsAccessCard(onClick: () -> Unit) {
                 }
             }
             Icon(imageVector = Icons.Rounded.ChevronRight, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+        }
+    }
+}
+
+@Composable
+private fun VisionBoardAccessCard(onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(4.dp, RoundedCornerShape(16.dp))
+            .clickable { onClick() },
+        shape  = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(StudyPurpleFaint),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(imageVector = Icons.Rounded.Star, contentDescription = null, tint = StudyPurple, modifier = Modifier.size(22.dp))
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text("Vision Board", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    Text("Manage your goals and motivation", color = TextSecondary, fontSize = 11.sp)
+                }
+            }
+            Icon(imageVector = Icons.Rounded.ChevronRight, contentDescription = null, tint = TextHint, modifier = Modifier.size(22.dp))
         }
     }
 }

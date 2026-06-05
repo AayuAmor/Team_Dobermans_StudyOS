@@ -1,6 +1,7 @@
 package com.teamdobermans.studyos.ui.onboarding
 import com.teamdobermans.studyos.R
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -32,7 +33,10 @@ class OnboardingActivity2_StudyActivityOS : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            StudyUI()
+            StudyUI(onNext = {
+                startActivity(Intent(this, OnboardingActivity3_worksOffline::class.java))
+                finish()
+            })
         }
     }
 }
@@ -42,7 +46,8 @@ fun StudyUI(
     onNavigateMockTest: () -> Unit = {},
     onNavigateFlashcard: () -> Unit = {},
     onNavigateBrainGame: () -> Unit = {},
-    onNavigateVideoNotes: () -> Unit = {}
+    onNavigateVideoNotes: () -> Unit = {},
+    onNext: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
@@ -129,7 +134,7 @@ fun StudyUI(
             Spacer(modifier = Modifier.height(30.dp))
 
             Button(
-                onClick  = {},
+                onClick  = onNext,
                 modifier = Modifier.fillMaxWidth().height(55.dp),
                 shape    = RoundedCornerShape(15.dp),
                 colors   = ButtonDefaults.buttonColors(containerColor = Color(0xFFD6D1E8))

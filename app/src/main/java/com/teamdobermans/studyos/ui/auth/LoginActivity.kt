@@ -2,6 +2,7 @@ package com.teamdobermans.studyos.ui.auth
 import com.teamdobermans.studyos.R
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -33,7 +34,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
-import com.teamdobermans.studyos.ui.home.DashboardActivity
+import com.teamdobermans.studyos.MainActivity
 import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.utils.GoogleSignInHelper
 import com.teamdobermans.studyos.viewModel.AuthState
@@ -52,7 +53,7 @@ class LoginActivity : ComponentActivity() {
                 .addOnCompleteListener { authTask ->
                     if (authTask.isSuccessful) {
                         Toast.makeText(this, "Google Sign-In successful!", Toast.LENGTH_SHORT).show()
-                        val intent = android.content.Intent(this, DashboardActivity::class.java)
+                        val intent = android.content.Intent(this, MainActivity::class.java)
                         intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
                         startActivity(intent)
                     } else {
@@ -70,7 +71,7 @@ class LoginActivity : ComponentActivity() {
 
         val sharedPref = getSharedPreferences("StudyOSPrefs", Context.MODE_PRIVATE)
         if (sharedPref.getBoolean("IS_REMEMBERED", false)) {
-            startActivity(android.content.Intent(this, DashboardActivity::class.java))
+            startActivity(android.content.Intent(this, MainActivity::class.java))
             finish()
             return
         }
@@ -79,8 +80,13 @@ class LoginActivity : ComponentActivity() {
             StudyOSTheme {
                 LoginBody(
                     viewModel      = AuthViewModel(),
-                    onLoginSuccess = {},
+                    onLoginSuccess = {
+                        val intent = Intent(this, MainActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                    },
                     onBack         = { finish() },
+                    onSignUpClick  = { startActivity(Intent(this, SignUpActivity::class.java)); finish() },
                     onGoogleSignIn = { googleLauncher.launch(GoogleSignInHelper.getSignInIntent(this)) }
                 )
             }
@@ -93,6 +99,7 @@ fun LoginBody(
     viewModel: AuthViewModel,
     onLoginSuccess: () -> Unit,
     onBack: () -> Unit,
+    onSignUpClick: () -> Unit = {},
     onGoogleSignIn: () -> Unit = {}
 ) {
     var email           by remember { mutableStateOf("") }
@@ -228,7 +235,7 @@ fun LoginBody(
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                     Text("Don't have an account? ", color = Color.Gray, fontSize = 14.sp)
-                    Text("Sign Up", color = StudyPurple, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.clickable { onBack() })
+                    Text("Sign Up", color = StudyPurple, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.clickable { onSignUpClick() })
                 }
             }
         }

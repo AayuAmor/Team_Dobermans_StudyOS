@@ -1,5 +1,6 @@
 package com.teamdobermans.studyos.navigation
 
+import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,8 +25,9 @@ import com.teamdobermans.studyos.ui.auth.LoginBody
 import com.teamdobermans.studyos.ui.auth.SignUpBody
 import com.teamdobermans.studyos.ui.focus.BrainGameScreen
 import com.teamdobermans.studyos.ui.focus.FocusScreen
+import com.teamdobermans.studyos.ui.focus.PomodoroActivity
 import com.teamdobermans.studyos.ui.focus.PomodoroBody
-import com.teamdobermans.studyos.ui.home.HomeScreen
+import com.teamdobermans.studyos.ui.home.DashboardBody
 import com.teamdobermans.studyos.ui.home.VisionBoardBody
 import com.teamdobermans.studyos.ui.plan.PlanBody
 import com.teamdobermans.studyos.ui.profile.ProfileScreenV2
@@ -33,6 +35,7 @@ import com.teamdobermans.studyos.ui.profile.SettingsBody
 import com.teamdobermans.studyos.ui.study.FlashcardsScreen
 import com.teamdobermans.studyos.ui.study.MockTestBody
 import com.teamdobermans.studyos.ui.study.NotesScreen
+import com.teamdobermans.studyos.ui.study.QuizScreen
 import com.teamdobermans.studyos.ui.study.StudyScreen
 import com.teamdobermans.studyos.ui.study.VideoToNotesScreen
 import com.teamdobermans.studyos.utils.GoogleSignInHelper
@@ -90,7 +93,8 @@ fun StudyOSNavGraph(
                             popUpTo(AppRoutes.Auth.route) { inclusive = true }
                         }
                     },
-                    onBack         = { navController.popBackStack() },
+                    onBack        = { navController.popBackStack() },
+                    onSignUpClick = { navController.navigate(AppRoutes.SignUp.route) },
                     onGoogleSignIn = { launcher.launch(GoogleSignInHelper.getSignInIntent(context)) }
                 )
             }
@@ -117,20 +121,32 @@ fun StudyOSNavGraph(
                             popUpTo(AppRoutes.Auth.route) { inclusive = true }
                         }
                     },
-                    onBack         = { navController.popBackStack() },
+                    onBack        = { navController.popBackStack() },
+                    onSignInClick = { navController.navigate(AppRoutes.Login.route) },
                     onGoogleSignIn = { launcher.launch(GoogleSignInHelper.getSignInIntent(context)) }
                 )
             }
 
             composable(AppRoutes.Home.route) {
-                val vm = viewModel<HomeViewModel>()
-                HomeScreen(
-                    viewModel          = vm,
-                    onNavigateStudy    = { navController.navigate(AppRoutes.Study.route) },
-                    onNavigatePlan     = { navController.navigate(AppRoutes.Plan.route) },
-                    onNavigateFocus    = { navController.navigate(AppRoutes.Focus.route) },
-                    onNavigateFlashcards = { navController.navigate(AppRoutes.Flashcards.route) },
-                    onNavigateNotes    = { navController.navigate(AppRoutes.Notes.route) }
+                val vm = viewModel<DashboardViewModel>()
+                val context = LocalContext.current
+                DashboardBody(
+                    viewModel = vm,
+                    onNavigatePomodoro = {
+                        context.startActivity(
+                            Intent(context, PomodoroActivity::class.java).putExtra("auto_start", true)
+                        )
+                    },
+                    onNavigateVisionBoard = { navController.navigate(AppRoutes.VisionBoard.route) },
+                    onNavigateProfile     = { navController.navigate(AppRoutes.Profile.route) },
+                    onNavigateAnalytics   = { navController.navigate(AppRoutes.Analytics.route) },
+                    onNavigateFlashcards  = { navController.navigate(AppRoutes.Flashcards.route) },
+                    onNavigateQuiz        = {
+                        context.startActivity(Intent(context, QuizScreen::class.java))
+                    },
+                    onNavigateBrainGame   = { navController.navigate(AppRoutes.BrainGame.route) },
+                    onNavigateVideoNotes  = { navController.navigate(AppRoutes.VideoNotes.route) },
+                    onNavigateMockTest    = { navController.navigate(AppRoutes.MockTest.route) }
                 )
             }
 
@@ -161,9 +177,10 @@ fun StudyOSNavGraph(
             composable(AppRoutes.Profile.route) {
                 val vm = viewModel<ProfileViewModel>()
                 ProfileScreenV2(
-                    viewModel           = vm,
-                    onNavigateAnalytics = { navController.navigate(AppRoutes.Analytics.route) },
-                    onSignOut           = {
+                    viewModel             = vm,
+                    onNavigateAnalytics   = { navController.navigate(AppRoutes.Analytics.route) },
+                    onNavigateVisionBoard = { navController.navigate(AppRoutes.VisionBoard.route) },
+                    onSignOut             = {
                         navController.navigate(AppRoutes.Auth.route) {
                             popUpTo(0) { inclusive = true }
                         }

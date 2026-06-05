@@ -33,7 +33,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
-import com.teamdobermans.studyos.ui.home.DashboardActivity
+import com.teamdobermans.studyos.MainActivity
 import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.utils.GoogleSignInHelper
 import com.teamdobermans.studyos.viewModel.AuthState
@@ -52,7 +52,7 @@ class SignUpActivity : ComponentActivity() {
                 .addOnCompleteListener { authTask ->
                     if (authTask.isSuccessful) {
                         Toast.makeText(this, "Google Sign-In successful!", Toast.LENGTH_SHORT).show()
-                        val intent = Intent(this, DashboardActivity::class.java)
+                        val intent = Intent(this, MainActivity::class.java)
                         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                         startActivity(intent)
                     } else {
@@ -76,7 +76,8 @@ class SignUpActivity : ComponentActivity() {
                         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                         startActivity(intent)
                     },
-                    onBack         = { finish() },
+                    onBack        = { finish() },
+                    onSignInClick = { startActivity(Intent(this, LoginActivity::class.java)); finish() },
                     onGoogleSignIn = { googleLauncher.launch(GoogleSignInHelper.getSignInIntent(this)) }
                 )
             }
@@ -89,6 +90,7 @@ fun SignUpBody(
     viewModel: AuthViewModel,
     onSignUpSuccess: () -> Unit,
     onBack: () -> Unit,
+    onSignInClick: () -> Unit = {},
     onGoogleSignIn: () -> Unit = {}
 ) {
     var fullName        by remember { mutableStateOf("") }
@@ -235,7 +237,7 @@ fun SignUpBody(
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                     Text("Already have an account? ", color = Color.Gray, fontSize = 14.sp)
-                    Text("Sign In", color = StudyPurple, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.clickable { onBack() })
+                    Text("Sign In", color = StudyPurple, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.clickable { onSignInClick() })
                 }
             }
         }

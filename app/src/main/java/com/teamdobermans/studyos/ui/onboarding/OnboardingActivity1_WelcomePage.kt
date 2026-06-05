@@ -1,6 +1,7 @@
 package com.teamdobermans.studyos.ui.onboarding
 import com.teamdobermans.studyos.R
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -25,7 +26,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.teamdobermans.studyos.ui.home.DashboardActivity
+import com.teamdobermans.studyos.ui.auth.LoginActivity
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 
 class OnboardingActivity1_WelcomePage : ComponentActivity() {
@@ -39,10 +40,14 @@ class OnboardingActivity1_WelcomePage : ComponentActivity() {
                 ) {
                     WelcomeScreen(
                         onGetStartedClick = {
-                            startActivity(Intent(this, OnboardingActivity1_WelcomePage::class.java))
+                            startActivity(Intent(this, OnboardingActivity2_StudyActivityOS::class.java))
+                            finish()
                         },
                         onSkipIntroClick = {
-                            startActivity(Intent(this, DashboardActivity::class.java))
+                            getSharedPreferences("StudyOSPrefs", Context.MODE_PRIVATE)
+                                .edit().putBoolean("onboarding_completed", true).apply()
+                            startActivity(Intent(this, LoginActivity::class.java))
+                            finish()
                         }
                     )
                 }

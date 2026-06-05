@@ -16,9 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BarChart
@@ -42,13 +40,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.teamdobermans.studyos.MainActivity
-import com.teamdobermans.studyos.R
-import com.teamdobermans.studyos.ui.home.VisionBoardActivity
+import com.teamdobermans.studyos.ui.home.DashboardActivity
 import com.teamdobermans.studyos.ui.profile.ProfileActivity
 import com.teamdobermans.studyos.ui.theme.StudyPurple
 
@@ -75,7 +70,7 @@ fun StudyBottomNav(selected: Int) {
                 isSelected = selected == 0,
                 onClick = {
                     if (selected != 0) {
-                        context.startActivity(Intent(context, MainActivity::class.java))
+                        context.startActivity(Intent(context, DashboardActivity::class.java))
                     }
                 }
             )
@@ -91,11 +86,7 @@ fun StudyBottomNav(selected: Int) {
                 label = "Study",
                 icon = if (selected == 2) Icons.Rounded.MenuBook else Icons.Outlined.MenuBook,
                 isSelected = selected == 2,
-                onClick = {
-                    if (selected != 2) {
-                        context.startActivity(Intent(context, VisionBoardActivity::class.java))
-                    }
-                }
+                onClick = { }
             )
             NavItem(
                 label = "Progress",

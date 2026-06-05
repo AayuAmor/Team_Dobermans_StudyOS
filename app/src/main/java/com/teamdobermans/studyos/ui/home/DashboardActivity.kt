@@ -1,6 +1,7 @@
 package com.teamdobermans.studyos.ui.home
 import com.teamdobermans.studyos.R
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -31,6 +32,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
+import com.teamdobermans.studyos.ui.analytics.ProgressActivity
+import com.teamdobermans.studyos.ui.focus.BrainGameActivityShell
+import com.teamdobermans.studyos.ui.focus.PomodoroActivity
+import com.teamdobermans.studyos.ui.profile.ProfileActivity
+import com.teamdobermans.studyos.ui.study.Flashcards
+import com.teamdobermans.studyos.ui.study.MockTestActivity
+import com.teamdobermans.studyos.ui.study.QuizScreen
+import com.teamdobermans.studyos.ui.study.VideotoNotes
 import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.viewModel.DashboardViewModel
 
@@ -42,7 +51,36 @@ class DashboardActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            DashboardBody(viewModel = dashboardViewModel)
+            DashboardBody(
+                viewModel = dashboardViewModel,
+                onNavigatePomodoro = {
+                    startActivity(Intent(this, PomodoroActivity::class.java).putExtra("auto_start", true))
+                },
+                onNavigateVisionBoard = {
+                    startActivity(Intent(this, VisionBoardActivity::class.java))
+                },
+                onNavigateAnalytics = {
+                    startActivity(Intent(this, ProgressActivity::class.java))
+                },
+                onNavigateProfile = {
+                    startActivity(Intent(this, ProfileActivity::class.java))
+                },
+                onNavigateFlashcards = {
+                    startActivity(Intent(this, Flashcards::class.java))
+                },
+                onNavigateQuiz = {
+                    startActivity(Intent(this, QuizScreen::class.java))
+                },
+                onNavigateBrainGame = {
+                    startActivity(Intent(this, BrainGameActivityShell::class.java))
+                },
+                onNavigateVideoNotes = {
+                    startActivity(Intent(this, VideotoNotes::class.java))
+                },
+                onNavigateMockTest = {
+                    startActivity(Intent(this, MockTestActivity::class.java))
+                }
+            )
         }
     }
 }
@@ -52,7 +90,13 @@ fun DashboardBody(
     viewModel: DashboardViewModel,
     onNavigatePomodoro: () -> Unit = {},
     onNavigateVisionBoard: () -> Unit = {},
-    onNavigateProfile: () -> Unit = {}
+    onNavigateProfile: () -> Unit = {},
+    onNavigateAnalytics: () -> Unit = {},
+    onNavigateFlashcards: () -> Unit = {},
+    onNavigateQuiz: () -> Unit = {},
+    onNavigateBrainGame: () -> Unit = {},
+    onNavigateVideoNotes: () -> Unit = {},
+    onNavigateMockTest: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val user = FirebaseAuth.getInstance().currentUser
@@ -197,40 +241,124 @@ fun DashboardBody(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 14.dp)
-                .shadow(4.dp, RoundedCornerShape(14.dp))
-                .clickable { onNavigatePomodoro() },
+                .shadow(4.dp, RoundedCornerShape(14.dp)),
             shape = RoundedCornerShape(14.dp),
             colors = CardDefaults.cardColors(containerColor = StudyPurpleDeep)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = if (timerRunning) "Running..." else "Focus Session",
+                            style = TextStyle(fontSize = 11.sp, color = Color.White.copy(alpha = 0.7f))
+                        )
+                        Text(
+                            text = timeText,
+                            style = TextStyle(fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White, letterSpacing = 1.sp)
+                        )
+                    }
+                    Image(
+                        painter = painterResource(
+                            id = if (timerRunning) R.drawable.baseline_pause_24 else R.drawable.baseline_play_arrow_24
+                        ),
+                        contentDescription = "Play/Pause",
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(Color.White)
+                            .padding(8.dp)
+                            .clickable { viewModel.toggleTimer() }
+                    )
+                }
+                Button(
+                    onClick = onNavigatePomodoro,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .height(40.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                ) {
+                    Text(
+                        "Start Session",
+                        color = StudyPurpleDeep,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+
+        Text(
+            text = "Vision Board",
+            style = TextStyle(
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+                letterSpacing = 0.3.sp
+            ),
+            modifier = Modifier.padding(start = 14.dp, top = 16.dp, bottom = 10.dp)
+        )
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp)
+                .shadow(4.dp, RoundedCornerShape(14.dp)),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column {
-                    Text(
-                        text = if (timerRunning) "Running..." else "Focus Session",
-                        style = TextStyle(fontSize = 11.sp, color = Color.White.copy(alpha = 0.7f))
-                    )
-                    Text(
-                        text = timeText,
-                        style = TextStyle(fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White, letterSpacing = 1.sp)
-                    )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFFF3E8FF)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("🎯", fontSize = 22.sp)
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            "Vision Board",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = TextPrimary
+                        )
+                        Text(
+                            "Keep your goals visible while you study",
+                            fontSize = 11.sp,
+                            color = TextSecondary
+                        )
+                    }
                 }
-                Image(
-                    painter = painterResource(
-                        id = if (timerRunning) R.drawable.baseline_pause_24 else R.drawable.baseline_play_arrow_24
-                    ),
-                    contentDescription = "Play/Pause",
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(CircleShape)
-                        .background(Color.White)
-                        .padding(8.dp)
-                        .clickable { viewModel.toggleTimer() }
-                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = onNavigateVisionBoard,
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = StudyPurple),
+                    modifier = Modifier.height(36.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
+                ) {
+                    Text("Open Board", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                }
             }
         }
 
@@ -251,8 +379,8 @@ fun DashboardBody(
                 .padding(horizontal = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            ToolCard(modifier = Modifier.weight(1f), iconRes = R.drawable.baseline_credit_card_24, iconBg = Color(0xFFFFF0E0), iconTint = Color(0xFFE07B39), name = "Flash Cards",     subtitle = "8 sets",           onClick = {})
-            ToolCard(modifier = Modifier.weight(1f), iconRes = R.drawable.baseline_quiz_24,         iconBg = Color(0xFFF0E8FF), iconTint = Color(0xFF7B4FE0), name = "Quiz Mode",      subtitle = "13 questions",     onClick = {})
+            ToolCard(modifier = Modifier.weight(1f), iconRes = R.drawable.baseline_credit_card_24, iconBg = Color(0xFFFFF0E0), iconTint = Color(0xFFE07B39), name = "Flash Cards",     subtitle = "8 sets",           onClick = onNavigateFlashcards)
+            ToolCard(modifier = Modifier.weight(1f), iconRes = R.drawable.baseline_quiz_24,         iconBg = Color(0xFFF0E8FF), iconTint = Color(0xFF7B4FE0), name = "Quiz Mode",      subtitle = "13 questions",     onClick = onNavigateQuiz)
         }
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -263,8 +391,8 @@ fun DashboardBody(
                 .padding(horizontal = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            ToolCard(modifier = Modifier.weight(1f), iconRes = R.drawable.baseline_sports_esports_24, iconBg = Color(0xFFFFE8EE), iconTint = Color(0xFFE04F7B), name = "Brain Game",      subtitle = "6 min break",      onClick = {})
-            ToolCard(modifier = Modifier.weight(1f), iconRes = R.drawable.baseline_video_library_24,  iconBg = Color(0xFFE8F4FF), iconTint = Color(0xFF3A82E0), name = "Videos to Notes", subtitle = "Convert into notes", onClick = {})
+            ToolCard(modifier = Modifier.weight(1f), iconRes = R.drawable.baseline_sports_esports_24, iconBg = Color(0xFFFFE8EE), iconTint = Color(0xFFE04F7B), name = "Brain Game",      subtitle = "6 min break",      onClick = onNavigateBrainGame)
+            ToolCard(modifier = Modifier.weight(1f), iconRes = R.drawable.baseline_video_library_24,  iconBg = Color(0xFFE8F4FF), iconTint = Color(0xFF3A82E0), name = "Videos to Notes", subtitle = "Convert into notes", onClick = onNavigateVideoNotes)
         }
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -275,11 +403,68 @@ fun DashboardBody(
                 .padding(horizontal = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            ToolCard(modifier = Modifier.weight(1f), iconRes = R.drawable.baseline_assignment_24, iconBg = Color(0xFFE8FFF4), iconTint = Color(0xFF1D9E75), name = "Mock Test",    subtitle = "10 min",     onClick = {})
-            ToolCard(modifier = Modifier.weight(1f), iconRes = R.drawable.baseline_bar_chart_24,  iconBg = Color(0xFFE8EAFF), iconTint = Color(0xFF4B5BE0), name = "Vision Board", subtitle = "Your goals", onClick = { onNavigateVisionBoard() })
+            ToolCard(modifier = Modifier.weight(1f), iconRes = R.drawable.baseline_assignment_24, iconBg = Color(0xFFE8FFF4), iconTint = Color(0xFF1D9E75), name = "Mock Test", subtitle = "10 min", onClick = onNavigateMockTest)
+            Spacer(modifier = Modifier.weight(1f))
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Analytics",
+            style = TextStyle(
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+                letterSpacing = 0.3.sp
+            ),
+            modifier = Modifier.padding(start = 14.dp, top = 16.dp, bottom = 10.dp)
+        )
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp)
+                .shadow(4.dp, RoundedCornerShape(14.dp)),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = StudyPurpleDeep)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Your Progress", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Image(
+                        painter = painterResource(id = R.drawable.baseline_bar_chart_24),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        colorFilter = ColorFilter.tint(Color.White.copy(alpha = 0.7f))
+                    )
+                }
+                Spacer(modifier = Modifier.height(14.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AnalyticsMiniStat(label = "Streak", value = "15d")
+                    Box(modifier = Modifier.width(1.dp).height(32.dp).background(Color.White.copy(alpha = 0.25f)))
+                    AnalyticsMiniStat(label = "This Week", value = "8.4h")
+                    Box(modifier = Modifier.width(1.dp).height(32.dp).background(Color.White.copy(alpha = 0.25f)))
+                    AnalyticsMiniStat(label = "Quiz Acc.", value = "78%")
+                }
+                Spacer(modifier = Modifier.height(14.dp))
+                Button(
+                    onClick = onNavigateAnalytics,
+                    modifier = Modifier.fillMaxWidth().height(38.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                ) {
+                    Text("View Analytics", color = StudyPurpleDeep, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
@@ -324,6 +509,14 @@ fun ToolCard(
     }
 }
 
+@Composable
+fun AnalyticsMiniStat(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
+        Text(label, color = Color.White.copy(alpha = 0.70f), fontSize = 10.sp)
+    }
+}
+
 @Preview
 @Composable
 fun DashboardPreview() {
@@ -331,7 +524,8 @@ fun DashboardPreview() {
         viewModel             = DashboardViewModel(),
         onNavigatePomodoro    = {},
         onNavigateVisionBoard = {},
-        onNavigateProfile     = {}
+        onNavigateProfile     = {},
+        onNavigateAnalytics   = {}
     )
 }
 

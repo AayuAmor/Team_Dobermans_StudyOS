@@ -41,13 +41,15 @@ class PomodoroActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent { PomodoroBody(onBack = { finish() }) }
+        val autoStart = intent.getBooleanExtra("auto_start", false)
+        setContent { PomodoroBody(onBack = { finish() }, autoStart = autoStart) }
     }
 }
 
 @Composable
 fun PomodoroBody(
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    autoStart: Boolean = false
 ) {
     val viewModel: PomodoroViewModel = viewModel()
     val selectedTab   by viewModel.selectedTab.collectAsState()
@@ -55,6 +57,10 @@ fun PomodoroBody(
     val shortMinutes  by viewModel.shortMinutes.collectAsState()
     val longMinutes   by viewModel.longMinutes.collectAsState()
     val isRunning     by viewModel.isRunning.collectAsState()
+
+    LaunchedEffect(Unit) {
+        if (autoStart && !isRunning) viewModel.toggleTimer()
+    }
     val sessionsToday by viewModel.sessionsToday.collectAsState()
     val timeRemaining by viewModel.timeRemaining.collectAsState()
 
