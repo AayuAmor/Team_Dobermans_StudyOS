@@ -1,6 +1,7 @@
 package com.teamdobermans.studyos.ui.study
 import com.teamdobermans.studyos.R
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -34,6 +35,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.teamdobermans.studyos.model.NoteModel
+import com.teamdobermans.studyos.model.Task
+import com.teamdobermans.studyos.ui.plan.PlanActivity
 import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.viewModel.NoteViewModel
 
@@ -63,23 +66,27 @@ fun NotesScreen(
     val resolvedVm: NoteViewModel = viewModel ?: androidx.lifecycle.viewmodel.compose.viewModel()
     val allNotes    by resolvedVm.notes.collectAsState()
     val saveResult  by resolvedVm.saveResult.collectAsState()
+    val linkedTasks by resolvedVm.linkedTasks.collectAsState()
     val context = LocalContext.current
 
     LaunchedEffect(saveResult) {
         saveResult?.let { result ->
-            val message = if (result == "SUCCESS") "Note saved!" else "$result"
+            val message = if (result == "SUCCESS") "Note saved!" else result
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             resolvedVm.clearSaveResult()
         }
     }
 
     NotesScreenContent(
-        modifier     = modifier,
-        allNotes     = allNotes,
-        onBackClick  = onBackClick,
-        onCreateNote = { title, body, folder -> resolvedVm.createNote(title, body, folder) },
-        onUpdateNote = { note -> resolvedVm.updateNote(note) },
-        onDeleteNote = { id -> resolvedVm.deleteNote(id) }
+        modifier        = modifier,
+        allNotes        = allNotes,
+        linkedTasks     = linkedTasks,
+        onBackClick     = onBackClick,
+        onNoteSelected  = { noteId -> resolvedVm.loadLinkedTasks(noteId) },
+        onNoteDeselected = { resolvedVm.clearLinkedTasks() },
+        onCreateNote    = { title, body, folder -> resolvedVm.createNote(title, body, folder) },
+        onUpdateNote    = { note -> resolvedVm.updateNote(note) },
+        onDeleteNote    = { id -> resolvedVm.deleteNote(id) }
     )
 }
 
@@ -87,7 +94,10 @@ fun NotesScreen(
 fun NotesScreenContent(
     modifier: Modifier = Modifier,
     allNotes: List<NoteModel>,
+    linkedTasks: List<Task> = emptyList(),
     onBackClick: () -> Unit,
+    onNoteSelected: (String) -> Unit = {},
+    onNoteDeselected: () -> Unit = {},
     onCreateNote: (String, String, String) -> Unit,
     onUpdateNote: (NoteModel) -> Unit,
     onDeleteNote: (String) -> Unit
@@ -96,12 +106,12 @@ fun NotesScreenContent(
     var extraFolders by rememberSaveable { mutableStateOf(listOf<String>()) }
     val folders = defaultFolders + extraFolders
 
-    var activeFolder       by rememberSaveable { mutableStateOf("Science") }
-    var searchQuery        by rememberSaveable { mutableStateOf("") }
-    var selectedNote       by remember { mutableStateOf<NoteModel?>(null) }
-    var showEditor         by rememberSaveable { mutableStateOf(false) }
+    var activeFolder        by rememberSaveable { mutableStateOf("Science") }
+    var searchQuery         by rememberSaveable { mutableStateOf("") }
+    var selectedNote        by remember { mutableStateOf<NoteModel?>(null) }
+    var showEditor          by rememberSaveable { mutableStateOf(false) }
     var showNewFolderDialog by rememberSaveable { mutableStateOf(false) }
-    var newFolderName      by rememberSaveable { mutableStateOf("") }
+    var newFolderName       by rememberSaveable { mutableStateOf("") }
 
     if (showNewFolderDialog) {
         AlertDialog(
@@ -148,6 +158,7 @@ fun NotesScreenContent(
             existingNote  = selectedNote,
             folders       = folders,
             defaultFolder = activeFolder,
+            linkedTasks   = linkedTasks,
             onSave = { title, body, folder ->
                 if (selectedNote != null) {
                     onUpdateNote(selectedNote!!.copy(title = title, body = body, folder = folder))
@@ -156,15 +167,18 @@ fun NotesScreenContent(
                 }
                 showEditor = false
                 selectedNote = null
+                onNoteDeselected()
             },
             onDelete = { noteId ->
                 onDeleteNote(noteId)
                 showEditor = false
                 selectedNote = null
+                onNoteDeselected()
             },
             onBack = {
                 showEditor = false
                 selectedNote = null
+                onNoteDeselected()
             }
         )
     } else {
@@ -227,7 +241,11 @@ fun NotesScreenContent(
                     items(visibleNotes, key = { it.id }) { note ->
                         NoteCard(
                             note    = note,
-                            onClick = { selectedNote = note; showEditor = true },
+                            onClick = {
+                                selectedNote = note
+                                showEditor = true
+                                if (note.id.isNotBlank()) onNoteSelected(note.id)
+                            },
                             onClose = { onDeleteNote(note.id) }
                         )
                     }
@@ -270,6 +288,7 @@ fun CreateEditNoteScreen(
     existingNote: NoteModel? = null,
     folders: List<String> = listOf("Science", "Social", "English"),
     defaultFolder: String = "Science",
+    linkedTasks: List<Task> = emptyList(),
     onSave: (title: String, body: String, folder: String) -> Unit,
     onDelete: ((noteId: String) -> Unit)? = null,
     onBack: () -> Unit
@@ -279,6 +298,7 @@ fun CreateEditNoteScreen(
     var folder by remember { mutableStateOf(existingNote?.folder ?: defaultFolder) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     val isEditing = existingNote != null
+    val context = LocalContext.current
 
     if (showDeleteDialog) {
         AlertDialog(
@@ -381,6 +401,16 @@ fun CreateEditNoteScreen(
                 )
             )
 
+            // ── Linked Tasks section (only for existing notes) ───────────────
+            if (isEditing) {
+                LinkedTasksSection(
+                    linkedTasks = linkedTasks,
+                    onOpenTask  = {
+                        context.startActivity(Intent(context, PlanActivity::class.java))
+                    }
+                )
+            }
+
             Button(
                 onClick  = { onSave(title.trim(), body.trim(), folder) },
                 enabled  = title.isNotBlank(),
@@ -407,6 +437,84 @@ fun CreateEditNoteScreen(
                     shape    = RoundedCornerShape(12.dp)
                 ) {
                     Text("Delete Note", color = Color.White, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LinkedTasksSection(
+    linkedTasks: List<Task>,
+    onOpenTask: (Task) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape    = RoundedCornerShape(12.dp),
+        color    = StudyPurpleLight
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                "Linked Tasks",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = BrandPurple
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            if (linkedTasks.isEmpty()) {
+                Text(
+                    "No tasks linked to this note",
+                    color = Color.Gray,
+                    fontSize = 12.sp
+                )
+            } else {
+                linkedTasks.forEach { task ->
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 3.dp)
+                            .clickable { onOpenTask(task) },
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color.White
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Text("•", color = BrandPurple, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    task.title,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = TextPrimary,
+                                    maxLines = 1
+                                )
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(50.dp),
+                                color = when (task.priority) {
+                                    com.teamdobermans.studyos.model.Priority.HIGH   -> Color(0xFFFFEBEB)
+                                    com.teamdobermans.studyos.model.Priority.MEDIUM -> Color(0xFFFFF8E1)
+                                    com.teamdobermans.studyos.model.Priority.LOW    -> Color(0xFFE8F5E9)
+                                }
+                            ) {
+                                Text(
+                                    task.priority.name.lowercase().replaceFirstChar { it.uppercase() },
+                                    color = when (task.priority) {
+                                        com.teamdobermans.studyos.model.Priority.HIGH   -> Color(0xFFE53935)
+                                        com.teamdobermans.studyos.model.Priority.MEDIUM -> Color(0xFFF57F17)
+                                        com.teamdobermans.studyos.model.Priority.LOW    -> Color(0xFF2E7D32)
+                                    },
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -597,4 +705,3 @@ fun NotesScreenPreview() {
         )
     }
 }
-

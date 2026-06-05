@@ -3,7 +3,9 @@ package com.teamdobermans.studyos.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.teamdobermans.studyos.model.NoteModel
+import com.teamdobermans.studyos.model.Task
 import com.teamdobermans.studyos.repo.NoteRepoImpl
+import com.teamdobermans.studyos.repo.TaskRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -12,12 +14,24 @@ import kotlinx.coroutines.launch
 
 class NoteViewModel : ViewModel() {
     private val repo = NoteRepoImpl()
+    private val taskRepo = TaskRepository
 
     val notes: StateFlow<List<NoteModel>> = repo.getNotes()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _saveResult = MutableStateFlow<String?>(null)
     val saveResult: StateFlow<String?> = _saveResult
+
+    private val _linkedTasks = MutableStateFlow<List<Task>>(emptyList())
+    val linkedTasks: StateFlow<List<Task>> = _linkedTasks
+
+    fun loadLinkedTasks(noteId: String) {
+        _linkedTasks.value = taskRepo.getTasksForNote(noteId)
+    }
+
+    fun clearLinkedTasks() {
+        _linkedTasks.value = emptyList()
+    }
 
     fun createNote(title: String, body: String, folder: String) =
         viewModelScope.launch {

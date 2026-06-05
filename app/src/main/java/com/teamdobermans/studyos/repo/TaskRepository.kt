@@ -1,10 +1,11 @@
+
 package com.teamdobermans.studyos.repo
 
 import com.teamdobermans.studyos.model.Priority
 import com.teamdobermans.studyos.model.Task
 import java.time.LocalDate
 
-class TaskRepository {
+object TaskRepository {
 
     private val remoteTaskStore = mutableListOf(
         Task(
@@ -36,55 +37,59 @@ class TaskRepository {
         )
     )
 
-    fun getAllTasks(): List<Task> {
-        return remoteTaskStore
-    }
+    fun getAllTasks(): List<Task> = remoteTaskStore.toList()
 
     fun getTodaysTasks(): List<Task> {
         val today = LocalDate.now()
-
-        return remoteTaskStore.filter {
-            it.startDate == today || it.endDate == today
-        }
+        return remoteTaskStore.filter { it.startDate == today || it.endDate == today }
     }
 
-    fun getHighPriorityTasks(): List<Task> {
-        return remoteTaskStore.filter {
-            it.priority == Priority.HIGH
-        }
-    }
+    fun getHighPriorityTasks(): List<Task> =
+        remoteTaskStore.filter { it.priority == Priority.HIGH }
 
-    fun getTasksBySubject(subjectId: String): List<Task> {
-        return remoteTaskStore.filter {
-            it.subjectId == subjectId
-        }
-    }
+    fun getTasksBySubject(subjectId: String): List<Task> =
+        remoteTaskStore.filter { it.subjectId == subjectId }
 
     fun insertTask(task: Task) {
         remoteTaskStore.add(task)
     }
 
     fun updateTask(updatedTask: Task) {
-        val index = remoteTaskStore.indexOfFirst {
-            it.id == updatedTask.id
-        }
-
-        if (index != -1) {
-            remoteTaskStore[index] = updatedTask
-        }
+        val index = remoteTaskStore.indexOfFirst { it.id == updatedTask.id }
+        if (index != -1) remoteTaskStore[index] = updatedTask
     }
 
     fun deleteTask(taskId: String) {
-        remoteTaskStore.removeAll {
-            it.id == taskId
+        remoteTaskStore.removeAll { it.id == taskId }
+    }
+
+    fun getTodayTaskCount(): Int = getTodaysTasks().size
+
+    fun getTotalTaskCount(): Int = remoteTaskStore.size
+
+    // ── Notes ↔ Tasks relationship ───────────────────────────────────────────
+
+    fun attachNoteToTask(taskId: String, noteId: String) {
+        val index = remoteTaskStore.indexOfFirst { it.id == taskId }
+        if (index != -1) {
+            val task = remoteTaskStore[index]
+            if (!task.linkedNoteIds.contains(noteId)) {
+                remoteTaskStore[index] = task.copy(linkedNoteIds = task.linkedNoteIds + noteId)
+            }
         }
     }
 
-    fun getTodayTaskCount(): Int {
-        return getTodaysTasks().size
+    fun removeNoteFromTask(taskId: String, noteId: String) {
+        val index = remoteTaskStore.indexOfFirst { it.id == taskId }
+        if (index != -1) {
+            val task = remoteTaskStore[index]
+            remoteTaskStore[index] = task.copy(linkedNoteIds = task.linkedNoteIds - noteId)
+        }
     }
 
-    fun getTotalTaskCount(): Int {
-        return remoteTaskStore.size
-    }
+    fun getLinkedNoteIds(taskId: String): List<String> =
+        remoteTaskStore.find { it.id == taskId }?.linkedNoteIds ?: emptyList()
+
+    fun getTasksForNote(noteId: String): List<Task> =
+        remoteTaskStore.filter { noteId in it.linkedNoteIds }
 }
