@@ -32,7 +32,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
-import com.teamdobermans.studyos.ui.analytics.ProgressActivity
+import com.teamdobermans.studyos.ui.profile.ProgressActivity
 import com.teamdobermans.studyos.ui.focus.BrainGameActivityShell
 import com.teamdobermans.studyos.ui.focus.PomodoroActivity
 import com.teamdobermans.studyos.ui.profile.ProfileActivity
@@ -459,7 +459,7 @@ fun DashboardBody(
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White)
                 ) {
-                    Text("View Analytics", color = StudyPurpleDeep, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Text("View Full Analytics", color = StudyPurpleDeep, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
         }

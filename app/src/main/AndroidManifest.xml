@@ -33,7 +33,7 @@
         <activity android:name=".ui.focus.PomodoroActivity"         android:exported="false" android:theme="@style/Theme.StudyOS" />
         <activity android:name=".ui.auth.LoginActivity"             android:exported="false" android:theme="@style/Theme.StudyOS" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ui.profile.ProfileActivity"        android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.analytics.ProgressActivity"     android:exported="false" android:theme="@style/Theme.StudyOS" />
+        <activity android:name=".ui.profile.ProgressActivity"      android:exported="false" android:theme="@style/Theme.StudyOS" />
         <activity android:name=".ui.home.VisionBoardActivity"       android:exported="false" android:theme="@style/Theme.StudyOS" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ui.study.MockTestActivity"         android:exported="false" android:theme="@style/Theme.StudyOS" />
         <activity android:name=".ui.study.Flashcards"               android:exported="false" android:theme="@style/Theme.StudyOS" />

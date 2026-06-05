@@ -26,8 +26,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
-import com.teamdobermans.studyos.navigation.AppRoutes
-import com.teamdobermans.studyos.navigation.StudyOSNavGraph
+import com.teamdobermans.studyos.ui.navigation.AppRoutes
+import com.teamdobermans.studyos.ui.navigation.StudyOSNavGraph
 import com.teamdobermans.studyos.ui.onboarding.OnboardingActivity1_WelcomePage
 import com.teamdobermans.studyos.ui.theme.*
 

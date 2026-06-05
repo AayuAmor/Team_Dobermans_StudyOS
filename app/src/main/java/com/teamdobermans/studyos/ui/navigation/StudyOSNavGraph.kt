@@ -1,4 +1,4 @@
-package com.teamdobermans.studyos.navigation
+package com.teamdobermans.studyos.ui.navigation
 
 import android.content.Intent
 import android.widget.Toast
@@ -20,7 +20,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.GoogleAuthProvider
 import com.teamdobermans.studyos.AuthScreen
-import com.teamdobermans.studyos.ui.analytics.AnalyticsScreen
+import com.teamdobermans.studyos.ui.profile.ProgressBody
 import com.teamdobermans.studyos.ui.auth.LoginBody
 import com.teamdobermans.studyos.ui.auth.SignUpBody
 import com.teamdobermans.studyos.ui.focus.BrainGameScreen
@@ -198,9 +198,9 @@ fun StudyOSNavGraph(
 
             composable(AppRoutes.Analytics.route) {
                 val vm = viewModel<AnalyticsViewModel>()
-                AnalyticsScreen(
-                    viewModel = vm,
-                    onBack    = { navController.popBackStack() }
+                ProgressBody(
+                    analyticsViewModel = vm,
+                    onBack             = { navController.popBackStack() }
                 )
             }
 

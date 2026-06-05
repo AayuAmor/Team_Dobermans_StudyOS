@@ -1,4 +1,4 @@
-package com.teamdobermans.studyos.navigation
+package com.teamdobermans.studyos.ui.navigation
 
 sealed class AppRoutes(val route: String) {
 
@@ -22,8 +22,5 @@ sealed class AppRoutes(val route: String) {
     object Pomodoro    : AppRoutes("pomodoro")
     object Settings    : AppRoutes("settings")
 
-    object Dashboard   : AppRoutes("home")
-    object Progress    : AppRoutes("analytics")
-    object StudyHub    : AppRoutes("study")
 }
 

@@ -203,8 +203,8 @@ private fun AnalyticsAccessCard(onClick: () -> Unit) {
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
-                    Text("View Analytics", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                    Text("Detailed performance insights", color = Color.White.copy(alpha = 0.70f), fontSize = 11.sp)
+                    Text("Analytics", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    Text("Track your study performance", color = Color.White.copy(alpha = 0.70f), fontSize = 11.sp)
                 }
             }
             Icon(imageVector = Icons.Rounded.ChevronRight, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
