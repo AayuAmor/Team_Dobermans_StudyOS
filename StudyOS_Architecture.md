@@ -1,95 +1,147 @@
-# StudyOS Architecture
+# StudyOS Architecture v2.1
 
 ## Core Philosophy
 
-StudyOS is not a note-taking app.
+StudyOS is not a note-taking application.
 
-StudyOS is a Personal Learning Operating System.
+StudyOS is a Personal Learning Operating System designed to help students capture knowledge, organize learning, execute study plans, and measure progress.
 
-Everything revolves around knowledge.
+Knowledge is the foundation of the entire system.
 
-The Note becomes the central object of the entire application.
+The Note is the central object of StudyOS.
 
-Every feature either creates knowledge, consumes knowledge, tests knowledge, or visualizes knowledge.
+Every feature either creates knowledge, consumes knowledge, tests knowledge, reinforces knowledge, or visualizes knowledge.
+
+The system is designed around a single principle:
+
+Generate knowledge once and reuse it everywhere.
 
 ---
 
 # The Knowledge Engine
 
-The Note is the source of truth.
+The Note is the single source of truth.
 
 ```text
 Video
 │
-├── Notes
+▼
+Notes
 │
 ├── Flashcards
-│
 ├── Quiz
-│
 ├── Mock Test
-│
 ├── Tasks
-│
+├── Revision Sessions
 ├── Analytics
-│
-└── Revision Sessions
+└── Progress Tracking
 ```
 
-Everything derives from Notes.
+Every learning feature derives from Notes.
 
-Never duplicate knowledge.
+Knowledge should never be duplicated.
 
-Generate it once.
+The same note should power:
 
-Reuse it everywhere.
+* Quiz Generation
+* Mock Test Generation
+* Flashcard Generation
+* Revision Sessions
+* Linked Tasks
+* Learning Analytics
 
 ---
 
-# Final Feature Architecture
+# Application Architecture
 
-## Dashboard
+StudyOS follows:
 
-Purpose:
+```text
+MVVM + Repository Pattern
+```
 
-Display learning status and provide entry points into the learning system.
+Architecture Flow:
+
+```text
+UI Layer
+    ↓
+ViewModel Layer
+    ↓
+Repository Layer
+    ↓
+Local Storage / Backend Services
+```
 
 Responsibilities:
 
-* Today's Tasks
-* Study Hours
-* Streak
-* Focus Session
-* Continue Learning
-* Quick Actions
-* Analytics Preview
-* Vision Board Preview
+```text
+UI
+→ Displays state
 
-Owner:
+ViewModel
+→ Handles business logic
+
+Repository
+→ Handles data access
+
+Backend
+→ Handles heavy processing
+```
+
+Activities must never contain business logic.
+
+Business logic belongs inside ViewModels and Repositories.
+
+---
+
+# Dashboard System
+
+## Purpose
+
+Provide a complete overview of the user's learning status.
+
+## Owner
 
 ```text
+DashboardActivity
+DashboardViewModel
+```
+
+## Responsibilities
+
+* Today's Tasks
+* Daily Study Hours
+* Weekly Study Hours
+* Current Streak
+* Longest Streak
+* Focus Session Launcher
+* Continue Learning
+* Vision Board Preview
+* Analytics Preview
+* Quick Actions
+
+## Dashboard Flow
+
+```text
+Task Repository
+Analytics Repository
+Streak Repository
+Focus Repository
+        ↓
+DashboardViewModel
+        ↓
 DashboardActivity
 ```
 
 ---
 
-## Notes System
+# Notes System
 
-Purpose:
+## Purpose
 
-The central knowledge repository.
+The central knowledge repository of StudyOS.
 
-Responsibilities:
-
-* Create Notes
-* Edit Notes
-* Organize Notes
-* Tag Notes
-* Search Notes
-* Link Notes to Tasks
-* Generate Learning Content
-
-Owner:
+## Owner
 
 ```text
 NoteActivity
@@ -97,23 +149,40 @@ NotesViewModel
 NoteRepository
 ```
 
+## Responsibilities
+
+* Create Notes
+* Edit Notes
+* Delete Notes
+* Search Notes
+* Organize Notes
+* Tag Notes
+* Link Notes to Tasks
+* Generate Learning Materials
+
+## Note Model
+
+Each Note should contain:
+
+```text
+id
+title
+content
+subject
+tags
+createdAt
+updatedAt
+```
+
 ---
 
-## Task System
+# Task System
 
-Purpose:
+## Purpose
 
-Convert learning goals into actions.
+Convert learning goals into actionable study plans.
 
-Responsibilities:
-
-* Create Task
-* Update Task
-* Prioritize Task
-* Link Notes
-* Track Completion
-
-Owner:
+## Owner
 
 ```text
 PlanActivity
@@ -121,83 +190,170 @@ PlanViewModel
 TaskRepository
 ```
 
-Relationship:
+## Responsibilities
+
+* Create Tasks
+* Update Tasks
+* Complete Tasks
+* Prioritize Tasks
+* Link Notes
+* Schedule Study Work
+
+## Task Relationship
 
 ```text
 Task
-↓
-Linked Notes
+│
+└── Linked Notes
+```
+
+A task can contain multiple linked notes.
+
+A note can be linked to multiple tasks.
+
+---
+
+# Streak System
+
+## Purpose
+
+Encourage consistency while remaining realistic for students.
+
+## Owner
+
+```text
+StreakRepository
+StreakViewModel
+```
+
+## StudyOS Rule
+
+StudyOS uses a Flexible Streak System.
+
+Rules:
+
+```text
+Miss 1 day
+→ Streak continues
+
+Miss 2 days
+→ Streak continues
+
+Miss 3 consecutive days
+→ Streak resets
+```
+
+## Meaningful Study Activity
+
+The streak only updates when the user performs meaningful study actions.
+
+Examples:
+
+* Complete Pomodoro Session
+* Complete Task
+* Complete Quiz
+* Complete Mock Test
+* Create Note
+* Complete Revision Session
+
+Opening the application does not count.
+
+## Workflow
+
+```text
+Study Activity
+        ↓
+StudyActivityTracker
+        ↓
+StreakRepository
+        ↓
+Dashboard Refresh
 ```
 
 ---
 
-## Focus System
+# Focus System
 
-Purpose:
+## Purpose
 
-Convert planned learning into focused execution.
+Convert plans into focused execution.
 
-Responsibilities:
-
-* Pomodoro
-* Deep Work Sessions
-* Focus Statistics
-
-Owner:
+## Owner
 
 ```text
 PomodoroActivity
 ```
 
+## Responsibilities
+
+* Pomodoro Timer
+* Deep Work Sessions
+* Session Statistics
+* Focus Tracking
+
+## Workflow
+
+```text
+Focus Session
+        ↓
+Focus Repository
+        ↓
+Analytics
+        ↓
+Streak System
+```
+
 ---
 
-## Analytics System
+# Analytics System
 
-Purpose:
+## Purpose
 
 Measure learning effectiveness.
 
-Single Owner:
+## Owner
 
 ```text
 ProgressActivity
 ```
 
-Responsibilities:
+There must not be a separate Analytics screen.
 
-* Study Hours
-* Weekly Hours
-* Streak
-* Quiz Accuracy
+ProgressActivity is the single analytics owner.
+
+## Responsibilities
+
+* Daily Study Hours
+* Weekly Study Hours
+* Monthly Study Hours
+* Current Streak
+* Longest Streak
 * Focus Score
-* Completion Rate
-
-There should be no separate AnalyticsScreen.
-
-
-ProgressActivity owns analytics.
+* Quiz Accuracy
+* Task Completion Rate
+* Revision Statistics
 
 ---
 
 # Knowledge Generation Layer
 
-This is the intelligence layer.
+This layer transforms Notes into learning materials.
 
-All generated content comes from Notes.
+Everything originates from Notes.
 
 ---
 
-## Quiz Generation
+# Quiz Generation
 
-Backend Required:
+## Backend Required
 
 No
 
-Implementation:
+## Technology
 
 Rule-Based NLP
 
-Files:
+## Files
 
 ```text
 QuestionGenerator.kt
@@ -205,108 +361,81 @@ QuizViewModel.kt
 QuizScreen.kt
 ```
 
-Input:
+## Workflow
 
 ```text
 Note
-```
-
-Output:
-
-```text
-MCQs
-```
-
-Flow:
-
-```text
-Note
-↓
+    ↓
 QuestionGenerator
-↓
-Quiz Questions
+    ↓
+Generated MCQs
+    ↓
+QuizScreen
 ```
 
 ---
 
-## Mock Test Generation
+# Mock Test Generation
 
-Backend Required:
+## Backend Required
 
 No
 
-Implementation:
+## Technology
 
-Same engine as Quiz Generation.
+Rule-Based NLP
 
-Input:
-
-```text
-Multiple Notes
-```
-
-Output:
-
-```text
-Exam-style Question Set
-```
-
-Flow:
+## Workflow
 
 ```text
 Selected Notes
-↓
-Question Generator
-↓
+        ↓
+QuestionGenerator
+        ↓
 Question Bank
-↓
+        ↓
 Mock Test
 ```
 
+## Purpose
+
+Provide exam-style practice from existing notes.
+
 ---
 
-## Flashcard Generation
+# Flashcard Generation
 
-Backend Required:
+## Backend Required
 
 No
 
-Implementation:
+## Technology
 
 Rule-Based Extraction
 
-Input:
+## Workflow
 
 ```text
 Note
-```
-
-Output:
-
-```text
-Front
-Back
-```
-
-Flow:
-
-```text
-Note
-↓
-Important Concepts
-↓
+    ↓
+Concept Extraction
+    ↓
 Flashcards
 ```
+
+## Purpose
+
+Provide active recall learning.
 
 ---
 
 # Video To Notes System
 
-Backend Required:
+## Backend Required
 
 Yes
 
-Technology:
+## Technology Stack
 
 ```text
 FastAPI
@@ -315,81 +444,88 @@ FFmpeg
 yt-dlp
 ```
 
-Purpose:
+## Purpose
 
-Transform videos into structured notes.
+Transform educational videos into structured notes.
 
-Input Sources:
+## Supported Inputs
 
 1. Local Video Upload
 2. Shared Video URL
 
-Both paths enter the same processing pipeline.
+Both use the same backend pipeline.
 
 ---
 
-## Unified Video Pipeline
+# Unified Video Pipeline
 
 ```text
-Android
-│
-├── Upload Video
-│
-└── Share URL
+Android Application
         │
-        ▼
+        ├── Upload Video
+        │
+        └── Share URL
+                │
+                ▼
 FastAPI Backend
-        │
-        ▼
-Media Processing Queue
-        │
-        ▼
+                │
+                ▼
+Media Queue
+                │
+                ▼
 Audio Extraction
-        │
-        ▼
+                │
+                ▼
 Whisper Transcription
-        │
-        ▼
+                │
+                ▼
 Note Structuring
-        │
-        ▼
+                │
+                ▼
 Generated Notes
-        │
-        ▼
-Android Notes System
+                │
+                ▼
+Notes Repository
+                │
+                ▼
+StudyOS Knowledge Engine
 ```
 
 ---
 
-## Why FastAPI
+# Why FastAPI
 
 FastAPI is used because:
 
-* Whisper runs best in Python
-* FFmpeg integration is easier
-* yt-dlp integration is easier
-* Processing can happen asynchronously
+* Whisper performs best in Python
+* FFmpeg integration is straightforward
+* yt-dlp integration is straightforward
+* Background processing is easier
 * Android remains lightweight
+* Future AI integrations become easier
 
-Android should never process videos directly.
+Android should never process large media files directly.
 
-Android only uploads.
+Android uploads.
 
-FastAPI performs computation.
+FastAPI processes.
 
 ---
 
-
 # Final Technical Decisions
 
+```text
 Dashboard
+→ Android MVVM
+
+Notes
 → Android MVVM
 
 Tasks
 → Android MVVM
 
-Notes
-→ Android MVVM
+Streak System
+→ Flexible Streak Architecture
 
 Quiz Generation
 → Local Rule-Based NLP
@@ -397,19 +533,28 @@ Quiz Generation
 Mock Test Generation
 → Local Rule-Based NLP
 
-Flashcards
+Flashcard Generation
 → Local Rule-Based NLP
 
 Analytics
-→ ProgressActivity only
+→ ProgressActivity
 
 Video To Notes
 → FastAPI + FFmpeg + faster-whisper + yt-dlp
 
 AI APIs
-→ Not required for v1
-
+→ Not Required For V1
 ```
 
-StudyOS v1 focuses on execution, learning, and knowledge management, not expensive AI. AI becomes an enhancement later, not the foundation.
-```
+## StudyOS Mission
+
+StudyOS focuses on:
+
+* Knowledge Management
+* Learning Consistency
+* Active Recall
+* Revision
+* Focused Study
+* Productivity
+
+Artificial Intelligence is an enhancement layer, not the foundation of the platform.
