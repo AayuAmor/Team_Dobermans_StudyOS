@@ -1,4 +1,4 @@
-package com.teamdobermans.studyos.Model
+package com.teamdobermans.studyos.model
 
 data class NoteModel(
     val id: String = "",

@@ -2,8 +2,8 @@ package com.teamdobermans.studyos.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.teamdobermans.studyos.Model.NoteModel
-import com.teamdobermans.studyos.Repo.NoteRepoImpl
+import com.teamdobermans.studyos.model.NoteModel
+import com.teamdobermans.studyos.repo.NoteRepoImpl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

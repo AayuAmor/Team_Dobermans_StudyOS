@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.auth.FirebaseAuth
-import com.teamdobermans.studyos.Model.NoteModel
+import com.teamdobermans.studyos.model.NoteModel
 import com.teamdobermans.studyos.ui.theme.BrandPurple
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 import com.teamdobermans.studyos.viewModel.NoteViewModel

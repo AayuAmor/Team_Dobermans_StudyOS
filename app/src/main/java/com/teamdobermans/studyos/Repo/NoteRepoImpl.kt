@@ -1,9 +1,9 @@
-package com.teamdobermans.studyos.Repo
+package com.teamdobermans.studyos.repo
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import com.teamdobermans.studyos.Model.NoteModel
+import com.teamdobermans.studyos.model.NoteModel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
