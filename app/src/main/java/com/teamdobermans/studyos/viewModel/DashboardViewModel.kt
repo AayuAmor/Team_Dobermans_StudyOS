@@ -1,4 +1,4 @@
-package com.teamdobermans.studyos
+package com.teamdobermans.studyos.viewModel
 
 import android.os.CountDownTimer
 import androidx.lifecycle.ViewModel
