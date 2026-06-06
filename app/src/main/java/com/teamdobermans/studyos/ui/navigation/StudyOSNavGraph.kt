@@ -205,7 +205,11 @@ fun StudyOSNavGraph(
             }
 
             composable(AppRoutes.Flashcards.route) {
-                FlashcardsScreen(onBack = { navController.popBackStack() })
+                val vm = viewModel<FlashcardViewModel>()
+                FlashcardsScreen(
+                    viewModel = vm,
+                    onBack    = { navController.popBackStack() }
+                )
             }
 
             composable(AppRoutes.BrainGame.route) {
@@ -251,4 +255,3 @@ fun StudyOSNavGraph(
         }
     }
 }
-

@@ -59,4 +59,5 @@
     <!-- Google Sign-In: replace with your Web Client ID from Firebase Console -->
     <!-- Project Settings -> Your App -> google-services.json -> oauth_client with client_type 3 -->
     <string name="default_web_client_id">YOUR_WEB_CLIENT_ID_HERE</string>
+    <string name="title_activity_flashcard_model">FlashcardModel</string>
 </resources>
