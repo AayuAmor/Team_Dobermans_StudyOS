@@ -2,6 +2,7 @@ package com.teamdobermans.studyos.viewModel
 
 import android.os.CountDownTimer
 import androidx.lifecycle.ViewModel
+import com.google.firebase.auth.FirebaseAuth
 import com.teamdobermans.studyos.model.Task
 import com.teamdobermans.studyos.repo.TaskRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,7 +22,11 @@ data class DashboardUiState(
 
 class DashboardViewModel : ViewModel() {
 
+    private val auth           = FirebaseAuth.getInstance()
     private val taskRepository = TaskRepository()
+
+    private val _userName = MutableStateFlow(resolveUserName())
+    val userName: StateFlow<String> = _userName.asStateFlow()
 
     private val _state = MutableStateFlow(
         DashboardUiState(
@@ -29,6 +34,17 @@ class DashboardViewModel : ViewModel() {
         )
     )
     val state: StateFlow<DashboardUiState> = _state.asStateFlow()
+
+    fun loadUserName() {
+        _userName.value = resolveUserName()
+    }
+
+    private fun resolveUserName(): String {
+        val user = auth.currentUser
+        return user?.displayName?.takeIf { it.isNotBlank() }
+            ?: user?.email?.substringBefore("@")
+            ?: "Learner"
+    }
 
     private val _progress = MutableStateFlow(_state.value.dailyProgress)
     val progress: StateFlow<Float> = _progress.asStateFlow()

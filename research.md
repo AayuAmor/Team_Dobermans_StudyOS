@@ -2101,6 +2101,216 @@ Quick answers for each feature under exam conditions.
 
 ---
 
+# FEATURE DEEP DIVE — PROFILE UPDATE SYSTEM
+
+**Sprint:** 6 (Enhancement)  
+**Status:** Implemented  
+**Owner:** Ayush Kumar Raut  
+**Date:** June 2026
+
+---
+
+## Feature Name
+
+Profile Update System
+
+---
+
+## Problem Solved
+
+Before this feature, users had no way to change their display name or email address after account creation. The profile screen only showed the email extracted from Firebase Auth and allowed password changes. The display name shown on the Dashboard was hardcoded to fallback values rather than reading from a persisted user record. This feature gives users control over their identity data and keeps Firebase Auth and Firestore in sync.
+
+---
+
+## Architecture Placement
+
+```
+ProfileActivity (UI)
+        ↓
+ProfileViewModel (state machine + validation)
+        ↓
+ProfileRepository (Firebase communication)
+        ↓
+Firebase Auth (displayName + email update)
+        ↓
+Cloud Firestore (users/{uid} document merge)
+```
+
+Dashboard integration:
+
+```
+DashboardActivity.onResume()
+        ↓
+DashboardViewModel.loadUserName()
+        ↓
+FirebaseAuth.currentUser.displayName
+        ↓
+DashboardHeader greeting updated
+```
+
+---
+
+## New Files Created
+
+| File | Purpose |
+|---|---|
+| `model/UserProfile.kt` | Data class: `uid`, `name`, `email` — maps Firestore `users/{uid}` |
+
+---
+
+## Modified Files
+
+| File | What Changed |
+|---|---|
+| `repo/ProfileRepository.kt` | Added `getProfile()`, `updateProfile(name, email)`; `updateDisplayName()` now also updates Firebase Auth via `UserProfileChangeRequest` |
+| `viewModel/ProfileViewModel.kt` | Added `ProfileUiState` sealed class, `profile` StateFlow, `uiState` StateFlow, `nameError`/`emailError` StateFlows, `loadProfile()`, `updateProfile()`, `validateProfile()`; kept `email` and `saveResult` for backward compat with `ProfileScreen.kt` |
+| `ui/profile/ProfileActivity.kt` | Added email editing field; replaced Toast feedback with inline success/error banners; replaced direct `ProfileViewModel()` instantiation with `by viewModels()` for ViewModel lifecycle correctness; loading indicator on Save button during async call |
+| `viewModel/DashboardViewModel.kt` | Added `userName: StateFlow<String>` and `loadUserName()` which reads live from `FirebaseAuth.currentUser` |
+| `ui/home/DashboardActivity.kt` | Overrides `onResume()` to call `dashboardViewModel.loadUserName()`; `DashboardBody` collects `userName` from ViewModel via `collectAsState()` instead of reading FirebaseAuth directly |
+
+---
+
+## Workflow (Save Changes)
+
+1. User opens Profile screen — `ProfileViewModel.init {}` calls `loadProfile()`
+2. `ProfileRepository.getProfile()` reads Firestore `users/{uid}`, falls back to Firebase Auth fields
+3. Fields pre-fill with current `name` and `email` from loaded `UserProfile`
+4. User edits name and/or email → presses "Save Changes"
+5. `ProfileViewModel.updateProfile(name, email)` runs:
+   - `validateProfile()` checks: name ≥ 2 chars, email matches `Patterns.EMAIL_ADDRESS`
+   - If invalid: sets `_nameError` and/or `_emailError` StateFlows → inline errors shown
+   - If valid: sets `_uiState = Loading` → button shows spinner
+6. `ProfileRepository.updateProfile()` runs three operations in order:
+   - `UserProfileChangeRequest.Builder().setDisplayName(name)` → `user.updateProfile().await()` (Firebase Auth)
+   - `user.updateEmail(email).await()` only if email changed (throws `FirebaseAuthRecentLoginRequiredException` → caught and rethrown with friendly message)
+   - `db.collection("users").document(uid).set(data, SetOptions.merge()).await()` — writes `displayName`, `email`, `updatedAt` without touching other fields
+7. On success: `_uiState = Success` → green banner shown → auto-dismissed after 3 seconds
+8. On failure: `_uiState = Error(message)` → red banner shown with specific error message
+9. User returns to Dashboard → `DashboardActivity.onResume()` → `dashboardViewModel.loadUserName()` → greeting refreshes
+
+---
+
+## Repository Participation
+
+`ProfileRepository` is the sole Firebase communication layer. It:
+- Reads profile from Firestore with Auth fallback
+- Updates Firebase Auth `displayName` via `UserProfileChangeRequest`
+- Updates Firebase Auth `email` via `updateEmail()` with re-auth detection
+- Writes to Firestore using `SetOptions.merge()` to avoid overwriting unrelated fields
+- Returns `Result<T>` via `runCatching` so ViewModel handles success/failure uniformly
+
+---
+
+## Firebase Integration
+
+### Firebase Auth
+
+```kotlin
+// Display name update
+UserProfileChangeRequest.Builder().setDisplayName(name).build()
+user.updateProfile(profileChange).await()
+
+// Email update (requires recent sign-in)
+user.updateEmail(email).await()
+```
+
+### Firestore
+
+```kotlin
+// Merge update — preserves existing fields
+db.collection("users").document(uid).set(
+    mapOf("displayName" to name, "email" to email, "updatedAt" to Timestamp.now()),
+    SetOptions.merge()
+).await()
+```
+
+Firestore path: `users/{uid}`  
+Fields written: `displayName`, `email`, `updatedAt`  
+Fields preserved: all existing fields (e.g., streak, sessions)
+
+---
+
+## Validation Strategy
+
+Validation runs client-side inside `ProfileViewModel.validateProfile()` before any Firebase call.
+
+| Field | Rule | Error Message |
+|---|---|---|
+| Name | Not empty | "Name cannot be empty" |
+| Name | ≥ 2 characters | "Name must be at least 2 characters" |
+| Email | Not empty | "Email cannot be empty" |
+| Email | Matches `Patterns.EMAIL_ADDRESS` | "Invalid email format" |
+
+Errors are exposed as `StateFlow<String?>` and rendered inline below each field using `isError` on `OutlinedTextField`. No Toasts are used for validation errors.
+
+---
+
+## ProfileUiState
+
+```kotlin
+sealed class ProfileUiState {
+    object Idle    : ProfileUiState()
+    object Loading : ProfileUiState()
+    data class Success(val message: String = "Profile updated successfully") : ProfileUiState()
+    data class Error(val message: String) : ProfileUiState()
+}
+```
+
+| State | UI Effect |
+|---|---|
+| `Idle` | Normal state, button enabled |
+| `Loading` | Button disabled, spinner shown |
+| `Success` | Green banner shown, auto-clears after 3s |
+| `Error` | Red banner shown with message |
+
+---
+
+## Dashboard Integration
+
+`DashboardActivity.onResume()` calls `dashboardViewModel.loadUserName()`. This reads `FirebaseAuth.currentUser.displayName` live (which was just updated by `updateProfile()`). The `DashboardBody` composable collects `viewModel.userName` as `StateFlow`, so it recomposes automatically when the value changes. The greeting "Good Morning, [name]" reflects the updated name immediately on return from ProfileActivity.
+
+---
+
+## Edge Cases Handled
+
+| Edge Case | Handling |
+|---|---|
+| Firebase requires recent sign-in for email update | Caught as `FirebaseAuthRecentLoginRequiredException` → shows "Please sign out and sign back in before changing your email address" |
+| Network failure during save | `runCatching` propagates exception → `ProfileUiState.Error` shown |
+| Email unchanged from current | `updateEmail()` is skipped (guarded by `email != user.email`) |
+| Profile not yet loaded (Firestore slow) | Fields start empty, fill in once `getProfile()` resolves via `remember(profile.name)` key |
+| ViewModel recreated on configuration change | `by viewModels()` in Activity ensures same ViewModel instance survives rotation |
+| `ProfileScreen.kt` backward compat | `email` and `saveResult` StateFlows retained in ViewModel; not removed |
+
+---
+
+## Future Improvements
+
+- Migrate to `user.verifyBeforeUpdateEmail()` for safer email change flow (Firebase recommended)
+- Add profile photo upload using Firebase Storage
+- Show Firestore `updatedAt` timestamp on the profile card
+- Re-authentication dialog: when `FirebaseAuthRecentLoginRequiredException` is caught, prompt user to re-enter password inline instead of requiring full sign-out/sign-in
+- Migrate Tasks to Firestore so they survive process death (Sprint 7)
+
+---
+
+## Viva Explanation
+
+> "The Profile Update System follows MVVM strictly. The Activity only sets content and injects the ViewModel via `by viewModels()`. The ViewModel owns all state through `ProfileUiState` — a sealed class with Idle, Loading, Success, and Error states. Validation happens in the ViewModel before any Firebase call. The Repository does three things: updates Firebase Auth display name via `UserProfileChangeRequest`, updates the email via `updateEmail()` with re-auth error handling, and merges the data into Firestore using `SetOptions.merge()` to avoid wiping existing fields. On return to the Dashboard, `onResume()` triggers `loadUserName()` which reads the freshly updated `displayName` from Firebase Auth, causing the greeting to update without reinstalling the app."
+
+---
+
+## Rebuild From Memory
+
+1. Create `model/UserProfile.kt` with `uid`, `name`, `email`
+2. In `ProfileRepository`, add `getProfile()` reading Firestore → falls back to Auth fields. Add `updateProfile(name, email)` that: (a) updates Auth displayName via `UserProfileChangeRequest`, (b) calls `updateEmail()` if email changed, catching `FirebaseAuthRecentLoginRequiredException`, (c) writes to Firestore with `SetOptions.merge()`
+3. In `ProfileViewModel`, define `ProfileUiState` sealed class. Add `profile`, `uiState`, `nameError`, `emailError` as `MutableStateFlow`. `loadProfile()` calls repo and populates `_profile`. `validateProfile()` sets error flows and returns `Boolean`. `updateProfile()` calls validate first, then repo, then sets success/error state
+4. In `ProfileActivity`, use `by viewModels()`. Collect `profile`, `uiState`, `nameError`, `emailError`. Pre-fill fields with `remember(profile.name)`. Add email `OutlinedTextField`. Show inline errors. Replace Toast with success/error banner cards. `LaunchedEffect(uiState)` auto-clears Success after 3 seconds
+5. In `DashboardViewModel`, add `_userName = MutableStateFlow(resolveUserName())` where `resolveUserName()` reads `auth.currentUser.displayName`. Add `loadUserName()` that refreshes it
+6. In `DashboardActivity`, override `onResume()` to call `dashboardViewModel.loadUserName()`. In `DashboardBody`, replace local FirebaseAuth read with `val userName by viewModel.userName.collectAsState()`
+
+---
+
 *End of StudyOS Engineering Research Book — Version 2.0*  
 *Package: com.teamdobermans.studyos*  
 *Documented: June 2026*  

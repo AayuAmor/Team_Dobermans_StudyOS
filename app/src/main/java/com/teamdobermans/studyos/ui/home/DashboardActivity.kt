@@ -54,7 +54,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.firebase.auth.FirebaseAuth
 import com.teamdobermans.studyos.R
 import com.teamdobermans.studyos.model.Task
 import com.teamdobermans.studyos.ui.focus.BrainGameActivityShell
@@ -77,6 +76,11 @@ import com.teamdobermans.studyos.viewModel.DashboardViewModel
 class DashboardActivity : ComponentActivity() {
 
     private val dashboardViewModel: DashboardViewModel by viewModels()
+
+    override fun onResume() {
+        super.onResume()
+        dashboardViewModel.loadUserName()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -142,8 +146,7 @@ fun DashboardBody(
     onNavigateNotes: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val user = FirebaseAuth.getInstance().currentUser
-    val userName = user?.displayName ?: user?.email?.substringBefore("@") ?: "User"
+    val userName by viewModel.userName.collectAsState()
 
     val dashboardState by viewModel.state.collectAsState()
     val progress by viewModel.progress.collectAsState()
