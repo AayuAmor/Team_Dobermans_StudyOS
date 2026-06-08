@@ -69,9 +69,42 @@ class NoteRepoImpl {
         }
     }
 
-    suspend fun updateNote(note: NoteModel): Boolean {
+    suspend fun createNoteAndReturnId(title: String, body: String, folder: String): String? {
+        val userId = auth.currentUser?.uid ?: return null
+        val id = notesCollection.document().id
+        val note = NoteModel(
+            id = id,
+            title = title,
+            body = body,
+            folder = folder,
+            timestamp = System.currentTimeMillis(),
+            userId = userId
+        )
         return try {
-            notesCollection.document(note.id).set(note).await()
+            notesCollection.document(id).set(note).await()
+            id
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun autoSaveNote(note: NoteModel): Boolean {
+        val userId = auth.currentUser?.uid ?: return false
+        val updated = note.copy(userId = userId, timestamp = System.currentTimeMillis())
+        return try {
+            notesCollection.document(updated.id).set(updated).await()
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun updateNote(note: NoteModel): Boolean {
+        val userId = auth.currentUser?.uid ?: return false
+        return try {
+            notesCollection.document(note.id).set(
+                note.copy(userId = userId, timestamp = System.currentTimeMillis())
+            ).await()
             true
         } catch (e: Exception) {
             false
@@ -82,7 +115,6 @@ class NoteRepoImpl {
         try {
             notesCollection.document(noteId).delete().await()
         } catch (e: Exception) {
-
         }
     }
 }

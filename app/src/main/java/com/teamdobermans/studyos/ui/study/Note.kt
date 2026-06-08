@@ -38,6 +38,7 @@ import com.teamdobermans.studyos.model.NoteModel
 import com.teamdobermans.studyos.model.Task
 import com.teamdobermans.studyos.ui.plan.PlanActivity
 import com.teamdobermans.studyos.ui.theme.*
+import com.teamdobermans.studyos.viewModel.AutoSaveStatus
 import com.teamdobermans.studyos.viewModel.NoteViewModel
 
 private val BrandPurpleLight = Color(0xFF7C6CEF)
@@ -64,9 +65,11 @@ fun NotesScreen(
     onBackClick: () -> Unit = {}
 ) {
     val resolvedVm: NoteViewModel = viewModel ?: androidx.lifecycle.viewmodel.compose.viewModel()
-    val allNotes    by resolvedVm.notes.collectAsState()
-    val saveResult  by resolvedVm.saveResult.collectAsState()
+    val allNotes by resolvedVm.notes.collectAsState()
+    val saveResult by resolvedVm.saveResult.collectAsState()
     val linkedTasks by resolvedVm.linkedTasks.collectAsState()
+    val autoSaveStatus by resolvedVm.autoSaveStatus.collectAsState()
+    val currentEditingNoteId by resolvedVm.currentEditingNoteId.collectAsState()
     val context = LocalContext.current
 
     LaunchedEffect(saveResult) {
@@ -78,15 +81,19 @@ fun NotesScreen(
     }
 
     NotesScreenContent(
-        modifier        = modifier,
-        allNotes        = allNotes,
-        linkedTasks     = linkedTasks,
-        onBackClick     = onBackClick,
-        onNoteSelected  = { noteId -> resolvedVm.loadLinkedTasks(noteId) },
-        onNoteDeselected = { resolvedVm.clearLinkedTasks() },
-        onCreateNote    = { title, body, folder -> resolvedVm.createNote(title, body, folder) },
-        onUpdateNote    = { note -> resolvedVm.updateNote(note) },
-        onDeleteNote    = { id -> resolvedVm.deleteNote(id) }
+        modifier             = modifier,
+        allNotes             = allNotes,
+        linkedTasks          = linkedTasks,
+        onBackClick          = onBackClick,
+        onNoteSelected       = { noteId -> resolvedVm.loadLinkedTasks(noteId) },
+        onNoteDeselected     = { resolvedVm.clearLinkedTasks() },
+        onCreateNote         = { title, body, folder -> resolvedVm.createNote(title, body, folder) },
+        onUpdateNote         = { note -> resolvedVm.updateNote(note) },
+        onDeleteNote         = { id -> resolvedVm.deleteNote(id) },
+        onAutoSave           = { noteId, title, body, folder -> resolvedVm.onEditorChanged(noteId, title, body, folder) },
+        autoSaveStatus       = autoSaveStatus,
+        currentEditingNoteId = currentEditingNoteId,
+        onEditorClosed       = { resolvedVm.clearEditingNote() }
     )
 }
 
@@ -100,7 +107,11 @@ fun NotesScreenContent(
     onNoteDeselected: () -> Unit = {},
     onCreateNote: (String, String, String) -> Unit,
     onUpdateNote: (NoteModel) -> Unit,
-    onDeleteNote: (String) -> Unit
+    onDeleteNote: (String) -> Unit,
+    onAutoSave: (String?, String, String, String) -> Unit = { _, _, _, _ -> },
+    autoSaveStatus: AutoSaveStatus = AutoSaveStatus.IDLE,
+    currentEditingNoteId: String? = null,
+    onEditorClosed: () -> Unit = {}
 ) {
     val defaultFolders = listOf("Science", "Social", "English")
     var extraFolders by rememberSaveable { mutableStateOf(listOf<String>()) }
@@ -155,30 +166,42 @@ fun NotesScreenContent(
 
     if (showEditor) {
         CreateEditNoteScreen(
-            existingNote  = selectedNote,
-            folders       = folders,
-            defaultFolder = activeFolder,
-            linkedTasks   = linkedTasks,
+            existingNote   = selectedNote,
+            folders        = folders,
+            defaultFolder  = activeFolder,
+            linkedTasks    = linkedTasks,
+            onAutoSave     = onAutoSave,
+            autoSaveStatus = autoSaveStatus,
             onSave = { title, body, folder ->
-                if (selectedNote != null) {
-                    onUpdateNote(selectedNote!!.copy(title = title, body = body, folder = folder))
-                } else {
-                    onCreateNote(title, body, folder)
+                val autoCreatedId = currentEditingNoteId
+                when {
+                    selectedNote != null -> {
+                        onUpdateNote(selectedNote!!.copy(title = title, body = body, folder = folder))
+                    }
+                    autoCreatedId != null -> {
+                        onUpdateNote(NoteModel(id = autoCreatedId, title = title, body = body, folder = folder))
+                    }
+                    else -> {
+                        onCreateNote(title, body, folder)
+                    }
                 }
                 showEditor = false
                 selectedNote = null
                 onNoteDeselected()
+                onEditorClosed()
             },
             onDelete = { noteId ->
                 onDeleteNote(noteId)
                 showEditor = false
                 selectedNote = null
                 onNoteDeselected()
+                onEditorClosed()
             },
             onBack = {
                 showEditor = false
                 selectedNote = null
                 onNoteDeselected()
+                onEditorClosed()
             }
         )
     } else {
@@ -289,6 +312,8 @@ fun CreateEditNoteScreen(
     folders: List<String> = listOf("Science", "Social", "English"),
     defaultFolder: String = "Science",
     linkedTasks: List<Task> = emptyList(),
+    onAutoSave: (String?, String, String, String) -> Unit = { _, _, _, _ -> },
+    autoSaveStatus: AutoSaveStatus = AutoSaveStatus.IDLE,
     onSave: (title: String, body: String, folder: String) -> Unit,
     onDelete: ((noteId: String) -> Unit)? = null,
     onBack: () -> Unit
@@ -355,6 +380,27 @@ fun CreateEditNoteScreen(
                     fontWeight = FontWeight.Bold
                 )
             }
+
+            if (autoSaveStatus != AutoSaveStatus.IDLE) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Text(
+                        text = when (autoSaveStatus) {
+                            AutoSaveStatus.SAVING -> "Saving..."
+                            AutoSaveStatus.SAVED  -> "Saved"
+                            AutoSaveStatus.FAILED -> "Save failed"
+                            AutoSaveStatus.IDLE   -> ""
+                        },
+                        color = when (autoSaveStatus) {
+                            AutoSaveStatus.FAILED -> Color(0xFFFFCDD2)
+                            else                  -> Color.White.copy(alpha = 0.7f)
+                        },
+                        fontSize = 11.sp
+                    )
+                }
+            }
         }
 
         Column(
@@ -368,13 +414,23 @@ fun CreateEditNoteScreen(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 folders.forEach { f ->
-                    FolderChip(label = f, isActive = f == folder, onClick = { folder = f })
+                    FolderChip(
+                        label    = f,
+                        isActive = f == folder,
+                        onClick  = {
+                            folder = f
+                            onAutoSave(existingNote?.id, title, body, f)
+                        }
+                    )
                 }
             }
 
             OutlinedTextField(
                 value = title,
-                onValueChange = { title = it },
+                onValueChange = {
+                    title = it
+                    onAutoSave(existingNote?.id, it, body, folder)
+                },
                 label = { Text("Title") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -389,7 +445,10 @@ fun CreateEditNoteScreen(
 
             OutlinedTextField(
                 value = body,
-                onValueChange = { body = it },
+                onValueChange = {
+                    body = it
+                    onAutoSave(existingNote?.id, title, it, folder)
+                },
                 label = { Text("Content") },
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 maxLines = Int.MAX_VALUE,
@@ -401,7 +460,6 @@ fun CreateEditNoteScreen(
                 )
             )
 
-            // ── Linked Tasks section (only for existing notes) ───────────────
             if (isEditing) {
                 LinkedTasksSection(
                     linkedTasks = linkedTasks,
