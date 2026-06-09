@@ -2311,6 +2311,189 @@ sealed class ProfileUiState {
 
 ---
 
+---
+
+# FEATURE DEEP DIVE — NOTIFICATION PREFERENCE TOGGLE
+
+**Sprint:** 6 (Enhancement)  
+**Status:** Implemented  
+**Owner:** Ayush Kumar Raut  
+**Date:** June 2026
+
+---
+
+## Problem Statement
+
+Before this feature, the settings screen had a "Weekly Summary Notification" toggle that was purely in-memory. Toggling it had no effect: the state was discarded on app restart, it was not saved to Firebase Auth or Firestore, and it could not be read by any notification scheduling code. Users who turned off notifications would see them re-enabled on next launch. There was no persistent user preference for notifications anywhere in the system.
+
+---
+
+## User Story
+
+As a user, I want to turn study reminders on or off so that StudyOS respects my preference for notifications — both immediately and after I restart the app or log out and log back in.
+
+---
+
+## Why Preference Persistence Matters
+
+- A notification preference that resets on restart is worse than no preference at all — it creates a false expectation
+- Firebase Auth does not store arbitrary user settings, so Firestore is required for persistence across devices/sessions
+- Local SharedPreferences is required for zero-latency reads on app start (Firestore reads are async and cannot block the UI)
+- Both layers together give: instant local read + authoritative remote sync
+
+---
+
+## Architecture Placement
+
+```
+SettingsActivity (UI)
+        ↓
+SettingsViewModel (AndroidViewModel — needs Application for context)
+        ↓
+SettingsRepository (dual-write: SharedPrefs + Firestore)
+        ↓
+SharedPreferences "StudyOSPrefs" (local cache, key: reminders_enabled)
+        +
+Firestore users/{uid} (remote source of truth, field: remindersEnabled)
+```
+
+---
+
+## New Files Created
+
+| File | Purpose |
+|---|---|
+| `model/UserSettings.kt` | Data class: `remindersEnabled: Boolean`, `updatedAt: Long` |
+| `repo/SettingsRepository.kt` | Dual-write: SharedPrefs + Firestore; `getCachedReminderPreference()`, `getReminderPreference()`, `setReminderPreference()` |
+
+---
+
+## Modified Files
+
+| File | What Changed |
+|---|---|
+| `viewModel/SettingsViewModel.kt` | Changed from `ViewModel` to `AndroidViewModel(application)` for context access; added `SettingsUiState` data class; added `_uiState` StateFlow; added `loadSettings()`, `setRemindersEnabled()`, `clearMessages()`; kept `signedOut`, `notificationsEnabled`, `darkMode`, `signOut()` for backward compat |
+| `ui/profile/SettingActivity.kt` | `SettingsActivity` now uses `by viewModels()` instead of direct `SettingsViewModel()` instantiation; `SettingsBody` signature made non-default for ViewModel; replaced "Weekly Summary Notification" local toggle with `StudyRemindersRow` persistent toggle; added `StudyRemindersRow` composable with subtitle, spinner during save, and status line; added `LaunchedEffect` for auto-clear of success messages; static preview updated |
+
+---
+
+## Workflow
+
+1. `SettingsActivity.onCreate()` → `by viewModels()` creates `SettingsViewModel(application)`
+2. `SettingsViewModel.init {}` calls `loadSettings()`
+3. `SettingsRepository.getCachedReminderPreference()` reads SharedPrefs immediately → populates `_uiState` with local value so toggle renders instantly
+4. `SettingsRepository.getReminderPreference()` reads Firestore → on success, syncs local SharedPrefs to remote value and updates `_uiState`
+5. User toggles "Study Reminders" → `setRemindersEnabled(enabled)` is called
+6. Optimistic update: `_uiState.remindersEnabled = enabled`, `saving = true` → spinner replaces toggle
+7. `SettingsRepository.setReminderPreference(enabled)` runs:
+   - Writes `prefs.edit().putBoolean("reminders_enabled", enabled).apply()` immediately
+   - Writes Firestore `users/{uid}` with `{remindersEnabled, updatedAt}` using `SetOptions.merge()`
+8. On success: spinner clears, toggle shows, `successMessage = "Saved"` shows in green for 3 seconds then clears
+9. On failure: toggle reverts to previous value, `errorMessage = "Failed to save preference"` shows in red
+
+---
+
+## Firestore Strategy
+
+```
+Collection: users
+Document:   {uid}
+Fields written: remindersEnabled (Boolean), updatedAt (Timestamp)
+Strategy: SetOptions.merge() — does NOT overwrite displayName, email, or any other field
+```
+
+The flat `users/{uid}` document is consistent with how `ProfileRepository` writes `displayName`, `email`, and `updatedAt`. All user settings live in the same document.
+
+---
+
+## Local Cache Strategy
+
+```
+SharedPreferences file: "StudyOSPrefs"  (same file already used for onboarding_completed and IS_REMEMBERED)
+Key: "reminders_enabled"
+Default: true
+```
+
+Read order on app start:
+1. `getCachedReminderPreference()` → immediate (no I/O wait) — provides instant toggle state
+2. `getReminderPreference()` → async Firestore read → overwrites local if remote differs (keeps remote authoritative)
+
+Write order on toggle change:
+1. SharedPrefs write → instant (survives process death, no network needed)
+2. Firestore write → async (survives logout/login, accessible on new device)
+
+---
+
+## Notification System Integration
+
+No notification engine (NotificationManager, WorkManager, AlarmManager) exists in this project as of Sprint 6. When notification scheduling is added (Sprint 7+), it must check the preference before scheduling:
+
+```kotlin
+// Future notification scheduling code should check:
+val remindersEnabled = context
+    .getSharedPreferences("StudyOSPrefs", Context.MODE_PRIVATE)
+    .getBoolean(SettingsRepository.KEY_REMINDERS, true)
+
+if (!remindersEnabled) return  // Do not schedule
+
+// Otherwise proceed with WorkManager / AlarmManager scheduling
+```
+
+`SettingsRepository.KEY_REMINDERS` is a `const val` intentionally exposed so notification code can reference it without hardcoding the string.
+
+---
+
+## SettingsUiState
+
+```kotlin
+data class SettingsUiState(
+    val remindersEnabled: Boolean = true,
+    val loading: Boolean = false,
+    val saving: Boolean = false,
+    val errorMessage: String? = null,
+    val successMessage: String? = null
+)
+```
+
+| State field | Meaning | UI effect |
+|---|---|---|
+| `loading` | `loadSettings()` in progress | Spinner replaces toggle during initial load |
+| `saving` | `setReminderPreference()` in progress | Spinner replaces toggle, "Saving..." status line |
+| `successMessage` | Save succeeded | "Saved" in green, auto-clears after 3 seconds |
+| `errorMessage` | Save failed | Error text in red, toggle reverts to previous value |
+
+---
+
+## Edge Cases Handled
+
+| Edge Case | Handling |
+|---|---|
+| No logged-in user | `auth.currentUser?.uid ?: return false` — repo returns local cached value, Firestore write skipped silently |
+| Network failure during save | `runCatching { ... }.getOrDefault(false)` → returns false → ViewModel reverts toggle + shows error |
+| Firestore write fails | Same as network failure — local write succeeds, remote fails, error shown |
+| App restart | SharedPrefs has the preference → `getCachedReminderPreference()` fires instantly on next start |
+| Logout/login (same device) | SharedPrefs persists → preference still applied locally |
+| Logout/login (new device) | No SharedPrefs → default `true`; `getReminderPreference()` reads Firestore and syncs local |
+| Preference missing in Firestore | `doc.contains("remindersEnabled")` is false → falls back to local cached value |
+| Rapid toggle spam | Each call to `setRemindersEnabled()` is a new coroutine; optimistic update keeps UI responsive |
+
+---
+
+## Viva Explanation
+
+> "The Notification Preference Toggle follows MVVM with a dual-persistence strategy. The View — `SettingsActivity` — uses `by viewModels()` to get a lifecycle-aware `SettingsViewModel` which extends `AndroidViewModel` so it can access SharedPreferences through the Application context. The ViewModel exposes a `SettingsUiState` StateFlow with loading, saving, and error/success states. When the user toggles Study Reminders, `setRemindersEnabled()` first applies an optimistic update so the UI responds instantly, then calls `SettingsRepository.setReminderPreference()`. The repository writes to SharedPreferences immediately for local durability, then writes to Firestore `users/{uid}` using `SetOptions.merge()` so no other fields are overwritten. If Firestore fails, the ViewModel reverts the toggle and shows an error. On app restart, SharedPreferences provides the cached value instantly — Firestore provides the authoritative value asynchronously and syncs local to remote. The `KEY_REMINDERS` constant is public so future notification scheduling code can check it without a hard-coded string."
+
+---
+
+## Rebuild From Memory
+
+1. Create `model/UserSettings.kt` — `data class UserSettings(val remindersEnabled: Boolean = true, val updatedAt: Long = ...)`
+2. Create `repo/SettingsRepository(context: Context)` — holds SharedPrefs (`"StudyOSPrefs"`, key `"reminders_enabled"`) and Firestore. `getCachedReminderPreference()` reads local. `getReminderPreference()` reads Firestore and syncs local. `setReminderPreference(enabled)` writes local first, then Firestore `users/{uid}` with `SetOptions.merge()`
+3. Change `SettingsViewModel` to extend `AndroidViewModel(application: Application)`. Add `SettingsUiState`. Initialize `_uiState` from `getCachedReminderPreference()`. `init {}` calls `loadSettings()`. `setRemindersEnabled()` does optimistic update → repo call → success/revert. Keep `signOut()`, `signedOut`, `notificationsEnabled` for compat
+4. In `SettingsActivity`, change to `by viewModels()`. In `SettingsBody`, collect `uiState`. Replace "Weekly Summary Notification" row with `StudyRemindersRow(checked = uiState.remindersEnabled, saving = uiState.saving, ...)`. `StudyRemindersRow` shows title, subtitle, spinner during saving, and a status line. `LaunchedEffect(uiState.successMessage)` auto-clears after 3 seconds
+
+---
+
 *End of StudyOS Engineering Research Book — Version 2.0*  
 *Package: com.teamdobermans.studyos*  
 *Documented: June 2026*  
