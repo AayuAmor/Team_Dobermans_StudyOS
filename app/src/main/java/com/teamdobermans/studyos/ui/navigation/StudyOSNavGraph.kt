@@ -148,7 +148,8 @@ fun StudyOSNavGraph(
                     },
                     onNavigateBrainGame   = { navController.navigate(AppRoutes.BrainGame.route) },
                     onNavigateVideoNotes  = { navController.navigate(AppRoutes.VideoNotes.route) },
-                    onNavigateMockTest    = { navController.navigate(AppRoutes.MockTest.route) }
+                    onNavigateMockTest    = { navController.navigate(AppRoutes.MockTest.route) },
+                    onNavigateNotes       = { navController.navigate(AppRoutes.Notes.route) }
                 )
             }
 
