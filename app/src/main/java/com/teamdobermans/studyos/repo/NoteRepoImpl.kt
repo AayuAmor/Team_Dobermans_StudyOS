@@ -9,13 +9,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
-class NoteRepoImpl {
+class NoteRepoImpl : NoteRepo {
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
     private val notesCollection = db.collection("notes")
 
-    fun getNotes(): Flow<List<NoteModel>> = callbackFlow {
+    override fun getNotes(): Flow<List<NoteModel>> = callbackFlow {
         var notesListener: ListenerRegistration? = null
 
         val authListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
@@ -50,7 +50,7 @@ class NoteRepoImpl {
         }
     }
 
-    suspend fun createNote(title: String, body: String, folder: String): Boolean {
+    override suspend fun createNote(title: String, body: String, folder: String): Boolean {
         val userId = auth.currentUser?.uid ?: return false
         val id = notesCollection.document().id
         val note = NoteModel(
@@ -99,7 +99,7 @@ class NoteRepoImpl {
         }
     }
 
-    suspend fun updateNote(note: NoteModel): Boolean {
+    override suspend fun updateNote(note: NoteModel): Boolean {
         val userId = auth.currentUser?.uid ?: return false
         return try {
             notesCollection.document(note.id).set(
@@ -111,7 +111,7 @@ class NoteRepoImpl {
         }
     }
 
-    suspend fun deleteNote(noteId: String) {
+    override suspend fun deleteNote(noteId: String) {
         try {
             notesCollection.document(noteId).delete().await()
         } catch (e: Exception) {

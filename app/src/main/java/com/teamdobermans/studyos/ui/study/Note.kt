@@ -96,12 +96,12 @@ fun NotesScreenContent(
     var extraFolders by rememberSaveable { mutableStateOf(listOf<String>()) }
     val folders = defaultFolders + extraFolders
 
-    var activeFolder       by rememberSaveable { mutableStateOf("Science") }
-    var searchQuery        by rememberSaveable { mutableStateOf("") }
-    var selectedNote       by remember { mutableStateOf<NoteModel?>(null) }
-    var showEditor         by rememberSaveable { mutableStateOf(false) }
+    var activeFolder        by rememberSaveable { mutableStateOf("Science") }
+    var searchQuery         by rememberSaveable { mutableStateOf("") }
+    var selectedNote        by remember { mutableStateOf<NoteModel?>(null) }
+    var showEditor          by rememberSaveable { mutableStateOf(false) }
     var showNewFolderDialog by rememberSaveable { mutableStateOf(false) }
-    var newFolderName      by rememberSaveable { mutableStateOf("") }
+    var newFolderName       by rememberSaveable { mutableStateOf("") }
 
     if (showNewFolderDialog) {
         AlertDialog(
@@ -283,16 +283,23 @@ fun CreateEditNoteScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Note") },
-            text  = { Text("Are you sure you want to delete this note?") },
+            title = { Text("Note Delete Confirmation", fontWeight = FontWeight.Bold) },
+            text  = { Text("Are you sure you want to delete \"${existingNote?.title}\"? This cannot be undone.") },
             confirmButton = {
-                TextButton(onClick = {
-                    showDeleteDialog = false
-                    existingNote?.let { onDelete?.invoke(it.id) }
-                }) { Text("Delete", color = Color.Red) }
+                Button(
+                    onClick = {
+                        showDeleteDialog = false
+                        existingNote?.let { onDelete?.invoke(it.id) }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) {
+                    Text("Delete", color = Color.White)
+                }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
             }
         )
     }
@@ -545,12 +552,42 @@ fun FolderChip(label: String, isActive: Boolean, onClick: () -> Unit) {
     }
 }
 
+// ✅ FIXED: NoteCard now shows confirmation before deleting!
 @Composable
 fun NoteCard(note: NoteModel, onClick: () -> Unit, onClose: () -> Unit) {
+
+    // This controls whether the popup is shown or not
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    // This is the popup dialog
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Note Delete Confirmation", fontWeight = FontWeight.Bold) },
+            text  = { Text("Are you sure you want to delete \"${note.title}\"?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteDialog = false
+                        onClose() // ← actually deletes the note
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) {
+                    Text("Delete", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth().clickable { onClick() },
-        shape    = RoundedCornerShape(16.dp),
-        colors   = CardDefaults.cardColors(containerColor = Color.White),
+        modifier  = Modifier.fillMaxWidth().clickable { onClick() },
+        shape     = RoundedCornerShape(16.dp),
+        colors    = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
@@ -570,7 +607,8 @@ fun NoteCard(note: NoteModel, onClick: () -> Unit, onClose: () -> Unit) {
                     painter = painterResource(id = R.drawable.ic_clear),
                     contentDescription = "Delete",
                     tint = Color.LightGray,
-                    modifier = Modifier.size(20.dp).clickable { onClose() }
+                    // ✅ Now shows dialog instead of deleting immediately!
+                    modifier = Modifier.size(20.dp).clickable { showDeleteDialog = true }
                 )
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -597,4 +635,3 @@ fun NotesScreenPreview() {
         )
     }
 }
-

@@ -37,6 +37,7 @@ import com.teamdobermans.studyos.ui.focus.PomodoroActivity
 import com.teamdobermans.studyos.ui.profile.ProfileActivity
 import com.teamdobermans.studyos.ui.study.Flashcards
 import com.teamdobermans.studyos.ui.study.MockTestActivity
+import com.teamdobermans.studyos.ui.study.NotesPage
 import com.teamdobermans.studyos.ui.study.QuizScreen
 import com.teamdobermans.studyos.ui.study.VideotoNotes
 import com.teamdobermans.studyos.ui.theme.*
@@ -83,6 +84,9 @@ class DashboardActivity : ComponentActivity() {
                 },
                 onNavigateMockTest = {
                     startActivity(Intent(this, MockTestActivity::class.java))
+                },
+                onNavigateNotes = {
+                    startActivity(Intent(this, NotesPage::class.java))
                 }
             )
         }
@@ -100,7 +104,8 @@ fun DashboardBody(
     onNavigateQuiz: () -> Unit = {},
     onNavigateBrainGame: () -> Unit = {},
     onNavigateVideoNotes: () -> Unit = {},
-    onNavigateMockTest: () -> Unit = {}
+    onNavigateMockTest: () -> Unit = {},
+    onNavigateNotes: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val userName by viewModel.userName.collectAsState()
@@ -407,7 +412,7 @@ fun DashboardBody(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             ToolCard(modifier = Modifier.weight(1f), iconRes = R.drawable.baseline_assignment_24, iconBg = Color(0xFFE8FFF4), iconTint = Color(0xFF1D9E75), name = "Mock Test", subtitle = "10 min", onClick = onNavigateMockTest)
-            Spacer(modifier = Modifier.weight(1f))
+            ToolCard(modifier = Modifier.weight(1f), iconRes = R.drawable.baseline_menu_book_24, iconBg = Color(0xFFF0F0F0), iconTint = StudyPurple, name = "Notes", subtitle = "Manage notes", onClick = onNavigateNotes)
         }
 
         Text(

@@ -2,16 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- ── Notification permissions ─────────────────────────────────────── -->
-    <!-- Android 13+ (API 33): runtime permission, requested from SettingActivity -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-    <!-- Android 12+ (API 31): required for AlarmManager.setExactAndAllowWhileIdle.
-         The app falls back to setAndAllowWhileIdle if the user has not granted this.
-         Users grant it via Settings > Apps > Special app access > Alarms & Reminders. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-
-    <!-- Required so BootReceiver can receive ACTION_BOOT_COMPLETED -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
@@ -35,34 +27,111 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".ui.study.NotesPage"                  android:exported="false" android:theme="@style/Theme.StudyOS" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".ui.focus.BrainGameActivityShell"   android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.focus.BrainGameActivity"        android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.profile.SettingsActivity"       android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.plan.PlanActivity"              android:exported="false" android:theme="@style/Theme.StudyOS" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".ui.auth.SignUpActivity"            android:exported="false" android:theme="@style/Theme.StudyOS" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".ui.home.DashboardActivity"         android:exported="true" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.focus.PomodoroActivity"         android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.auth.LoginActivity"             android:exported="false" android:theme="@style/Theme.StudyOS" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".ui.profile.ProfileActivity"        android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.profile.ProgressActivity"      android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.home.VisionBoardActivity"       android:exported="true" android:theme="@style/Theme.StudyOS" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".ui.study.MockTestActivity"         android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.study.Flashcards"               android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.study.QuizScreen"               android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.study.VideotoNotes"             android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.onboarding.OnboardingActivity1_WelcomePage" android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.onboarding.OnboardingActivity2_StudyActivityOS" android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.onboarding.OnboardingActivity3_worksOffline" android:exported="false" android:theme="@style/Theme.StudyOS" />
+        <activity
+            android:name=".ui.study.NotesPage"
+            android:exported="false"
+            android:label="@string/title_activity_note"
+            android:theme="@style/Theme.StudyOS"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.study.QuizScreen"
+            android:exported="false"
+            android:label="Quiz"
+            android:theme="@style/Theme.StudyOS" />
+        <activity
+            android:name=".ui.focus.BrainGameActivityShell"
+            android:exported="false"
+            android:label="Brain Game"
+            android:theme="@style/Theme.StudyOS" />
+        <activity
+            android:name=".ui.focus.BrainGameActivity"
+            android:exported="false"
+            android:label="Brain Game"
+            android:theme="@style/Theme.StudyOS" />
+        <activity
+            android:name=".ui.profile.SettingsActivity"
+            android:exported="false"
+            android:label="Settings"
+            android:theme="@style/Theme.StudyOS" />
+        <activity
+            android:name=".ui.plan.PlanActivity"
+            android:exported="false"
+            android:label="Study Plan"
+            android:theme="@style/Theme.StudyOS"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.auth.SignUpActivity"
+            android:exported="false"
+            android:label="Sign Up"
+            android:theme="@style/Theme.StudyOS"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.home.DashboardActivity"
+            android:exported="true"
+            android:label="Dashboard"
+            android:theme="@style/Theme.StudyOS" />
+        <activity
+            android:name=".ui.focus.PomodoroActivity"
+            android:exported="true"
+            android:label="Pomodoro"
+            android:theme="@style/Theme.StudyOS" />
+        <activity
+            android:name=".ui.auth.LoginActivity"
+            android:exported="false"
+            android:label="Login"
+            android:theme="@style/Theme.StudyOS"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.profile.ProfileActivity"
+            android:exported="false"
+            android:label="Profile"
+            android:theme="@style/Theme.StudyOS" />
+        <activity
+            android:name=".ui.profile.ProgressActivity"
+            android:exported="false"
+            android:label="Progress"
+            android:theme="@style/Theme.StudyOS" />
+        <activity
+            android:name=".ui.home.VisionBoardActivity"
+            android:exported="true"
+            android:label="Vision Board"
+            android:theme="@style/Theme.StudyOS"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".ui.study.MockTestActivity"
+            android:exported="false"
+            android:label="Mock Test"
+            android:theme="@style/Theme.StudyOS" />
+        <activity
+            android:name=".ui.study.Flashcards"
+            android:exported="false"
+            android:label="Flashcards"
+            android:theme="@style/Theme.StudyOS" />
+        <activity
+            android:name=".ui.study.VideotoNotes"
+            android:exported="false"
+            android:label="Video to Notes"
+            android:theme="@style/Theme.StudyOS" />
+        <activity
+            android:name=".ui.onboarding.OnboardingActivity1_WelcomePage"
+            android:exported="false"
+            android:label="Welcome"
+            android:theme="@style/Theme.StudyOS" />
+        <activity
+            android:name=".ui.onboarding.OnboardingActivity2_StudyActivityOS"
+            android:exported="false"
+            android:label="Onboarding"
+            android:theme="@style/Theme.StudyOS" />
+        <activity
+            android:name=".ui.onboarding.OnboardingActivity3_worksOffline"
+            android:exported="false"
+            android:label="Onboarding"
+            android:theme="@style/Theme.StudyOS" />
 
-        <!-- ── Notification broadcast receivers ──────────────────────────── -->
-
-        <!-- Receives the daily alarm trigger; not exported (only system AlarmManager sends it) -->
         <receiver
             android:name=".notification.StudyReminderReceiver"
             android:exported="false" />
 
-        <!-- Reschedules alarms after device reboot; must be exported to receive system broadcasts -->
         <receiver
             android:name=".notification.BootReceiver"
             android:exported="true">
