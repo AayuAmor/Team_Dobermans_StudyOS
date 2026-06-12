@@ -2,10 +2,14 @@ package com.teamdobermans.studyos.ui.profile
 
 import com.teamdobermans.studyos.R
 
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -27,6 +32,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import com.teamdobermans.studyos.notification.StudyReminderScheduler
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 import com.teamdobermans.studyos.ui.theme.StudyPurple
 import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
@@ -40,10 +47,15 @@ class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Ensure the notification channel exists as early as possible
+        StudyReminderScheduler.createChannel(this)
         setContent { SettingsBody(viewModel = settingsViewModel) }
     }
 }
 
+// ── Main Settings composable ──────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsBody(
     viewModel: SettingsViewModel,
@@ -52,6 +64,7 @@ fun SettingsBody(
 ) {
     val signedOut by viewModel.signedOut.collectAsState()
     val uiState   by viewModel.uiState.collectAsState()
+    val context   = LocalContext.current
 
     LaunchedEffect(signedOut) {
         if (signedOut) onSignOut()
@@ -60,11 +73,54 @@ fun SettingsBody(
     // Auto-clear success message after 3 seconds
     LaunchedEffect(uiState.successMessage) {
         if (uiState.successMessage != null) {
-            delay(3000)
+            delay(3_000)
             viewModel.clearMessages()
         }
     }
 
+    // ── Android 13+ POST_NOTIFICATIONS permission ─────────────────────────
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // Permission just granted — now enable reminders
+            viewModel.setRemindersEnabled(true)
+        }
+        // If denied, leave reminders disabled; toggle stays off
+    }
+
+    // Wrapped toggle handler: checks POST_NOTIFICATIONS before enabling
+    val onReminderToggle: (Boolean) -> Unit = { enabled ->
+        if (!enabled) {
+            viewModel.setRemindersEnabled(false)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            // Request permission first; enable in the launcher callback if granted
+            notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            viewModel.setRemindersEnabled(true)
+        }
+    }
+
+    // ── Time picker dialog state ──────────────────────────────────────────
+    var showTimePicker by remember { mutableStateOf(false) }
+
+    if (showTimePicker) {
+        ReminderTimePickerDialog(
+            initialHour   = uiState.reminderHour,
+            initialMinute = uiState.reminderMinute,
+            onConfirm = { h, m ->
+                viewModel.setReminderTime(h, m)
+                showTimePicker = false
+            },
+            onDismiss = { showTimePicker = false }
+        )
+    }
+
+    // ── Other local preferences (not yet persisted — out of this feature's scope) ──
     var offlineMode by remember { mutableStateOf(true) }
     var focusSounds by remember { mutableStateOf(false) }
     var pinNotes    by remember { mutableStateOf(false) }
@@ -120,6 +176,7 @@ fun SettingsBody(
         )
     }
 
+    // ── Layout ────────────────────────────────────────────────────────────────
     Column(modifier = Modifier.fillMaxSize().background(StudyPurple)) {
 
         Column(
@@ -144,7 +201,7 @@ fun SettingsBody(
                 .padding(16.dp)
         ) {
 
-            // --- App Preferences card ---
+            // ── App Preferences card ─────────────────────────────────────
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape  = RoundedCornerShape(16.dp),
@@ -162,17 +219,26 @@ fun SettingsBody(
                     SettingsToggleRow("Offline mode", offlineMode) { offlineMode = it }
                     HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
 
-                    // Persistent Study Reminders toggle
                     StudyRemindersRow(
                         checked        = uiState.remindersEnabled,
                         saving         = uiState.saving,
                         loading        = uiState.loading,
                         successMessage = uiState.successMessage,
                         errorMessage   = uiState.errorMessage,
-                        onCheckedChange = { viewModel.setRemindersEnabled(it) }
+                        onCheckedChange = onReminderToggle
                     )
-                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
 
+                    // Reminder time row — visible only when reminders are on
+                    if (uiState.remindersEnabled) {
+                        HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
+                        ReminderTimeRow(
+                            hour    = uiState.reminderHour,
+                            minute  = uiState.reminderMinute,
+                            onClick = { showTimePicker = true }
+                        )
+                    }
+
+                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
                     SettingsToggleRow("Focus Sounds", focusSounds) { focusSounds = it }
                     HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
                     SettingsToggleRow("Pin Notes",    pinNotes)    { pinNotes    = it }
@@ -181,7 +247,7 @@ fun SettingsBody(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // --- Daily Study Goal card ---
+            // ── Daily Study Goal card ─────────────────────────────────────
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -215,7 +281,7 @@ fun SettingsBody(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // --- Export and Data card ---
+            // ── Export and Data card ──────────────────────────────────────
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape  = RoundedCornerShape(16.dp),
@@ -281,6 +347,8 @@ fun SettingsBody(
     }
 }
 
+// ── Sub-composables ───────────────────────────────────────────────────────────
+
 @Composable
 private fun StudyRemindersRow(
     checked: Boolean,
@@ -331,25 +399,87 @@ private fun StudyRemindersRow(
             }
         }
 
-        // Subtle status line
         val statusText = when {
-            saving          -> "Saving..."
+            saving               -> "Saving..."
             successMessage != null -> successMessage
             errorMessage != null   -> errorMessage
-            else            -> null
+            else                 -> null
         }
         if (statusText != null) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 statusText,
                 fontSize = 11.sp,
-                color = when {
-                    errorMessage != null && !saving -> Color(0xFFE53935)
-                    else                            -> Color(0xFF388E3C)
-                }
+                color = if (errorMessage != null && !saving) Color(0xFFE53935) else Color(0xFF388E3C)
             )
         }
     }
+}
+
+@Composable
+private fun ReminderTimeRow(hour: Int, minute: Int, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Reminder Time", color = Color(0xFF1A1A2E), fontSize = 14.sp)
+            Text(
+                "Daily at ${formatTime(hour, minute)}",
+                color = Color.Gray,
+                fontSize = 11.sp
+            )
+        }
+        TextButton(onClick = onClick) {
+            Text("Change", color = StudyPurple, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ReminderTimePickerDialog(
+    initialHour: Int,
+    initialMinute: Int,
+    onConfirm: (Int, Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val state = rememberTimePickerState(
+        initialHour   = initialHour,
+        initialMinute = initialMinute,
+        is24Hour      = false
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "Set Reminder Time",
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1A1A2E)
+            )
+        },
+        text = {
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                TimePicker(state = state)
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(state.hour, state.minute) },
+                colors  = ButtonDefaults.buttonColors(containerColor = StudyPurple)
+            ) {
+                Text("Set", color = Color.White, fontWeight = FontWeight.SemiBold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel", color = Color.Gray) }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(20.dp)
+    )
 }
 
 @Composable
@@ -375,11 +505,22 @@ fun SettingsToggleRow(label: String, checked: Boolean, onCheckedChange: (Boolean
     }
 }
 
+/** Converts 24-hour [hour]/[minute] to a 12-hour "H:MM AM/PM" string. */
+private fun formatTime(hour: Int, minute: Int): String {
+    val amPm        = if (hour < 12) "AM" else "PM"
+    val displayHour = when {
+        hour == 0 -> 12
+        hour > 12 -> hour - 12
+        else      -> hour
+    }
+    return "%d:%02d %s".format(displayHour, minute, amPm)
+}
+
+// ── Preview ───────────────────────────────────────────────────────────────────
+
 @Preview(showBackground = true)
 @Composable
 fun SettingsPreview() {
-    // Note: SettingsViewModel requires Application context and cannot be previewed directly.
-    // Preview shows a static representation of the layout.
     StudyOSTheme {
         Column(
             modifier = Modifier
@@ -403,13 +544,15 @@ fun SettingsPreview() {
                     SettingsToggleRow("Offline mode", true) {}
                     HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
                     StudyRemindersRow(
-                        checked = true,
-                        saving = false,
-                        loading = false,
+                        checked        = true,
+                        saving         = false,
+                        loading        = false,
                         successMessage = null,
-                        errorMessage = null,
+                        errorMessage   = null,
                         onCheckedChange = {}
                     )
+                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
+                    ReminderTimeRow(hour = 8, minute = 0, onClick = {})
                     HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
                     SettingsToggleRow("Focus Sounds", false) {}
                     HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))

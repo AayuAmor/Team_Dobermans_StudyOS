@@ -2,6 +2,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- ── Notification permissions ─────────────────────────────────────── -->
+    <!-- Android 13+ (API 33): runtime permission, requested from SettingActivity -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Android 12+ (API 31): required for AlarmManager.setExactAndAllowWhileIdle.
+         The app falls back to setAndAllowWhileIdle if the user has not granted this.
+         Users grant it via Settings > Apps > Special app access > Alarms & Reminders. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <!-- Required so BootReceiver can receive ACTION_BOOT_COMPLETED -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -42,6 +54,23 @@
         <activity android:name=".ui.onboarding.OnboardingActivity1_WelcomePage" android:exported="false" android:theme="@style/Theme.StudyOS" />
         <activity android:name=".ui.onboarding.OnboardingActivity2_StudyActivityOS" android:exported="false" android:theme="@style/Theme.StudyOS" />
         <activity android:name=".ui.onboarding.OnboardingActivity3_worksOffline" android:exported="false" android:theme="@style/Theme.StudyOS" />
+
+        <!-- ── Notification broadcast receivers ──────────────────────────── -->
+
+        <!-- Receives the daily alarm trigger; not exported (only system AlarmManager sends it) -->
+        <receiver
+            android:name=".notification.StudyReminderReceiver"
+            android:exported="false" />
+
+        <!-- Reschedules alarms after device reboot; must be exported to receive system broadcasts -->
+        <receiver
+            android:name=".notification.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
 
     </application>
 

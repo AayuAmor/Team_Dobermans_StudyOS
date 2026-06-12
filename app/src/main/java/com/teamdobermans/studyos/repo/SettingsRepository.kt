@@ -14,8 +14,12 @@ class SettingsRepository(context: Context) {
     private val prefs = context.getSharedPreferences("StudyOSPrefs", Context.MODE_PRIVATE)
 
     companion object {
-        const val KEY_REMINDERS = "reminders_enabled"
+        const val KEY_REMINDERS      = "reminders_enabled"
+        const val KEY_REMINDER_HOUR   = "reminder_hour"
+        const val KEY_REMINDER_MINUTE = "reminder_minute"
     }
+
+    // ── Reminder toggle ───────────────────────────────────────────────────────
 
     fun getCachedReminderPreference(): Boolean =
         prefs.getBoolean(KEY_REMINDERS, true)
@@ -37,7 +41,6 @@ class SettingsRepository(context: Context) {
     }
 
     suspend fun setReminderPreference(enabled: Boolean): Boolean {
-        // Write locally first so the preference is instant even if offline
         prefs.edit().putBoolean(KEY_REMINDERS, enabled).apply()
 
         val uid = auth.currentUser?.uid ?: return false
@@ -50,5 +53,43 @@ class SettingsRepository(context: Context) {
             db.collection("users").document(uid).set(data, SetOptions.merge()).await()
             true
         }.getOrDefault(false)
+    }
+
+    // ── Reminder time ─────────────────────────────────────────────────────────
+
+    fun getCachedReminderTime(): Pair<Int, Int> = Pair(
+        prefs.getInt(KEY_REMINDER_HOUR,   8),
+        prefs.getInt(KEY_REMINDER_MINUTE, 0)
+    )
+
+    suspend fun getReminderTime(): Pair<Int, Int> {
+        val local = getCachedReminderTime()
+        val uid   = auth.currentUser?.uid ?: return local
+
+        return runCatching {
+            val doc = db.collection("users").document(uid).get().await()
+            val h = if (doc.contains("reminderHour"))   (doc.getLong("reminderHour")?.toInt()   ?: local.first)  else local.first
+            val m = if (doc.contains("reminderMinute")) (doc.getLong("reminderMinute")?.toInt() ?: local.second) else local.second
+            prefs.edit().putInt(KEY_REMINDER_HOUR, h).putInt(KEY_REMINDER_MINUTE, m).apply()
+            Pair(h, m)
+        }.getOrDefault(local)
+    }
+
+    suspend fun setReminderTime(hour: Int, minute: Int) {
+        prefs.edit()
+            .putInt(KEY_REMINDER_HOUR,   hour)
+            .putInt(KEY_REMINDER_MINUTE, minute)
+            .apply()
+
+        val uid = auth.currentUser?.uid ?: return
+
+        runCatching {
+            val data = mapOf(
+                "reminderHour"   to hour,
+                "reminderMinute" to minute,
+                "updatedAt"      to Timestamp.now()
+            )
+            db.collection("users").document(uid).set(data, SetOptions.merge()).await()
+        }
     }
 }

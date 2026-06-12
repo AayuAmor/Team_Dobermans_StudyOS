@@ -2494,6 +2494,145 @@ data class SettingsUiState(
 
 ---
 
+# Feature 3 — Study Reminder Notification System
+
+**User story:** As a student, I want a notification to remind me to start studying at a time I choose, so I don't miss my daily study session.
+
+**Acceptance criteria:**
+1. Notification triggers at a user-set time every day
+2. Tapping the notification opens the app
+
+---
+
+## Technology Choice: AlarmManager vs WorkManager
+
+WorkManager is designed for deferrable background tasks and does not guarantee exact timing. For user-facing reminders at a precise time, `AlarmManager` is the correct choice:
+
+| | AlarmManager | WorkManager |
+|---|---|---|
+| Exact timing | Yes (`setExactAndAllowWhileIdle`) | No (min 15 min intervals) |
+| Works in Doze | Yes (with `WAKEUP` flags) | Yes |
+| Survives reboot | Only with BootReceiver | Built-in |
+| Best for | Time-critical alarms | Background sync / uploads |
+
+WorkManager is also not a project dependency in StudyOS, so AlarmManager is the only viable option.
+
+---
+
+## Architecture
+
+```
+SettingsActivity (UI)
+    → SettingsViewModel.setReminderTime(h, m) / .setRemindersEnabled(enabled)
+        → StudyReminderScheduler.schedule(ctx, h, m) / .cancel(ctx)
+            → AlarmManager.setExactAndAllowWhileIdle (or setAndAllowWhileIdle fallback)
+                → [alarm fires at set time]
+                    → StudyReminderReceiver.onReceive()
+                        → NotificationManagerCompat.notify()
+                        → StudyReminderScheduler.schedule() [re-arms for next day]
+
+[device reboot]
+    → BootReceiver.onReceive()
+        → StudyReminderScheduler.rescheduleIfEnabled()
+```
+
+---
+
+## Files Changed
+
+| File | Type | Purpose |
+|---|---|---|
+| `notification/StudyReminderScheduler.kt` | Created | Singleton — channel creation, schedule, cancel, reschedule, build notification |
+| `notification/StudyReminderReceiver.kt` | Created | BroadcastReceiver — posts notification, re-arms alarm for next day |
+| `notification/BootReceiver.kt` | Created | BroadcastReceiver — reschedules alarms after device reboot |
+| `repo/SettingsRepository.kt` | Modified | Added `KEY_REMINDER_HOUR`, `KEY_REMINDER_MINUTE`, `getCachedReminderTime()`, `getReminderTime()`, `setReminderTime()` |
+| `viewModel/SettingsViewModel.kt` | Modified | Added `reminderHour`/`reminderMinute` to `SettingsUiState`, `setReminderTime()`, scheduler calls in `setRemindersEnabled()` |
+| `ui/profile/SettingActivity.kt` | Modified | `ReminderTimeRow`, `ReminderTimePickerDialog`, POST_NOTIFICATIONS permission launcher, `onReminderToggle` wrapper |
+| `AndroidManifest.xml` | Modified | `POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`, `RECEIVE_BOOT_COMPLETED` permissions + receiver declarations |
+
+---
+
+## Key Implementation Decisions
+
+### One-Shot Alarm Pattern
+`AlarmManager.setExactAndAllowWhileIdle()` fires only once. `StudyReminderReceiver` re-arms the alarm for the next day in `onReceive()` after every fire. This is the standard Android pattern for daily repeating alarms — `setRepeating()` does not wake the device in Doze mode.
+
+### Exact Alarm Permission (API 31+)
+`SCHEDULE_EXACT_ALARM` is declared in the manifest, but on Android 12+ users can revoke it via Settings > Apps > Alarms & Reminders. The scheduler checks `alarmManager.canScheduleExactAlarms()` at runtime and falls back to `setAndAllowWhileIdle()` if not granted. This is inexact (may fire up to ~10 minutes late in Doze) but still reliable.
+
+### POST_NOTIFICATIONS Runtime Permission (API 33+)
+Declared in the manifest for the Play Store listing. Requested at runtime in `SettingsActivity` via `rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission())`. The toggle only calls `viewModel.setRemindersEnabled(true)` if the user grants the permission (in the launcher callback). If denied, the toggle stays off.
+
+### Notification Channel
+Created in both `StudyReminderScheduler.createChannel()` (called from `SettingsActivity.onCreate()` and from `StudyReminderReceiver.onReceive()`) and guarded with `Build.VERSION.SDK_INT >= Build.VERSION_CODES.O`. Creating a channel that already exists is a no-op.
+
+### SharedPreferences as Ground Truth for Receivers
+`StudyReminderReceiver` and `BootReceiver` read directly from `SharedPreferences("StudyOSPrefs")` since they cannot access the ViewModel. The repository constants `KEY_REMINDERS`, `KEY_REMINDER_HOUR`, `KEY_REMINDER_MINUTE` are public so receivers and repository always use the same keys.
+
+### Dual Persistence: Time Setting
+`reminderHour` / `reminderMinute` are written to both SharedPreferences (instant, offline-safe) and Firestore `users/{uid}` with `SetOptions.merge()`. On a fresh install / new device, Firestore provides the values; `getReminderTime()` reads Firestore and syncs local before the scheduler is invoked.
+
+---
+
+## Permissions Added
+
+| Permission | API Level | Why |
+|---|---|---|
+| `POST_NOTIFICATIONS` | 33+ (Android 13) | Required to show notifications; requested at runtime when user enables reminders |
+| `SCHEDULE_EXACT_ALARM` | 31+ (Android 12) | Required for `setExactAndAllowWhileIdle()`; falls back gracefully if revoked |
+| `RECEIVE_BOOT_COMPLETED` | All | Required so `BootReceiver` gets `ACTION_BOOT_COMPLETED` system broadcast |
+
+---
+
+## Limitations
+
+| Limitation | Why |
+|---|---|
+| Notification may arrive ≤10 min late on Android 12+ devices where exact alarm permission is revoked | Doze mode batches inexact alarms |
+| BootReceiver uses `android:exported="true"` | Required for system broadcast receivers on Android 8+; mitigated by no `data` or `scheme` in intent-filter |
+| No notification on first install until user opens Settings once | Alarm is only scheduled when user enables the toggle or changes the time — not on first app launch |
+| `SCHEDULE_EXACT_ALARM` may be auto-revoked by battery saver | User must re-grant in Settings > Apps > Alarms & Reminders; `canScheduleExactAlarms()` guard ensures we don't crash |
+
+---
+
+## Acceptance Validation
+
+| Acceptance Criteria | Status | Evidence |
+|---|---|---|
+| Notification triggers at set time | PASS | `StudyReminderScheduler.schedule(ctx, h, m)` → `AlarmManager.setExactAndAllowWhileIdle(RTC_WAKEUP, triggerAt, pendingIntent)` → `StudyReminderReceiver.onReceive()` → `NotificationManagerCompat.notify()` |
+| Tapping notification opens app | PASS | `StudyReminderScheduler.buildNotification()` uses `PendingIntent` wrapping `Intent(context, MainActivity::class.java)` with `FLAG_ACTIVITY_NEW_TASK or FLAG_ACTIVITY_CLEAR_TASK` |
+
+---
+
+## How to Test
+
+1. Open Settings → toggle "Study Reminders" ON → grant POST_NOTIFICATIONS if prompted
+2. Tap "Change" under Reminder Time → set time 1–2 minutes from now → tap "Set"
+3. Lock the screen / put device in Doze → wait for the notification to appear
+4. Tap the notification → app should open to the main screen (MainActivity)
+5. Reboot device → wait for the scheduled time → notification should still appear (BootReceiver)
+6. Toggle "Study Reminders" OFF → notification should NOT appear at the scheduled time
+
+---
+
+## Viva Explanation
+
+> "The Study Reminder Notification System uses AlarmManager rather than WorkManager because we need exact-time delivery, which WorkManager cannot guarantee. When the user enables reminders in `SettingsActivity`, the `POST_NOTIFICATIONS` permission is checked first on Android 13+ via `ActivityResultContracts.RequestPermission()`; if already granted, `SettingsViewModel.setRemindersEnabled(true)` is called directly. The ViewModel calls `StudyReminderScheduler.schedule(context, hour, minute)` which creates the notification channel, computes the next occurrence of the chosen time as a `Calendar` millis value, and registers a `PendingIntent` pointing at `StudyReminderReceiver` via `setExactAndAllowWhileIdle()`. When the alarm fires, `StudyReminderReceiver.onReceive()` checks SharedPreferences to confirm reminders are still enabled, posts the notification using `NotificationCompat.Builder` with a `PendingIntent` that opens `MainActivity`, then immediately re-arms the alarm for the next day — because `setExactAndAllowWhileIdle` is one-shot. `BootReceiver` handles device restarts by listening for `ACTION_BOOT_COMPLETED` and calling `rescheduleIfEnabled()` which reads the stored time from SharedPreferences. All PendingIntents use `FLAG_IMMUTABLE` as required on API 23+. The reminder time is persisted to both SharedPreferences (for receivers and fast reads) and Firestore `users/{uid}` (for cross-device sync via `SetOptions.merge()`)."
+
+---
+
+## Rebuild From Memory
+
+1. Create `notification/StudyReminderScheduler.kt` as a Kotlin `object`. Implement `createChannel()` (API 26+ guard), `schedule(ctx, h, m)` (Calendar → triggerAt, exact/inexact based on `canScheduleExactAlarms()`), `cancel()` (FLAG_NO_CREATE), `rescheduleIfEnabled(ctx)` (reads SharedPrefs), `buildNotification(ctx)` (BigTextStyle, tap opens MainActivity)
+2. Create `notification/StudyReminderReceiver.kt` — check prefs enabled, call `createChannel`, notify if `areNotificationsEnabled()`, re-arm via `schedule()`
+3. Create `notification/BootReceiver.kt` — call `rescheduleIfEnabled()` on `ACTION_BOOT_COMPLETED`
+4. Add `KEY_REMINDER_HOUR`/`KEY_REMINDER_MINUTE` to `SettingsRepository`. Add `getCachedReminderTime()`, `getReminderTime()`, `setReminderTime()` with dual write
+5. Extend `SettingsUiState` with `reminderHour: Int = 8`, `reminderMinute: Int = 0`. Add `setReminderTime()` to `SettingsViewModel`. In `setRemindersEnabled()`, call `schedule()`/`cancel()` after successful save
+6. In `SettingsActivity.onCreate()`, call `StudyReminderScheduler.createChannel(this)`. In `SettingsBody`, add `notificationPermissionLauncher`, `onReminderToggle` wrapper, `showTimePicker` state, `ReminderTimePickerDialog`, `ReminderTimeRow` (visible only when `remindersEnabled`)
+7. Declare three permissions and two receivers in `AndroidManifest.xml`
+
+---
+
 *End of StudyOS Engineering Research Book — Version 2.0*  
 *Package: com.teamdobermans.studyos*  
 *Documented: June 2026*  
