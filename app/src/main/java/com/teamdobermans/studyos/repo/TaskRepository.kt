@@ -16,7 +16,7 @@ class TaskRepository {
     private val auth = FirebaseAuth.getInstance()
     private val userId get() = auth.currentUser?.uid ?: ""
 
-    // ── existing local store (keep for backward compat) ───────────────────
+
     private val remoteTaskStore = mutableListOf<Task>()
 
     fun getAllTasks(): List<Task> = remoteTaskStore
@@ -30,7 +30,7 @@ class TaskRepository {
         if (index != -1) remoteTaskStore[index] = updatedTask
     }
 
-    // ── NEW: Firestore real-time fetch for Focus Session picker ───────────
+
     fun getActiveTasksFlow(): Flow<List<Task>> = callbackFlow {
         if (userId.isEmpty()) {
             trySend(emptyList())
@@ -71,7 +71,7 @@ class TaskRepository {
         awaitClose { listener.remove() }
     }
 
-    // ── NEW: link a session id to a task in Firestore ─────────────────────
+
     suspend fun linkSessionToTask(taskId: String, sessionId: String) {
         if (userId.isEmpty() || taskId.isEmpty()) return
         try {

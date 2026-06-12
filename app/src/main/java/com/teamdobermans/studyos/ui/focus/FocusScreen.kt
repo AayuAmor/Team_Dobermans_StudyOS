@@ -114,7 +114,7 @@ fun FocusContent(
         PomodoroTab.LONG_BREAK -> "LONG BREAK"
     }
 
-    // Track last session count to avoid re-triggering completion when navigating back to the screen
+
     var lastProcessedSessionCount by remember { mutableIntStateOf(sessionsToday) }
 
     LaunchedEffect(sessionsToday) {

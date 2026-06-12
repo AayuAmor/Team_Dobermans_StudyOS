@@ -164,7 +164,7 @@ fun VisionBoardContent(
         )
     }
 
-    // ── Edit Dialog ──────────────────────────────────────────────────────────
+
     editingGoal?.let { goal ->
         var editText   by remember(goal.id) { mutableStateOf(goal.text) }
         var editTarget by remember(goal.id) { mutableStateOf(goal.targetValue) }
@@ -242,7 +242,7 @@ fun VisionBoardContent(
         )
     }
 
-    // ── Main UI ───────────────────────────────────────────────────────────────
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -298,7 +298,7 @@ fun VisionBoardContent(
                 .padding(16.dp)
         ) {
 
-            // ── Add Goal Card ─────────────────────────────────────────────────
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -337,7 +337,7 @@ fun VisionBoardContent(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Emoji picker
+
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         emojiOptions.forEach { emoji ->
                             Surface(
@@ -477,7 +477,7 @@ fun VisionBoardContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ── Pinned Goals Grid ─────────────────────────────────────────────
+
             if (pinnedGoals.isNotEmpty()) {
                 pinnedGoals.chunked(2).forEach { rowGoals ->
                     Row(
