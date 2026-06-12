@@ -1,5 +1,6 @@
-package com.teamdobermans.studyos
+package com.teamdobermans.studyos.ui.study
 
+import com.teamdobermans.studyos.R
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -31,8 +32,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.google.firebase.auth.FirebaseAuth
-import com.teamdobermans.studyos.Model.NoteModel
+import com.teamdobermans.studyos.model.NoteModel
+import com.teamdobermans.studyos.ui.navigation.AppRoutes
+import com.teamdobermans.studyos.ui.navigation.StudyOSBottomNav
 import com.teamdobermans.studyos.ui.theme.BrandPurple
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 import com.teamdobermans.studyos.viewModel.NoteViewModel
@@ -57,9 +61,10 @@ class NotesPage : ComponentActivity() {
 @Composable
 fun NotesScreen(
     modifier: Modifier = Modifier,
+    navController: NavController? = null,
+    viewModel: NoteViewModel = viewModel(),
     onBackClick: () -> Unit = {}
 ) {
-    val viewModel: NoteViewModel = viewModel()
     val allNotes by viewModel.notes.collectAsState()
     val saveResult by viewModel.saveResult.collectAsState()
     val context = LocalContext.current
@@ -90,6 +95,7 @@ fun NotesScreen(
 
     NotesScreenContent(
         modifier = modifier,
+        navController = navController,
         allNotes = allNotes,
         onBackClick = onBackClick,
         onCreateNote = { title, body, folder -> viewModel.createNote(title, body, folder) },
@@ -101,6 +107,7 @@ fun NotesScreen(
 @Composable
 fun NotesScreenContent(
     modifier: Modifier = Modifier,
+    navController: NavController? = null,
     allNotes: List<NoteModel>,
     onBackClick: () -> Unit,
     onCreateNote: (String, String, String) -> Unit,
@@ -204,10 +211,9 @@ fun NotesScreenContent(
             modifier = modifier.fillMaxSize(),
             containerColor = BackgroundGray,
             bottomBar = {
-                StudyOSBottomNav(
-                    currentRoute = NavRoute.STUDY,
-                    context = LocalContext.current
-                )
+                navController?.let {
+                    StudyOSBottomNav(navController = it)
+                }
             },
             floatingActionButton = {
                 FloatingActionButton(

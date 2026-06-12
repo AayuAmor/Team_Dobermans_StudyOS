@@ -99,8 +99,12 @@ fun DashboardBody(
     onNavigateMockTest: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val user = FirebaseAuth.getInstance().currentUser
-    val userName = user?.displayName ?: user?.email?.substringBefore("@") ?: "User"
+    // Added check for LocalInspectionMode to prevent FirebaseAuth crash in Previews
+    val isPreview = androidx.compose.ui.platform.LocalInspectionMode.current
+    val userName = if (isPreview) "User" else {
+        val user = FirebaseAuth.getInstance().currentUser
+        user?.displayName ?: user?.email?.substringBefore("@") ?: "User"
+    }
 
     val progress     by viewModel.progress.collectAsState()
     val timerRunning by viewModel.timerRunning.collectAsState()
@@ -112,6 +116,42 @@ fun DashboardBody(
         }
     }
 
+    DashboardContent(
+        userName = userName,
+        progress = progress,
+        timerRunning = timerRunning,
+        timeLeft = timeLeft,
+        onToggleTimer = { viewModel.toggleTimer() },
+        onNavigatePomodoro = onNavigatePomodoro,
+        onNavigateVisionBoard = onNavigateVisionBoard,
+        onNavigateProfile = onNavigateProfile,
+        onNavigateAnalytics = onNavigateAnalytics,
+        onNavigateFlashcards = onNavigateFlashcards,
+        onNavigateQuiz = onNavigateQuiz,
+        onNavigateBrainGame = onNavigateBrainGame,
+        onNavigateVideoNotes = onNavigateVideoNotes,
+        onNavigateMockTest = onNavigateMockTest
+    )
+}
+
+@Composable
+fun DashboardContent(
+    userName: String,
+    progress: Float,
+    timerRunning: Boolean,
+    timeLeft: Long,
+    onToggleTimer: () -> Unit,
+    onNavigatePomodoro: () -> Unit = {},
+    onNavigateVisionBoard: () -> Unit = {},
+    onNavigateProfile: () -> Unit = {},
+    onNavigateAnalytics: () -> Unit = {},
+    onNavigateFlashcards: () -> Unit = {},
+    onNavigateQuiz: () -> Unit = {},
+    onNavigateBrainGame: () -> Unit = {},
+    onNavigateVideoNotes: () -> Unit = {},
+    onNavigateMockTest: () -> Unit = {}
+) {
+    val context = LocalContext.current
     val minutes  = timeLeft / 60
     val seconds  = timeLeft % 60
     val timeText = "%02d:%02d".format(minutes, seconds)
@@ -141,7 +181,7 @@ fun DashboardBody(
                         style = TextStyle(fontSize = 12.sp, color = Color.White.copy(alpha = 0.75f))
                     )
                     Text(
-                        text = "$userName",
+                        text = userName,
                         style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     )
                 }
@@ -273,7 +313,7 @@ fun DashboardBody(
                             .clip(CircleShape)
                             .background(Color.White)
                             .padding(8.dp)
-                            .clickable { viewModel.toggleTimer() }
+                            .clickable { onToggleTimer() }
                     )
                 }
                 Button(
@@ -520,8 +560,12 @@ fun AnalyticsMiniStat(label: String, value: String) {
 @Preview
 @Composable
 fun DashboardPreview() {
-    DashboardBody(
-        viewModel             = DashboardViewModel(),
+    DashboardContent(
+        userName = "Preview User",
+        progress = 65f,
+        timerRunning = false,
+        timeLeft = 1500L,
+        onToggleTimer = {},
         onNavigatePomodoro    = {},
         onNavigateVisionBoard = {},
         onNavigateProfile     = {},

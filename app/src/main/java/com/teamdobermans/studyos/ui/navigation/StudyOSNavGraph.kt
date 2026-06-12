@@ -129,20 +129,22 @@ fun StudyOSNavGraph(
 
             composable(AppRoutes.Home.route) {
                 val vm = viewModel<DashboardViewModel>()
-                val context = LocalContext.current
+                val ctx = LocalContext.current
                 DashboardBody(
                     viewModel = vm,
                     onNavigatePomodoro = {
-                        context.startActivity(
-                            Intent(context, PomodoroActivity::class.java).putExtra("auto_start", true)
+                        ctx.startActivity(
+                            Intent(ctx, PomodoroActivity::class.java).putExtra("auto_start", true)
                         )
                     },
-                    onNavigateVisionBoard = { navController.navigate(AppRoutes.VisionBoard.route) },
+                    onNavigateVisionBoard = { 
+                        navController.navigate(AppRoutes.VisionBoard.route)
+                    },
                     onNavigateProfile     = { navController.navigate(AppRoutes.Profile.route) },
                     onNavigateAnalytics   = { navController.navigate(AppRoutes.Analytics.route) },
                     onNavigateFlashcards  = { navController.navigate(AppRoutes.Flashcards.route) },
                     onNavigateQuiz        = {
-                        context.startActivity(Intent(context, QuizScreen::class.java))
+                        ctx.startActivity(Intent(ctx, QuizScreen::class.java))
                     },
                     onNavigateBrainGame   = { navController.navigate(AppRoutes.BrainGame.route) },
                     onNavigateVideoNotes  = { navController.navigate(AppRoutes.VideoNotes.route) },
@@ -176,10 +178,13 @@ fun StudyOSNavGraph(
 
             composable(AppRoutes.Profile.route) {
                 val vm = viewModel<ProfileViewModel>()
+                val ctx = LocalContext.current
                 ProfileScreenV2(
                     viewModel             = vm,
                     onNavigateAnalytics   = { navController.navigate(AppRoutes.Analytics.route) },
-                    onNavigateVisionBoard = { navController.navigate(AppRoutes.VisionBoard.route) },
+                    onNavigateVisionBoard = { 
+                        navController.navigate(AppRoutes.VisionBoard.route)
+                    },
                     onSignOut             = {
                         navController.navigate(AppRoutes.Auth.route) {
                             popUpTo(0) { inclusive = true }
@@ -192,6 +197,7 @@ fun StudyOSNavGraph(
                 val vm = viewModel<NoteViewModel>()
                 NotesScreen(
                     viewModel   = vm,
+                    navController = navController,
                     onBackClick = { navController.popBackStack() }
                 )
             }
