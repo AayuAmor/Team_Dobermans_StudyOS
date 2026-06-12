@@ -181,7 +181,7 @@ fun PomodoroBody(
         ) {
             Surface(shape = RoundedCornerShape(50.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
                 Row(modifier = Modifier.fillMaxWidth().padding(4.dp)) {
-                    PomodoroTab.values().forEach { tab ->
+                    PomodoroTab.entries.forEach { tab ->
                         val isSelected = tab == selectedTab
                         Surface(
                             shape    = RoundedCornerShape(50.dp),

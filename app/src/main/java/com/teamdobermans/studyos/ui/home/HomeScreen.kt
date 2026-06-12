@@ -19,9 +19,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
+import com.teamdobermans.studyos.model.VisionGoalModel
 import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.viewModel.HomeViewModel
 
@@ -40,22 +42,68 @@ fun HomeScreen(
         ?: user?.email?.substringBefore("@")
         ?: "Learner"
 
+    HomeScreenContent(
+        userName = userName,
+        greeting = greetingByHour(),
+        studyStreak = state.studyStreak,
+        weeklyHours = state.weeklyHours,
+        lastSubject = state.lastSubject,
+        lastNote = state.lastNote,
+        tasksCompleted = state.tasksCompleted,
+        totalTasks = state.totalTasks,
+        flashcardsDueToday = state.flashcardsDueToday,
+        dailyGoalPercent = state.dailyGoalPercent,
+        todayStudyMinutes = state.todayStudyMinutes,
+        goals = state.goals,
+        onNavigateStudy = onNavigateStudy,
+        onNavigatePlan = onNavigatePlan,
+        onNavigateFocus = onNavigateFocus,
+        onNavigateFlashcards = onNavigateFlashcards,
+        onNavigateNotes = onNavigateNotes
+    )
+}
+
+@Composable
+private fun HomeScreenContent(
+    userName: String,
+    greeting: String,
+    studyStreak: Int,
+    weeklyHours: Float,
+    lastSubject: String,
+    lastNote: String,
+    tasksCompleted: Int,
+    totalTasks: Int,
+    flashcardsDueToday: Int,
+    dailyGoalPercent: Float,
+    todayStudyMinutes: Int,
+    goals: List<VisionGoalModel>,
+    onNavigateStudy: () -> Unit = {},
+    onNavigatePlan: () -> Unit = {},
+    onNavigateFocus: () -> Unit = {},
+    onNavigateFlashcards: () -> Unit = {},
+    onNavigateNotes: () -> Unit = {}
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(StudyPurpleFaint)
             .verticalScroll(rememberScrollState())
     ) {
-        HomeHeader(userName = userName, streak = state.studyStreak, weeklyHours = state.weeklyHours)
+        HomeHeader(
+            userName = userName,
+            greeting = greeting,
+            streak = studyStreak,
+            weeklyHours = weeklyHours
+        )
 
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
             ContinueStudyingCard(
-                subject  = state.lastSubject,
-                noteTitle = state.lastNote,
-                onClick   = onNavigateStudy
+                subject = lastSubject,
+                noteTitle = lastNote,
+                onClick = onNavigateStudy
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -65,23 +113,23 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 TodayTasksCard(
-                    modifier  = Modifier.weight(1f),
-                    completed = state.tasksCompleted,
-                    total     = state.totalTasks,
-                    onClick   = onNavigatePlan
+                    modifier = Modifier.weight(1f),
+                    completed = tasksCompleted,
+                    total = totalTasks,
+                    onClick = onNavigatePlan
                 )
                 FlashcardReviewCard(
                     modifier = Modifier.weight(1f),
-                    dueCount = state.flashcardsDueToday,
-                    onClick  = onNavigateFlashcards
+                    dueCount = flashcardsDueToday,
+                    onClick = onNavigateFlashcards
                 )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
             QuickActionsRow(
-                onNoteClick     = onNavigateNotes,
-                onTaskClick     = onNavigatePlan,
+                onNoteClick = onNavigateNotes,
+                onTaskClick = onNavigatePlan,
                 onFlashcardClick = onNavigateFlashcards,
                 onPomodoroClick = onNavigateFocus
             )
@@ -89,14 +137,14 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             DailyProgressCard(
-                percent        = state.dailyGoalPercent,
-                tasksCompleted = state.tasksCompleted,
-                studyMinutes   = state.todayStudyMinutes
+                percent = dailyGoalPercent,
+                tasksCompleted = tasksCompleted,
+                studyMinutes = todayStudyMinutes
             )
 
-            if (state.goals.isNotEmpty()) {
+            if (goals.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
-                VisionBoardWidget(goals = state.goals)
+                VisionBoardWidget(goals = goals)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -105,7 +153,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeHeader(userName: String, streak: Int, weeklyHours: Float) {
+private fun HomeHeader(userName: String, greeting: String, streak: Int, weeklyHours: Float) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -125,7 +173,7 @@ private fun HomeHeader(userName: String, streak: Int, weeklyHours: Float) {
             ) {
                 Column {
                     Text(
-                        text = greetingByHour(),
+                        text = greeting,
                         color = Color.White.copy(alpha = 0.75f),
                         fontSize = 13.sp
                     )
@@ -160,15 +208,15 @@ private fun HomeHeader(userName: String, streak: Int, weeklyHours: Float) {
             ) {
                 StatPill(
                     modifier = Modifier.weight(1f),
-                    icon     = Icons.Rounded.Whatshot,
-                    label    = "Streak",
-                    value    = "$streak days"
+                    icon = Icons.Rounded.Whatshot,
+                    label = "Streak",
+                    value = "$streak days"
                 )
                 StatPill(
                     modifier = Modifier.weight(1f),
-                    icon     = Icons.Rounded.Schedule,
-                    label    = "This week",
-                    value    = "${weeklyHours}h studied"
+                    icon = Icons.Rounded.Schedule,
+                    label = "This week",
+                    value = "${weeklyHours}h studied"
                 )
             }
         }
@@ -210,7 +258,7 @@ private fun ContinueStudyingCard(subject: String, noteTitle: String, onClick: ()
             .fillMaxWidth()
             .shadow(6.dp, RoundedCornerShape(16.dp))
             .clickable { onClick() },
-        shape  = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = StudyPurple)
     ) {
         Row(
@@ -222,7 +270,7 @@ private fun ContinueStudyingCard(subject: String, noteTitle: String, onClick: ()
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text  = "Continue Studying",
+                    text = "Continue Studying",
                     color = Color.White.copy(alpha = 0.75f),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -230,14 +278,14 @@ private fun ContinueStudyingCard(subject: String, noteTitle: String, onClick: ()
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text  = noteTitle,
+                    text = noteTitle,
                     color = Color.White,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text  = subject,
+                    text = subject,
                     color = Color.White.copy(alpha = 0.7f),
                     fontSize = 12.sp
                 )
@@ -273,7 +321,7 @@ private fun TodayTasksCard(
         modifier = modifier
             .shadow(4.dp, RoundedCornerShape(16.dp))
             .clickable { onClick() },
-        shape  = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -293,7 +341,12 @@ private fun TodayTasksCard(
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Today's Tasks", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                Text(
+                    "Today's Tasks",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextPrimary
+                )
             }
             Spacer(modifier = Modifier.height(10.dp))
             Text(
@@ -309,12 +362,12 @@ private fun TodayTasksCard(
                     .fillMaxWidth()
                     .height(6.dp)
                     .clip(RoundedCornerShape(6.dp)),
-                color      = StudyPurple,
+                color = StudyPurple,
                 trackColor = StudyPurpleLight
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text  = "${(total - completed)} remaining",
+                text = "${(total - completed)} remaining",
                 color = TextSecondary,
                 fontSize = 10.sp
             )
@@ -332,7 +385,7 @@ private fun FlashcardReviewCard(
         modifier = modifier
             .shadow(4.dp, RoundedCornerShape(16.dp))
             .clickable { onClick() },
-        shape  = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -352,11 +405,16 @@ private fun FlashcardReviewCard(
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Reviews Due", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+                Text(
+                    "Reviews Due",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextPrimary
+                )
             }
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text  = "$dueCount",
+                text = "$dueCount",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = if (dueCount > 0) Color(0xFFE07B39) else TextPrimary
@@ -389,12 +447,12 @@ private fun QuickActionsRow(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(16.dp)),
-        shape  = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
-                text  = "Quick Actions",
+                text = "Quick Actions",
                 color = TextPrimary,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold
@@ -405,31 +463,31 @@ private fun QuickActionsRow(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 QuickActionButton(
-                    icon    = Icons.Rounded.EditNote,
-                    label   = "New Note",
+                    icon = Icons.Rounded.EditNote,
+                    label = "New Note",
                     bgColor = Color(0xFFF0EEFF),
-                    tint    = StudyPurple,
+                    tint = StudyPurple,
                     onClick = onNoteClick
                 )
                 QuickActionButton(
-                    icon    = Icons.Rounded.AddTask,
-                    label   = "Add Task",
+                    icon = Icons.Rounded.AddTask,
+                    label = "Add Task",
                     bgColor = Color(0xFFE8F5E9),
-                    tint    = Color(0xFF1D9E75),
+                    tint = Color(0xFF1D9E75),
                     onClick = onTaskClick
                 )
                 QuickActionButton(
-                    icon    = Icons.Rounded.Style,
-                    label   = "Flashcard",
+                    icon = Icons.Rounded.Style,
+                    label = "Flashcard",
                     bgColor = Color(0xFFFFF0E0),
-                    tint    = Color(0xFFE07B39),
+                    tint = Color(0xFFE07B39),
                     onClick = onFlashcardClick
                 )
                 QuickActionButton(
-                    icon    = Icons.Rounded.Timer,
-                    label   = "Focus",
+                    icon = Icons.Rounded.Timer,
+                    label = "Focus",
                     bgColor = Color(0xFFFFE8EE),
-                    tint    = Color(0xFFE04F7B),
+                    tint = Color(0xFFE04F7B),
                     onClick = onPomodoroClick
                 )
             }
@@ -464,7 +522,12 @@ private fun QuickActionButton(
             )
         }
         Spacer(modifier = Modifier.height(4.dp))
-        Text(text = label, fontSize = 10.sp, color = TextSecondary, fontWeight = FontWeight.Medium)
+        Text(
+            text = label,
+            fontSize = 10.sp,
+            color = TextSecondary,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 
@@ -478,7 +541,7 @@ private fun DailyProgressCard(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(16.dp)),
-        shape  = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -487,9 +550,14 @@ private fun DailyProgressCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Daily Progress", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
                 Text(
-                    text  = "${(percent * 100).toInt()}%",
+                    "Daily Progress",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+                Text(
+                    text = "${(percent * 100).toInt()}%",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = StudyPurple
@@ -502,7 +570,7 @@ private fun DailyProgressCard(
                     .fillMaxWidth()
                     .height(10.dp)
                     .clip(RoundedCornerShape(10.dp)),
-                color      = StudyPurple,
+                color = StudyPurple,
                 trackColor = StudyPurpleLight
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -510,9 +578,9 @@ private fun DailyProgressCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                ProgressStat(label = "Tasks Done",    value = "$tasksCompleted")
-                ProgressStat(label = "Study Time",   value = "${studyMinutes}m")
-                ProgressStat(label = "Goal",         value = "${(percent * 100).toInt()}%")
+                ProgressStat(label = "Tasks Done", value = "$tasksCompleted")
+                ProgressStat(label = "Study Time", value = "${studyMinutes}m")
+                ProgressStat(label = "Goal", value = "${(percent * 100).toInt()}%")
             }
         }
     }
@@ -527,12 +595,12 @@ private fun ProgressStat(label: String, value: String) {
 }
 
 @Composable
-private fun VisionBoardWidget(goals: List<String>) {
+private fun VisionBoardWidget(goals: List<VisionGoalModel>) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(16.dp)),
-        shape  = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = StudyPurpleDeep)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -545,29 +613,50 @@ private fun VisionBoardWidget(goals: List<String>) {
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text  = "My Goals",
+                    text = "My Goals",
                     color = Color.White,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
             Spacer(modifier = Modifier.height(10.dp))
-            goals.forEach { goal ->
+
+            // Show max 3 goals as preview
+            goals.take(3).forEach { goal ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFFFD700))
-                    )
+                    Text(text = goal.emoji, fontSize = 14.sp)
                     Spacer(modifier = Modifier.width(10.dp))
-                    Text(text = goal, color = Color.White.copy(alpha = 0.9f), fontSize = 13.sp)
+                    Column {
+                        Text(
+                            text = goal.text,
+                            color = Color.White.copy(alpha = 0.9f),
+                            fontSize = 13.sp
+                        )
+                        if (goal.targetValue.isNotEmpty()) {
+                            Text(
+                                text = "Target: ${goal.targetValue}",
+                                color = Color.White.copy(alpha = 0.55f),
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
                 }
+            }
+
+            // Show "x more" if more than 3 goals
+            if (goals.size > 3) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "+ ${goals.size - 3} more goals",
+                    color = Color(0xFFFFD700),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     }
@@ -578,7 +667,27 @@ private fun greetingByHour(): String {
     return when {
         hour < 12 -> "Good Morning"
         hour < 17 -> "Good Afternoon"
-        else      -> "Good Evening"
+        else -> "Good Evening"
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+fun HomeScreenPreview() {
+    StudyOSTheme {
+        HomeScreenContent(
+            userName = "Alex",
+            greeting = "Good Afternoon",
+            studyStreak = 12,
+            weeklyHours = 15.5f,
+            lastSubject = "Mobile Development",
+            lastNote = "Jetpack Compose Basics",
+            tasksCompleted = 5,
+            totalTasks = 8,
+            flashcardsDueToday = 20,
+            dailyGoalPercent = 0.65f,
+            todayStudyMinutes = 120,
+            goals = emptyList()
+        )
+    }
+}
