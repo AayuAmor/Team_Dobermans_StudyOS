@@ -14,8 +14,7 @@ data class Task(
     val priority: Priority,
     val subjectId: String,
     val subjectName: String,
-    val done: Boolean = false,
-    val linkedNoteIds: List<String> = emptyList()
+    val done: Boolean = false
 ) {
 
     fun isOverdue(compareDate: LocalDate = LocalDate.now()): Boolean {
@@ -24,4 +23,3 @@ data class Task(
         return compareDate.isAfter(finalDeadline)
     }
 }
-

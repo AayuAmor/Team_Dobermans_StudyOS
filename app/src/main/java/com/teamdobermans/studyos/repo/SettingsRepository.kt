@@ -19,8 +19,6 @@ class SettingsRepository(context: Context) {
         const val KEY_REMINDER_MINUTE = "reminder_minute"
     }
 
-    // ── Reminder toggle ───────────────────────────────────────────────────────
-
     fun getCachedReminderPreference(): Boolean =
         prefs.getBoolean(KEY_REMINDERS, true)
 
@@ -54,8 +52,6 @@ class SettingsRepository(context: Context) {
             true
         }.getOrDefault(false)
     }
-
-    // ── Reminder time ─────────────────────────────────────────────────────────
 
     fun getCachedReminderTime(): Pair<Int, Int> = Pair(
         prefs.getInt(KEY_REMINDER_HOUR,   8),

@@ -61,7 +61,6 @@ fun ProfileBody(
     val nameError  by viewModel.nameError.collectAsState()
     val emailError by viewModel.emailError.collectAsState()
 
-    // Backward-compat saveResult used by ProfileScreen.kt — keep observing so it reacts
     val saveResult by viewModel.saveResult.collectAsState()
 
     val displayName = profile.name.ifEmpty { profile.email.substringBefore("@") }
@@ -74,7 +73,6 @@ fun ProfileBody(
     val passwordsMatch = newPassword.isNotEmpty() && newPassword == confirmPassword
     val isLoading = uiState is ProfileUiState.Loading
 
-    // Auto-clear success state after 3 seconds
     LaunchedEffect(uiState) {
         if (uiState is ProfileUiState.Success) {
             delay(3000)
@@ -84,7 +82,6 @@ fun ProfileBody(
 
     Column(modifier = Modifier.fillMaxSize().background(StudyPurple)) {
 
-        // Top bar
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -127,7 +124,6 @@ fun ProfileBody(
                 .navigationBarsPadding()
         ) {
 
-            // --- Profile card ---
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -167,7 +163,6 @@ fun ProfileBody(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // --- Update preferences card ---
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -182,7 +177,6 @@ fun ProfileBody(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Name field
                     OutlinedTextField(
                         value = editName,
                         onValueChange = { editName = it },
@@ -210,7 +204,6 @@ fun ProfileBody(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Email field
                     OutlinedTextField(
                         value = editEmail,
                         onValueChange = { editEmail = it },
@@ -238,7 +231,6 @@ fun ProfileBody(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Save button
                     Button(
                         onClick = { viewModel.updateProfile(editName, editEmail) },
                         enabled = !isLoading,
@@ -257,7 +249,6 @@ fun ProfileBody(
                         }
                     }
 
-                    // Success banner
                     if (uiState is ProfileUiState.Success) {
                         Spacer(modifier = Modifier.height(10.dp))
                         Row(
@@ -279,7 +270,6 @@ fun ProfileBody(
                         }
                     }
 
-                    // Error banner
                     if (uiState is ProfileUiState.Error) {
                         Spacer(modifier = Modifier.height(10.dp))
                         Row(
@@ -304,7 +294,6 @@ fun ProfileBody(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // --- Password reset card ---
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),

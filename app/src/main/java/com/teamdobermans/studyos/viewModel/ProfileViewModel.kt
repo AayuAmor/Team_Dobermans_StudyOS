@@ -33,7 +33,6 @@ class ProfileViewModel : ViewModel() {
     private val _emailError = MutableStateFlow<String?>(null)
     val emailError: StateFlow<String?> = _emailError.asStateFlow()
 
-    // Kept for backward compat with ProfileScreen.kt
     private val _email = MutableStateFlow(repository.currentUserEmail())
     val email: StateFlow<String> = _email.asStateFlow()
 
@@ -50,9 +49,7 @@ class ProfileViewModel : ViewModel() {
                 _profile.value = loaded
                 _email.value   = loaded.email
             }
-            .onFailure {
-                // Non-fatal: show stale email from auth
-            }
+            .onFailure { }
     }
 
     fun validateProfile(name: String, email: String): Boolean {

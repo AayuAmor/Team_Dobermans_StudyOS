@@ -41,11 +41,7 @@ class MainActivity : ComponentActivity() {
             finish()
             return
         }
-        val startDestination = if (FirebaseAuth.getInstance().currentUser != null) {
-            AppRoutes.Home.route
-        } else {
-            AppRoutes.Auth.route
-        }
+        val startDestination = AppRoutes.Home.route
         setContent {
             StudyOSTheme {
                 StudyOSNavGraph(startDestination = startDestination)

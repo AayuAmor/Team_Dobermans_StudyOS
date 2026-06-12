@@ -41,7 +41,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
-    // Kept for backward compat with any existing callers
     private val _notificationsEnabled = MutableStateFlow(true)
     val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled.asStateFlow()
 
@@ -50,8 +49,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private val _signedOut = MutableStateFlow(false)
     val signedOut: StateFlow<Boolean> = _signedOut.asStateFlow()
-
-    // ── Settings loading ──────────────────────────────────────────────────────
 
     fun loadSettings() = viewModelScope.launch {
         _uiState.value = _uiState.value.copy(loading = true, errorMessage = null)
@@ -64,8 +61,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             loading          = false
         )
     }
-
-    // ── Toggle reminders ──────────────────────────────────────────────────────
 
     fun setRemindersEnabled(enabled: Boolean) = viewModelScope.launch {
         val currentHour   = _uiState.value.reminderHour
@@ -97,8 +92,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    // ── Reminder time ─────────────────────────────────────────────────────────
-
     fun setReminderTime(hour: Int, minute: Int) = viewModelScope.launch {
         repository.setReminderTime(hour, minute)
         _uiState.value = _uiState.value.copy(reminderHour = hour, reminderMinute = minute)
@@ -106,8 +99,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             StudyReminderScheduler.schedule(getApplication(), hour, minute)
         }
     }
-
-    // ── Misc ──────────────────────────────────────────────────────────────────
 
     fun clearMessages() {
         _uiState.value = _uiState.value.copy(successMessage = null, errorMessage = null)

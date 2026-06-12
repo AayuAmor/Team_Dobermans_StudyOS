@@ -12,22 +12,11 @@ import com.teamdobermans.studyos.R
 import com.teamdobermans.studyos.repo.SettingsRepository
 import java.util.Calendar
 
-/**
- * Central coordinator for study reminder alarms.
- *
- * Alarm lifetime:
- *  - schedule()  → one-shot exact alarm for the next occurrence of (hour:minute)
- *  - Receiver    → re-arms the alarm for the following day after each fire
- *  - cancel()    → removes the pending alarm
- *  - rescheduleIfEnabled() → called by BootReceiver to survive reboots
- */
 object StudyReminderScheduler {
 
     const val CHANNEL_ID      = "study_reminders"
     const val NOTIFICATION_ID = 1001
-    private const val ALARM_RC = 1001  // PendingIntent request code
-
-    // ── Notification channel ──────────────────────────────────────────────────
+    private const val ALARM_RC = 1001
 
     fun createChannel(context: Context) {
         val channel = NotificationChannel(
@@ -42,13 +31,6 @@ object StudyReminderScheduler {
             .createNotificationChannel(channel)
     }
 
-    // ── Alarm scheduling ──────────────────────────────────────────────────────
-
-    /**
-     * Schedules a one-shot alarm for the next occurrence of [hour]:[minute].
-     * If that time has already passed today the alarm fires tomorrow.
-     * The receiver re-arms this for the following day after each fire.
-     */
     fun schedule(context: Context, hour: Int, minute: Int) {
         createChannel(context)
 
@@ -60,13 +42,9 @@ object StudyReminderScheduler {
             set(Calendar.MINUTE,      minute)
             set(Calendar.SECOND,      0)
             set(Calendar.MILLISECOND, 0)
-            // Already passed today → push to tomorrow
             if (!after(Calendar.getInstance())) add(Calendar.DAY_OF_YEAR, 1)
         }.timeInMillis
 
-        // canScheduleExactAlarms() requires SCHEDULE_EXACT_ALARM (declared in manifest).
-        // Graceful fallback: setAndAllowWhileIdle delivers within a few minutes of
-        // the target time, still reliable enough for a study reminder.
         if (alarmManager.canScheduleExactAlarms()) {
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
         } else {
@@ -80,7 +58,6 @@ object StudyReminderScheduler {
         pendingIntent?.let { alarmManager.cancel(it) }
     }
 
-    /** Called by BootReceiver — re-schedules only if the user has reminders enabled. */
     fun rescheduleIfEnabled(context: Context) {
         val prefs = context.getSharedPreferences("StudyOSPrefs", Context.MODE_PRIVATE)
         if (!prefs.getBoolean(SettingsRepository.KEY_REMINDERS, true)) return
@@ -88,8 +65,6 @@ object StudyReminderScheduler {
         val minute = prefs.getInt(SettingsRepository.KEY_REMINDER_MINUTE, 0)
         schedule(context, hour, minute)
     }
-
-    // ── Notification builder ──────────────────────────────────────────────────
 
     fun buildNotification(context: Context) =
         NotificationCompat.Builder(context, CHANNEL_ID)
@@ -104,8 +79,6 @@ object StudyReminderScheduler {
             .setContentIntent(openAppPendingIntent(context))
             .setAutoCancel(true)
             .build()
-
-    // ── PendingIntent helpers ─────────────────────────────────────────────────
 
     private fun alarmPendingIntent(context: Context, extraFlags: Int): PendingIntent? =
         PendingIntent.getBroadcast(

@@ -100,7 +100,6 @@ fun PlanBody(viewModel: PlanViewModel) {
     }
     val pendingCount = filteredTasks.count { !it.done }
 
-    // ── Note picker dialog ───────────────────────────────────────────────────
     if (viewModel.showNotePicker) {
         val taskId = viewModel.notePickerTaskId ?: ""
         val alreadyLinked = viewModel.getLinkedNoteIds(taskId)
@@ -500,7 +499,6 @@ private fun TaskCard(
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
 
-            // ── Main task row ────────────────────────────────────────────────
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
@@ -565,7 +563,6 @@ private fun TaskCard(
                 }
             }
 
-            // ── Linked Notes section (shown when editing or notes exist) ─────
             if (isEditing || linkedNotes.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(10.dp))
                 HorizontalDivider(color = StudyPurpleLight, thickness = 1.dp)

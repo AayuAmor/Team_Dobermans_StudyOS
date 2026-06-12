@@ -33,7 +33,7 @@ class PomodoroViewModel : ViewModel() {
     private var countDownTimer: CountDownTimer? = null
 
     fun selectTab(tab: PomodoroTab) {
-        if (_isRunning.value) return
+        pauseTimer()
         _selectedTab.value = tab
         resetTimer()
     }
