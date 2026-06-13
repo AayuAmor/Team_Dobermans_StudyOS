@@ -27,19 +27,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.teamdobermans.studyos.model.FocusSessionModel
 import com.teamdobermans.studyos.ui.analytics.*
 import com.teamdobermans.studyos.ui.components.AnalyticsHeroRow
 import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.viewModel.AnalyticsViewModel
+import com.teamdobermans.studyos.viewModel.SessionHistoryViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class ProgressActivity : ComponentActivity() {
     private val analyticsViewModel: AnalyticsViewModel by viewModels()
+    private val sessionHistoryViewModel: SessionHistoryViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ProgressBody(analyticsViewModel = analyticsViewModel, onBack = { finish() })
+            ProgressBody(
+                analyticsViewModel = analyticsViewModel,
+                sessionHistoryViewModel = sessionHistoryViewModel,
+                onBack = { finish() }
+            )
         }
     }
 }
@@ -47,9 +57,12 @@ class ProgressActivity : ComponentActivity() {
 @Composable
 fun ProgressBody(
     analyticsViewModel: AnalyticsViewModel = AnalyticsViewModel(),
+    sessionHistoryViewModel: SessionHistoryViewModel = SessionHistoryViewModel(),
     onBack: () -> Unit = {}
 ) {
     val state by analyticsViewModel.state.collectAsState()
+    val sessions by sessionHistoryViewModel.sessions.collectAsState()
+    val isLoadingSessions by sessionHistoryViewModel.isLoading.collectAsState()
 
     val bestDay    = state.weeklyData.maxByOrNull { it.hours }?.day ?: "Thursday"
     val strongest  = state.subjectBreakdown.maxByOrNull { it.percent }?.name ?: "Mathematics"
@@ -92,7 +105,7 @@ fun ProgressBody(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            RecentSessionsCard()
+            RecentSessionsCard(sessions = sessions, isLoading = isLoadingSessions)
 
             Spacer(modifier = Modifier.height(14.dp))
 
@@ -173,13 +186,22 @@ private fun TaskCompletionCard(percent: Int) {
     }
 }
 
+private fun formatTimeAgo(completedAt: Long): String {
+    val diff = System.currentTimeMillis() - completedAt
+    return when {
+        diff < 60_000L         -> "Just now"
+        diff < 3_600_000L      -> "${diff / 60_000}m ago"
+        diff < 86_400_000L     -> "${diff / 3_600_000}h ago"
+        diff < 172_800_000L    -> "Yesterday"
+        else                   -> SimpleDateFormat("MMM d", Locale.getDefault()).format(Date(completedAt))
+    }
+}
+
 @Composable
-private fun RecentSessionsCard() {
-    val sessions = listOf(
-        Triple("Mathematics",  "25 min", "2h ago"),
-        Triple("Physics",      "50 min", "5h ago"),
-        Triple("Computer Sci", "25 min", "Yesterday")
-    )
+private fun RecentSessionsCard(
+    sessions: List<FocusSessionModel>,
+    isLoading: Boolean
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -194,10 +216,31 @@ private fun RecentSessionsCard() {
                 Text("Recent Study Sessions", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
             }
             Spacer(modifier = Modifier.height(12.dp))
-            sessions.forEachIndexed { index, (subject, duration, ago) ->
-                SessionRow(subject = subject, duration = duration, timeAgo = ago)
-                if (index < sessions.lastIndex) {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = StudyPurpleFaint)
+            when {
+                isLoading -> {
+                    Box(modifier = Modifier.fillMaxWidth().height(60.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = StudyPurple, modifier = Modifier.size(24.dp))
+                    }
+                }
+                sessions.isEmpty() -> {
+                    Text(
+                        text     = "No sessions recorded yet. Complete a focus session to see your history here.",
+                        fontSize = 12.sp,
+                        color    = TextSecondary
+                    )
+                }
+                else -> {
+                    val displaySessions = sessions.take(10)
+                    displaySessions.forEachIndexed { index, session ->
+                        SessionRow(
+                            subject  = session.taskTitle.ifBlank { "Focus Session" },
+                            duration = "${session.durationMinutes} min",
+                            timeAgo  = formatTimeAgo(session.completedAt)
+                        )
+                        if (index < displaySessions.lastIndex) {
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = StudyPurpleFaint)
+                        }
+                    }
                 }
             }
         }

@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.ui.draw.shadow
+import com.teamdobermans.studyos.model.NoteModel
 import com.teamdobermans.studyos.model.Priority
 import com.teamdobermans.studyos.model.SubjectModel
 import com.teamdobermans.studyos.model.Task
@@ -81,6 +82,8 @@ fun PlanBody(viewModel: PlanViewModel) {
         mutableStateOf(dynamicSubjects.firstOrNull() ?: SubjectModel("sub_fallback", "General Study"))
     }
 
+    val allNotes by viewModel.allNotes.collectAsState()
+
     val displayDueDateString = remember(viewModel.selectedStartDate, viewModel.selectedEndDate) {
         val startFormatted = viewModel.selectedStartDate.format(dateFormatter)
         if (viewModel.selectedEndDate != null) {
@@ -96,6 +99,68 @@ fun PlanBody(viewModel: PlanViewModel) {
         viewModel.tasks.filter { it.subjectId == viewModel.currentFilterSubjectId }
     }
     val pendingCount = filteredTasks.count { !it.done }
+
+    if (viewModel.showNotePicker) {
+        val taskId = viewModel.notePickerTaskId ?: ""
+        val alreadyLinked = viewModel.getLinkedNoteIds(taskId)
+        val availableNotes = allNotes.filter { it.id !in alreadyLinked }
+
+        AlertDialog(
+            onDismissRequest = { viewModel.closeNotePicker() },
+            title = {
+                Text(
+                    "Attach Note",
+                    fontWeight = FontWeight.Bold,
+                    color = StudyPurple
+                )
+            },
+            text = {
+                if (availableNotes.isEmpty()) {
+                    Text("No notes available to attach.", color = Color.Gray, fontSize = 14.sp)
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        availableNotes.forEach { note ->
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        viewModel.attachNote(taskId, note.id)
+                                        viewModel.closeNotePicker()
+                                    },
+                                shape = RoundedCornerShape(10.dp),
+                                color = StudyPurpleLight
+                            ) {
+                                Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+                                    Text(
+                                        note.title.ifBlank { "Untitled" },
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = StudyPurple,
+                                        fontSize = 14.sp
+                                    )
+                                    if (note.body.isNotBlank()) {
+                                        Text(
+                                            note.body,
+                                            color = Color.Gray,
+                                            fontSize = 12.sp,
+                                            maxLines = 1
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { viewModel.closeNotePicker() }) {
+                    Text("Cancel", color = Color.Gray)
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
 
     if (showDatePicker) {
         val dateRangePickerState = rememberDateRangePickerState()
@@ -392,76 +457,206 @@ fun PlanBody(viewModel: PlanViewModel) {
             Spacer(modifier = Modifier.height(12.dp))
 
             filteredTasks.forEach { task ->
-                val isOverdue = task.isOverdue()
+                TaskCard(
+                    task = task,
+                    isEditing = task.id == viewModel.editingTaskId,
+                    allNotes = allNotes,
+                    dateFormatter = dateFormatter,
+                    onTaskClick = { viewModel.startEditing(task) },
+                    onToggleDone = { viewModel.toggleTaskCompletion(task) },
+                    onAttachNote = { viewModel.openNotePicker(task.id) },
+                    onDetachNote = { noteId -> viewModel.detachNote(task.id, noteId) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TaskCard(
+    task: Task,
+    isEditing: Boolean,
+    allNotes: List<NoteModel>,
+    dateFormatter: DateTimeFormatter,
+    onTaskClick: () -> Unit,
+    onToggleDone: () -> Unit,
+    onAttachNote: () -> Unit,
+    onDetachNote: (String) -> Unit
+) {
+    val isOverdue = task.isOverdue()
+    val linkedNotes = remember(task.linkedNoteIds, allNotes) {
+        allNotes.filter { it.id in task.linkedNoteIds }
+    }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clickable { onTaskClick() },
+        shape  = RoundedCornerShape(14.dp),
+        color  = if (isOverdue) Color(0xFFFFF2F1) else Color.White,
+        border = if (isOverdue) BorderStroke(1.dp, Color(0xFFFFCDD2)) else null
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .background(if (task.done) StudyPurple else if (isOverdue) PriorityHighBg else StudyPurpleLight)
+                        .clickable { onToggleDone() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (task.done) Icon(painter = painterResource(R.drawable.baseline_check_24), contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            task.title,
+                            color = if (task.done) Color.Gray else TextPrimary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            textDecoration = if (task.done) TextDecoration.LineThrough else TextDecoration.None
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Surface(shape = RoundedCornerShape(4.dp), color = StudyPurple.copy(alpha = 0.1f)) {
+                            Text(task.subjectName, color = StudyPurple, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp), maxLines = 1)
+                        }
+                    }
+                    if (task.description.isNotEmpty()) {
+                        Text(task.description, color = Color.Gray, fontSize = 12.sp, textDecoration = if (task.done) TextDecoration.LineThrough else TextDecoration.None)
+                    }
+
+                    val formattedDeadLineString = remember(task.startDate, task.endDate) {
+                        val start = task.startDate.format(dateFormatter)
+                        if (task.endDate != null) "$start - ${task.endDate.format(dateFormatter)}" else start
+                    }
+
+                    Text(
+                        text = if (isOverdue) "Overdue: $formattedDeadLineString" else "Due: $formattedDeadLineString",
+                        color = if (isOverdue) PriorityHigh else StudyPurple.copy(alpha = 0.8f),
+                        fontSize = 10.sp,
+                        fontWeight = if (isOverdue) FontWeight.Bold else FontWeight.Light
+                    )
+                }
 
                 Surface(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { viewModel.startEditing(task) },
-                    shape    = RoundedCornerShape(14.dp),
-                    color    = if (isOverdue) Color(0xFFFFF2F1) else Color.White,
-                    border   = if (isOverdue) BorderStroke(1.dp, Color(0xFFFFCDD2)) else null
+                    shape = RoundedCornerShape(50.dp),
+                    color = when (task.priority) {
+                        Priority.HIGH   -> Color(0xFFFFEBEB)
+                        Priority.MEDIUM -> Color(0xFFFFF8E1)
+                        Priority.LOW    -> Color(0xFFE8F5E9)
+                    }
                 ) {
-                    Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier.size(22.dp).clip(CircleShape)
-                                .background(if (task.done) StudyPurple else if (isOverdue) PriorityHighBg else StudyPurpleLight)
-                                .clickable { viewModel.toggleTaskCompletion(task) },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (task.done) Icon(painter = painterResource(R.drawable.baseline_check_24), contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        task.priority.name.lowercase().replaceFirstChar { it.uppercase() },
+                        color = when (task.priority) {
+                            Priority.HIGH   -> Color(0xFFE53935)
+                            Priority.MEDIUM -> Color(0xFFF57F17)
+                            Priority.LOW    -> Color(0xFF2E7D32)
+                        },
+                        fontSize = 11.sp, fontWeight = FontWeight.Medium, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
+            }
 
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    task.title,
-                                    color = if (task.done) Color.Gray else TextPrimary,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
-                                    textDecoration = if (task.done) TextDecoration.LineThrough else TextDecoration.None
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Surface(shape = RoundedCornerShape(4.dp), color = StudyPurple.copy(alpha = 0.1f)) {
-                                    Text(task.subjectName, color = StudyPurple, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp), maxLines = 1)
-                                }
-                            }
-                            if (task.description.isNotEmpty()) {
-                                Text(task.description, color = Color.Gray, fontSize = 12.sp, textDecoration = if (task.done) TextDecoration.LineThrough else TextDecoration.None)
-                            }
+            if (isEditing || linkedNotes.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                HorizontalDivider(color = StudyPurpleLight, thickness = 1.dp)
+                Spacer(modifier = Modifier.height(8.dp))
 
-                            val formattedDeadLineString = remember(task.startDate, task.endDate) {
-                                val start = task.startDate.format(dateFormatter)
-                                if (task.endDate != null) "$start - ${task.endDate.format(dateFormatter)}" else start
-                            }
-
-                            Text(
-                                text = if (isOverdue) "Overdue: $formattedDeadLineString" else "Due: $formattedDeadLineString",
-                                color = if (isOverdue) PriorityHigh else StudyPurple.copy(alpha = 0.8f),
-                                fontSize = 10.sp,
-                                fontWeight = if (isOverdue) FontWeight.Bold else FontWeight.Light
-                            )
-                        }
-
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "Linked Notes",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = StudyPurple
+                    )
+                    if (isEditing) {
                         Surface(
-                            shape = RoundedCornerShape(50.dp),
-                            color = when (task.priority) {
-                                Priority.HIGH   -> Color(0xFFFFEBEB)
-                                Priority.MEDIUM -> Color(0xFFFFF8E1)
-                                Priority.LOW    -> Color(0xFFE8F5E9)
-                            }
+                            modifier = Modifier.clickable { onAttachNote() },
+                            shape = RoundedCornerShape(8.dp),
+                            color = StudyPurple
                         ) {
                             Text(
-                                task.priority.name.lowercase().replaceFirstChar { it.uppercase() },
-                                color = when (task.priority) {
-                                    Priority.HIGH   -> Color(0xFFE53935)
-                                    Priority.MEDIUM -> Color(0xFFF57F17)
-                                    Priority.LOW    -> Color(0xFF2E7D32)
-                                },
-                                fontSize = 11.sp, fontWeight = FontWeight.Medium, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                "+ Attach Note",
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                             )
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                if (linkedNotes.isEmpty()) {
+                    Text(
+                        "No notes attached",
+                        color = Color.Gray,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                } else {
+                    linkedNotes.forEach { note ->
+                        LinkedNoteChip(
+                            note = note,
+                            showRemove = isEditing,
+                            onRemove = { onDetachNote(note.id) }
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LinkedNoteChip(
+    note: NoteModel,
+    showRemove: Boolean,
+    onRemove: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = StudyPurpleLight
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                Text("•", color = StudyPurple, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    note.title.ifBlank { "Untitled" },
+                    color = TextPrimary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1
+                )
+            }
+            if (showRemove) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_clear),
+                    contentDescription = "Remove note",
+                    tint = Color.Gray,
+                    modifier = Modifier
+                        .size(16.dp)
+                        .clickable { onRemove() }
+                )
             }
         }
     }
@@ -472,4 +667,3 @@ fun PlanBody(viewModel: PlanViewModel) {
 fun PlanPreview() {
     StudyOSTheme { PlanBody(viewModel = PlanViewModel()) }
 }
-
