@@ -15,10 +15,17 @@ class StudyReminderReceiver : BroadcastReceiver() {
 
         if (!prefs.getBoolean(SettingsRepository.KEY_REMINDERS, true)) return
 
+        val hour   = prefs.getInt(SettingsRepository.KEY_REMINDER_HOUR,   8)
+        val minute = prefs.getInt(SettingsRepository.KEY_REMINDER_MINUTE, 0)
+
+        if (SessionManager.isSessionActive(context)) {
+            StudyReminderScheduler.schedule(context, hour, minute)
+            return
+        }
+
         StudyReminderScheduler.createChannel(context)
 
         val notifManager = NotificationManagerCompat.from(context)
-
         if (notifManager.areNotificationsEnabled()) {
             notifManager.notify(
                 StudyReminderScheduler.NOTIFICATION_ID,
@@ -26,8 +33,6 @@ class StudyReminderReceiver : BroadcastReceiver() {
             )
         }
 
-        val hour   = prefs.getInt(SettingsRepository.KEY_REMINDER_HOUR,   8)
-        val minute = prefs.getInt(SettingsRepository.KEY_REMINDER_MINUTE, 0)
         StudyReminderScheduler.schedule(context, hour, minute)
     }
 }

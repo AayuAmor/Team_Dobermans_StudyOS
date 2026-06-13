@@ -1,13 +1,15 @@
 package com.teamdobermans.studyos.viewModel
 
+import android.app.Application
 import android.os.CountDownTimer
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import com.teamdobermans.studyos.model.PomodoroTab
+import com.teamdobermans.studyos.notification.SessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class PomodoroViewModel : ViewModel() {
+class PomodoroViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _selectedTab   = MutableStateFlow(PomodoroTab.FOCUS)
     val selectedTab: StateFlow<PomodoroTab> = _selectedTab.asStateFlow()
@@ -31,6 +33,10 @@ class PomodoroViewModel : ViewModel() {
     val timeRemaining: StateFlow<Long> = _timeRemaining.asStateFlow()
 
     private var countDownTimer: CountDownTimer? = null
+
+    init {
+        SessionManager.endSession(getApplication())
+    }
 
     fun selectTab(tab: PomodoroTab) {
         pauseTimer()
@@ -61,6 +67,7 @@ class PomodoroViewModel : ViewModel() {
     }
 
     private fun startTimer() {
+        SessionManager.startSession(getApplication())
         _isRunning.value = true
         countDownTimer = object : CountDownTimer(_timeRemaining.value * 1000L, 1000L) {
             override fun onTick(ms: Long) { _timeRemaining.value = ms / 1000L }
@@ -68,6 +75,7 @@ class PomodoroViewModel : ViewModel() {
                 _isRunning.value = false
                 _sessionsToday.value += 1
                 _timeRemaining.value = totalSecondsForTab()
+                SessionManager.endSession(getApplication())
             }
         }.start()
     }
@@ -75,6 +83,7 @@ class PomodoroViewModel : ViewModel() {
     private fun pauseTimer() {
         countDownTimer?.cancel()
         _isRunning.value = false
+        SessionManager.endSession(getApplication())
     }
 
     private fun totalSecondsForTab(): Long = when (_selectedTab.value) {
@@ -86,6 +95,6 @@ class PomodoroViewModel : ViewModel() {
     override fun onCleared() {
         super.onCleared()
         countDownTimer?.cancel()
+        SessionManager.endSession(getApplication())
     }
 }
-

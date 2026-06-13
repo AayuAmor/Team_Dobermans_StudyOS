@@ -137,7 +137,7 @@ fun StudyOSNavGraph(
                             Intent(ctx, PomodoroActivity::class.java).putExtra("auto_start", true)
                         )
                     },
-                    onNavigateVisionBoard = { 
+                    onNavigateVisionBoard = {
                         navController.navigate(AppRoutes.VisionBoard.route)
                     },
                     onNavigateProfile     = { navController.navigate(AppRoutes.Profile.route) },
@@ -183,7 +183,7 @@ fun StudyOSNavGraph(
                 ProfileScreenV2(
                     viewModel             = vm,
                     onNavigateAnalytics   = { navController.navigate(AppRoutes.Analytics.route) },
-                    onNavigateVisionBoard = { 
+                    onNavigateVisionBoard = {
                         navController.navigate(AppRoutes.VisionBoard.route)
                     },
                     onSignOut             = {
@@ -198,7 +198,6 @@ fun StudyOSNavGraph(
                 val vm = viewModel<NoteViewModel>()
                 NotesScreen(
                     viewModel   = vm,
-                    navController = navController,
                     onBackClick = { navController.popBackStack() }
                 )
             }
@@ -258,4 +257,3 @@ fun StudyOSNavGraph(
         }
     }
 }
-

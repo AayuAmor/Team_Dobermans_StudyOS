@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.stateIn
 import java.time.LocalDate
 
 class PlanViewModel : ViewModel() {
-    private val repository = TaskRepository
+    private val repository = TaskRepository()
     private val noteRepo = NoteRepoImpl()
 
     val allNotes: StateFlow<List<NoteModel>> = noteRepo.getNotes()

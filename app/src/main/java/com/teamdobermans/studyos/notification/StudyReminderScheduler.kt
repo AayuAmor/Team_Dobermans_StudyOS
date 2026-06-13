@@ -35,7 +35,7 @@ object StudyReminderScheduler {
         createChannel(context)
 
         val alarmManager  = context.getSystemService(AlarmManager::class.java)
-        val pendingIntent = alarmPendingIntent(context, PendingIntent.FLAG_UPDATE_CURRENT)
+        val pendingIntent = alarmPendingIntent(context, PendingIntent.FLAG_UPDATE_CURRENT) ?: return
 
         val triggerAt = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, hour)

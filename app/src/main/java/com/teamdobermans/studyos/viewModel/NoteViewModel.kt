@@ -18,7 +18,7 @@ enum class AutoSaveStatus { IDLE, SAVING, SAVED, FAILED }
 
 class NoteViewModel : ViewModel() {
     private val repo = NoteRepoImpl()
-    private val taskRepo = TaskRepository
+    private val taskRepo = TaskRepository()
 
     val notes: StateFlow<List<NoteModel>> = repo.getNotes()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
