@@ -1,6 +1,7 @@
 package com.teamdobermans.studyos.repo
 
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.teamdobermans.studyos.model.FocusSessionModel
 import com.teamdobermans.studyos.model.Task
 import kotlinx.coroutines.tasks.await
@@ -29,11 +30,27 @@ class FocusSessionRepoImpl : FocusSessionRepo {
                 .collection("users")
                 .document(session.userId)
                 .collection("focusSessions")
-                .add(session)
+                .document(session.id)
+                .set(session)
                 .await()
             true
         } catch (e: Exception) {
             false
+        }
+    }
+
+    override suspend fun getSessions(userId: String): List<FocusSessionModel> {
+        return try {
+            val snapshot = firestore
+                .collection("users")
+                .document(userId)
+                .collection("focusSessions")
+                .orderBy("completedAt", Query.Direction.DESCENDING)
+                .get()
+                .await()
+            snapshot.documents.mapNotNull { it.toObject(FocusSessionModel::class.java) }
+        } catch (e: Exception) {
+            emptyList()
         }
     }
 }

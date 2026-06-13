@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.teamdobermans.studyos.model.FocusSessionModel
+import java.util.UUID
 import com.teamdobermans.studyos.model.Task
 import com.teamdobermans.studyos.repo.FocusSessionRepoImpl
 import com.teamdobermans.studyos.repo.TaskRepository
@@ -56,7 +57,9 @@ class FocusViewModel : ViewModel() {
         val task = _selectedTask.value
 
         viewModelScope.launch {
+            val sessionId = UUID.randomUUID().toString()
             val session = FocusSessionModel(
+                id              = sessionId,
                 taskId          = task?.id    ?: "",
                 taskTitle       = task?.title ?: "No Task",
                 durationMinutes = durationMinutes.toInt(),
@@ -66,8 +69,8 @@ class FocusViewModel : ViewModel() {
 
             repo.saveSession(session)
 
-            if (task != null && session.id.isNotEmpty()) {
-                taskRepo.linkSessionToTask(task.id, session.id)
+            if (task != null) {
+                taskRepo.linkSessionToTask(task.id, sessionId)
             }
         }
     }
