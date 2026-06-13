@@ -2,9 +2,12 @@ package com.teamdobermans.studyos.model
 
 data class FlashcardModel(
     val id: String = "",
-    val question: String = "",
-    val answer: String = "",
-    val subject: String = "Biology",
-    val timestamp: Long = 0L,
-    val userId: String = ""
+    val userId: String = "",
+    val front: String = "",
+    val back: String = "",
+    val deckName: String = "General",
+    val createdAt: Long = 0L,
+    val updatedAt: Long = 0L,
+    val lastReviewedAt: Long = 0L,
+    val reviewCount: Int = 0
 )

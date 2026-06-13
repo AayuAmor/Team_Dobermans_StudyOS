@@ -1,69 +1,90 @@
 package com.teamdobermans.studyos.repo
 
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ListenerRegistration
 import com.teamdobermans.studyos.model.FlashcardModel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.tasks.await
 
-class FlashcardRepoImpl {
-    private val db   = FirebaseFirestore.getInstance()
+class FlashcardRepoImpl : FlashcardRepo {
+
     private val auth = FirebaseAuth.getInstance()
-    private val col  = db.collection("flashcards")
+    private val firestore = FirebaseFirestore.getInstance()
 
-    fun getFlashcards(): Flow<List<FlashcardModel>> = callbackFlow {
-        var listener: ListenerRegistration? = null
+    private fun userCardsCollection() = auth.currentUser?.uid?.let { uid ->
+        firestore.collection("users").document(uid).collection("flashcards")
+    }
 
-        val authListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
-            val userId = firebaseAuth.currentUser?.uid
-            listener?.remove()
-
-            if (userId == null) {
-                trySend(emptyList())
-                return@AuthStateListener
+    override fun observeFlashcards(deckName: String?): Flow<List<FlashcardModel>> {
+        val collection = userCardsCollection() ?: return flowOf(emptyList())
+        return callbackFlow {
+            val query = if (deckName != null) {
+                collection.whereEqualTo("deckName", deckName)
+            } else {
+                collection
             }
-
-            listener = col
-                .whereEqualTo("userId", userId)
-                .addSnapshotListener { snapshot, error ->
-                    if (error != null) { trySend(emptyList()); return@addSnapshotListener }
-                    val cards = snapshot?.documents
-                        ?.mapNotNull { it.toObject(FlashcardModel::class.java) }
-                        ?.sortedBy { it.timestamp }
-                        ?: emptyList()
-                    trySend(cards)
-                }
-        }
-
-        auth.addAuthStateListener(authListener)
-        awaitClose {
-            listener?.remove()
-            auth.removeAuthStateListener(authListener)
+            val listener = query.addSnapshotListener { snapshot, _ ->
+                val cards = snapshot?.documents
+                    ?.mapNotNull { doc ->
+                        doc.toObject(FlashcardModel::class.java)?.copy(id = doc.id)
+                    }
+                    ?.sortedByDescending { it.createdAt }
+                    ?: emptyList()
+                trySend(cards)
+            }
+            awaitClose { listener.remove() }
         }
     }
 
-    suspend fun createFlashcard(question: String, answer: String, subject: String): Boolean {
-        val userId = auth.currentUser?.uid ?: return false
-        val id = col.document().id
+    override suspend fun createFlashcard(front: String, back: String, deckName: String): String? {
+        val collection = userCardsCollection() ?: return null
+        val uid = auth.currentUser?.uid ?: return null
+        val docRef = collection.document()
+        val now = System.currentTimeMillis()
         val card = FlashcardModel(
-            id        = id,
-            question  = question,
-            answer    = answer,
-            subject   = subject,
-            timestamp = System.currentTimeMillis(),
-            userId    = userId
+            id = docRef.id,
+            userId = uid,
+            front = front.trim(),
+            back = back.trim(),
+            deckName = deckName.trim().ifBlank { "General" },
+            createdAt = now,
+            updatedAt = now
         )
-        return try { col.document(id).set(card).await(); true } catch (e: Exception) { false }
+        return try {
+            docRef.set(card).await()
+            docRef.id
+        } catch (e: Exception) { null }
     }
 
-    suspend fun updateFlashcard(card: FlashcardModel): Boolean {
-        return try { col.document(card.id).set(card).await(); true } catch (e: Exception) { false }
+    override suspend fun updateFlashcard(card: FlashcardModel): Boolean {
+        val collection = userCardsCollection() ?: return false
+        return try {
+            collection.document(card.id)
+                .set(card.copy(updatedAt = System.currentTimeMillis()))
+                .await()
+            true
+        } catch (e: Exception) { false }
     }
 
-    suspend fun deleteFlashcard(cardId: String) {
-        try { col.document(cardId).delete().await() } catch (e: Exception) { }
+    override suspend fun deleteFlashcard(cardId: String) {
+        val collection = userCardsCollection() ?: return
+        try { collection.document(cardId).delete().await() } catch (_: Exception) {}
+    }
+
+    override suspend fun recordReview(cardId: String) {
+        val collection = userCardsCollection() ?: return
+        try {
+            collection.document(cardId).update(
+                mapOf(
+                    "lastReviewedAt" to System.currentTimeMillis(),
+                    "reviewCount" to FieldValue.increment(1),
+                    "updatedAt" to System.currentTimeMillis()
+                )
+            ).await()
+        } catch (_: Exception) {}
     }
 }
