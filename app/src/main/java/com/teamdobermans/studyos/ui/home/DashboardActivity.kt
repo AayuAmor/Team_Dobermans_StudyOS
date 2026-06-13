@@ -110,7 +110,10 @@ fun DashboardBody(
     val context = LocalContext.current
     val userName by viewModel.userName.collectAsState()
 
-    val progress     by viewModel.progress.collectAsState()
+    val streakCount      by viewModel.streakCount.collectAsState()
+    val weeklyStudyHours by viewModel.weeklyStudyHours.collectAsState()
+    val pendingTaskCount by viewModel.pendingTaskCount.collectAsState()
+    val dailyProgress    by viewModel.dailyProgress.collectAsState()
     val timerRunning by viewModel.timerRunning.collectAsState()
     val timeLeft     by viewModel.timeLeft.collectAsState()
 
@@ -172,7 +175,7 @@ fun DashboardBody(
                     .clip(RoundedCornerShape(20.dp))
                     .background(Color.White.copy(alpha = 0.18f))
                     .clickable {
-                        Toast.makeText(context, "15 day streak! Keep going", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "$streakCount day streak! Keep going", Toast.LENGTH_SHORT).show()
                     }
                     .padding(horizontal = 14.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -180,7 +183,7 @@ fun DashboardBody(
             ) {
                 Text(text = "Study Streak", style = TextStyle(fontSize = 13.sp, color = Color.White))
                 Text(
-                    text = "15 days",
+                    text = "$streakCount days",
                     style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 )
             }
@@ -216,13 +219,13 @@ fun DashboardBody(
                         style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
                     )
                     Text(
-                        text = "${progress.toInt()}%",
+                        text = "${dailyProgress.toInt()}%",
                         style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold, color = StudyPurple)
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 LinearProgressIndicator(
-                    progress = { progress / 100f },
+                    progress = { dailyProgress / 100f },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(8.dp)
@@ -454,11 +457,11 @@ fun DashboardBody(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    AnalyticsMiniStat(label = "Streak", value = "15d")
+                    AnalyticsMiniStat(label = "Streak", value = "${streakCount}d")
                     Box(modifier = Modifier.width(1.dp).height(32.dp).background(Color.White.copy(alpha = 0.25f)))
-                    AnalyticsMiniStat(label = "This Week", value = "8.4h")
+                    AnalyticsMiniStat(label = "This Week", value = "${"%.1f".format(weeklyStudyHours)}h")
                     Box(modifier = Modifier.width(1.dp).height(32.dp).background(Color.White.copy(alpha = 0.25f)))
-                    AnalyticsMiniStat(label = "Quiz Acc.", value = "78%")
+                    AnalyticsMiniStat(label = "Pending", value = "$pendingTaskCount")
                 }
                 Spacer(modifier = Modifier.height(14.dp))
                 Button(
