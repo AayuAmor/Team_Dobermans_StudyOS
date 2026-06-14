@@ -7,19 +7,25 @@ import java.time.LocalDate
 
 class TaskRepository {
 
-    private val store = mutableMapOf<String, Task>()
-    private val _flow = MutableStateFlow<List<Task>>(emptyList())
+    companion object {
+        private val store = mutableMapOf<String, Task>()
+        private val _flow = MutableStateFlow<List<Task>>(emptyList())
+
+        private fun emit() {
+            _flow.value = store.values.toList()
+        }
+    }
 
     fun getAllTasks(): List<Task> = store.values.toList()
 
     fun insertTask(task: Task) {
         store[task.id] = task
-        _flow.value = store.values.toList()
+        emit()
     }
 
     fun updateTask(updatedTask: Task) {
         store[updatedTask.id] = updatedTask
-        _flow.value = store.values.toList()
+        emit()
     }
 
     fun getTodaysTasks(): List<Task> {
@@ -38,13 +44,13 @@ class TaskRepository {
         val task = store[taskId] ?: return
         if (noteId !in task.linkedNoteIds) {
             store[taskId] = task.copy(linkedNoteIds = task.linkedNoteIds + noteId)
-            _flow.value = store.values.toList()
+            emit()
         }
     }
 
     fun removeNoteFromTask(taskId: String, noteId: String) {
         val task = store[taskId] ?: return
         store[taskId] = task.copy(linkedNoteIds = task.linkedNoteIds.filter { it != noteId })
-        _flow.value = store.values.toList()
+        emit()
     }
 }
