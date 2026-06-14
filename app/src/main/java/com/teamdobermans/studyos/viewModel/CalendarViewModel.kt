@@ -76,21 +76,29 @@ class CalendarViewModel : ViewModel() {
         _viewMode.value = mode
     }
 
+    fun refreshSessions() {
+        loadSessions()
+    }
+
     private fun loadSessions() {
         val uid = auth.currentUser?.uid ?: return
         viewModelScope.launch {
             val sessions = sessionRepo.getSessions(uid)
+            val zone = ZoneId.systemDefault()
             _sessionEvents.value = sessions.mapNotNull { session ->
                 if (session.completedAt == 0L) return@mapNotNull null
-                val instant = Instant.ofEpochMilli(session.completedAt)
-                val zone = ZoneId.systemDefault()
+                val completedInstant = Instant.ofEpochMilli(session.completedAt)
+                val date = completedInstant.atZone(zone).toLocalDate()
                 CalendarEvent(
                     id = session.id,
                     title = session.taskTitle.ifBlank { "Focus Session" },
-                    date = instant.atZone(zone).toLocalDate(),
+                    date = date,
                     type = CalendarEventType.SESSION,
                     durationMinutes = session.durationMinutes,
-                    startTime = instant.atZone(zone).toLocalTime()
+                    startTime = if (session.startedAt > 0L)
+                        Instant.ofEpochMilli(session.startedAt).atZone(zone).toLocalTime()
+                    else null,
+                    endTime = completedInstant.atZone(zone).toLocalTime()
                 )
             }
         }

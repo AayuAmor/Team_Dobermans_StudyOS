@@ -13,5 +13,6 @@ data class CalendarEvent(
     val date: LocalDate,
     val type: CalendarEventType,
     val durationMinutes: Int? = null,
-    val startTime: LocalTime? = null
+    val startTime: LocalTime? = null,
+    val endTime: LocalTime? = null
 )

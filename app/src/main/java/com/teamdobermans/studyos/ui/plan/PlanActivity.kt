@@ -125,6 +125,11 @@ fun PlanBody(viewModel: PlanViewModel) {
 
     val pendingCount = filteredTasks.count { !it.done }
 
+    // Refresh sessions every time PlanBody enters composition (handles nav-back after completing a session)
+    LaunchedEffect(Unit) {
+        calendarVm.refreshSessions()
+    }
+
     fun onDateTapped(date: LocalDate) {
         calendarVm.selectDate(date)
         viewModel.selectedStartDate = date
@@ -515,27 +520,34 @@ fun PlanBody(viewModel: PlanViewModel) {
                 Spacer(modifier = Modifier.height(4.dp))
             }
 
-            // Sessions for selected date
-            if (sessionsForSelectedDate.isNotEmpty()) {
-                if (tasksForSelectedDate.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
-                Text(
-                    "Completed Sessions",
-                    fontSize = 12.sp,
-                    color = Color.Gray,
-                    fontWeight = FontWeight.SemiBold
+            // Study Sessions section — always visible with its own empty state
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.baseline_history_24),
+                    contentDescription = null,
+                    tint = StudyPurple,
+                    modifier = Modifier.size(16.dp)
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    "Study Sessions",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = StudyPurple
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            if (sessionsForSelectedDate.isEmpty()) {
+                NoSessionsState()
+            } else {
                 sessionsForSelectedDate.forEach { event ->
                     SessionEventItem(event)
                     Spacer(modifier = Modifier.height(4.dp))
                 }
-            }
-
-            // Empty state
-            if (tasksForSelectedDate.isEmpty() && sessionsForSelectedDate.isEmpty()) {
-                EmptyEventsCard()
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -908,6 +920,15 @@ private fun WeekStrip(
 @Composable
 private fun SessionEventItem(event: CalendarEvent) {
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
+    val timeLabel = when {
+        event.startTime != null && event.endTime != null ->
+            "${event.startTime.format(timeFormatter)} – ${event.endTime.format(timeFormatter)}"
+        event.endTime != null ->
+            "Ended ${event.endTime.format(timeFormatter)}"
+        event.startTime != null ->
+            event.startTime.format(timeFormatter)
+        else -> ""
+    }
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape  = RoundedCornerShape(12.dp),
@@ -945,15 +966,15 @@ private fun SessionEventItem(event: CalendarEvent) {
                 )
                 if (event.durationMinutes != null) {
                     Text(
-                        "${event.durationMinutes} min focus session",
+                        "${event.durationMinutes} min session",
                         color = Color.Gray,
                         fontSize = 11.sp
                     )
                 }
             }
-            if (event.startTime != null) {
+            if (timeLabel.isNotEmpty()) {
                 Text(
-                    event.startTime.format(timeFormatter),
+                    timeLabel,
                     color = StudyPurple,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium
@@ -964,7 +985,7 @@ private fun SessionEventItem(event: CalendarEvent) {
 }
 
 @Composable
-private fun EmptyEventsCard() {
+private fun NoSessionsState() {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape  = RoundedCornerShape(12.dp),
@@ -974,20 +995,13 @@ private fun EmptyEventsCard() {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 24.dp, horizontal = 16.dp),
+                .padding(vertical = 18.dp, horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                "No events on this day",
-                color = TextPrimary,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 14.sp
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                "Add a task below or complete a focus session",
-                color = Color.Gray,
-                fontSize = 12.sp,
+                "No study sessions for this date",
+                color = TextSecondary,
+                fontSize = 13.sp,
                 textAlign = TextAlign.Center
             )
         }

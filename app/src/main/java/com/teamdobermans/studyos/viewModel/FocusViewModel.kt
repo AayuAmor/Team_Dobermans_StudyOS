@@ -57,13 +57,17 @@ class FocusViewModel : ViewModel() {
         val task = _selectedTask.value
 
         viewModelScope.launch {
-            val sessionId = UUID.randomUUID().toString()
+            val sessionId   = UUID.randomUUID().toString()
+            val completedAt = System.currentTimeMillis()
+            val startedAt   = completedAt - (durationMinutes * 60_000L).toLong()
+
             val session = FocusSessionModel(
                 id              = sessionId,
                 taskId          = task?.id    ?: "",
                 taskTitle       = task?.title ?: "No Task",
                 durationMinutes = durationMinutes.toInt(),
-                completedAt     = System.currentTimeMillis(),
+                startedAt       = startedAt,
+                completedAt     = completedAt,
                 userId          = uid
             )
 
