@@ -8,12 +8,7 @@ from app.core.exceptions import TranscriptionException
 
 logger = logging.getLogger(__name__)
 
-
 class WhisperService:
-    """
-    Singleton wrapper around the Whisper model.
-    Call load_model() once at startup; use transcribe() on every request.
-    """
 
     _model: Optional[whisper.Whisper] = None
     _model_name: str = "base"
@@ -32,7 +27,7 @@ class WhisperService:
 
         logger.info(f"Transcribing: {audio_path.name}")
         try:
-            # fp16=False ensures compatibility with CPU-only environments
+                                                                         
             result = cls._model.transcribe(str(audio_path), fp16=False)
         except Exception as exc:
             logger.error(f"Whisper transcription error: {exc}")

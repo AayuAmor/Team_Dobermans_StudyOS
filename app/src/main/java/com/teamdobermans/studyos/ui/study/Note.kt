@@ -552,15 +552,12 @@ fun FolderChip(label: String, isActive: Boolean, onClick: () -> Unit) {
     }
 }
 
-// ✅ FIXED: NoteCard now shows confirmation before deleting!
 @Composable
 fun NoteCard(note: NoteModel, onClick: () -> Unit, onClose: () -> Unit) {
 
-    // This controls whether the popup is shown or not
-    var showDeleteDialog by remember { mutableStateOf(false) }
+        var showDeleteDialog by remember { mutableStateOf(false) }
 
-    // This is the popup dialog
-    if (showDeleteDialog) {
+        if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text("Note Delete Confirmation", fontWeight = FontWeight.Bold) },
@@ -569,8 +566,7 @@ fun NoteCard(note: NoteModel, onClick: () -> Unit, onClose: () -> Unit) {
                 Button(
                     onClick = {
                         showDeleteDialog = false
-                        onClose() // ← actually deletes the note
-                    },
+                        onClose()                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
                 ) {
                     Text("Delete", color = Color.White)
@@ -607,8 +603,7 @@ fun NoteCard(note: NoteModel, onClick: () -> Unit, onClose: () -> Unit) {
                     painter = painterResource(id = R.drawable.ic_clear),
                     contentDescription = "Delete",
                     tint = Color.LightGray,
-                    // ✅ Now shows dialog instead of deleting immediately!
-                    modifier = Modifier.size(20.dp).clickable { showDeleteDialog = true }
+                                        modifier = Modifier.size(20.dp).clickable { showDeleteDialog = true }
                 )
             }
             Spacer(modifier = Modifier.height(12.dp))

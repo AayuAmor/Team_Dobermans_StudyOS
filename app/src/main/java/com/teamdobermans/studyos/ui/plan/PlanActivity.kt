@@ -125,8 +125,7 @@ fun PlanBody(viewModel: PlanViewModel) {
 
     val pendingCount = filteredTasks.count { !it.done }
 
-    // Refresh sessions every time PlanBody enters composition (handles nav-back after completing a session)
-    LaunchedEffect(Unit) {
+        LaunchedEffect(Unit) {
         calendarVm.refreshSessions()
     }
 
@@ -136,8 +135,7 @@ fun PlanBody(viewModel: PlanViewModel) {
         viewModel.selectedEndDate = null
     }
 
-    // Note picker dialog
-    if (viewModel.showNotePicker) {
+        if (viewModel.showNotePicker) {
         val taskId = viewModel.notePickerTaskId ?: ""
         val alreadyLinked = viewModel.getLinkedNoteIds(taskId)
         val availableNotes = allNotes.filter { it.id !in alreadyLinked }
@@ -190,8 +188,7 @@ fun PlanBody(viewModel: PlanViewModel) {
         )
     }
 
-    // Date range picker dialog
-    if (showDatePicker) {
+        if (showDatePicker) {
         val dateRangePickerState = rememberDateRangePickerState()
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
@@ -241,8 +238,7 @@ fun PlanBody(viewModel: PlanViewModel) {
             .background(StudyPurpleDeep)
             .imePadding()
     ) {
-        // ── Header ──────────────────────────────────────────────────────────────
-        Column(
+                Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
@@ -305,8 +301,7 @@ fun PlanBody(viewModel: PlanViewModel) {
             }
         }
 
-        // ── Scroll body ─────────────────────────────────────────────────────────
-        Column(
+                Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(StudyPurpleFaint)
@@ -314,16 +309,14 @@ fun PlanBody(viewModel: PlanViewModel) {
                 .padding(16.dp)
         ) {
 
-            // ── Calendar card ────────────────────────────────────────────────────
-            Card(
+                        Card(
                 modifier = Modifier.fillMaxWidth().shadow(4.dp, RoundedCornerShape(16.dp)),
                 shape    = RoundedCornerShape(16.dp),
                 colors   = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Row(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
 
-                    // Left: large date display
-                    Column(
+                                        Column(
                         modifier = Modifier
                             .width(72.dp)
                             .padding(end = 8.dp),
@@ -350,17 +343,14 @@ fun PlanBody(viewModel: PlanViewModel) {
                         )
                     }
 
-                    // Right: view controls + calendar grid
-                    Column(modifier = Modifier.weight(1f)) {
+                                        Column(modifier = Modifier.weight(1f)) {
 
-                        // Controls: toggle + nav
-                        Row(
+                                                Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            // Month / Week toggle
-                            Row(
+                                                        Row(
                                 modifier = Modifier
                                     .background(StudyPurpleLight, RoundedCornerShape(50.dp))
                                     .padding(2.dp)
@@ -399,8 +389,7 @@ fun PlanBody(viewModel: PlanViewModel) {
                                 }
                             }
 
-                            // Prev / Label / Next
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Row(verticalAlignment = Alignment.CenterVertically) {
                                 IconButton(
                                     onClick = {
                                         if (viewMode == CalendarViewMode.MONTH)
@@ -450,8 +439,7 @@ fun PlanBody(viewModel: PlanViewModel) {
 
                         Spacer(modifier = Modifier.height(6.dp))
 
-                        // Day headers row (shared between month and week views)
-                        Row(modifier = Modifier.fillMaxWidth()) {
+                                                Row(modifier = Modifier.fillMaxWidth()) {
                             dayHeaders.forEach { day ->
                                 Text(
                                     day,
@@ -495,8 +483,7 @@ fun PlanBody(viewModel: PlanViewModel) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ── Events section ───────────────────────────────────────────────────
-            Text(
+                        Text(
                 selectedDate.format(sectionFormatter),
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
@@ -505,8 +492,7 @@ fun PlanBody(viewModel: PlanViewModel) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Tasks for selected date
-            tasksForSelectedDate.forEach { task ->
+                        tasksForSelectedDate.forEach { task ->
                 TaskCard(
                     task = task,
                     isEditing = task.id == viewModel.editingTaskId,
@@ -520,8 +506,7 @@ fun PlanBody(viewModel: PlanViewModel) {
                 Spacer(modifier = Modifier.height(4.dp))
             }
 
-            // Study Sessions section — always visible with its own empty state
-            Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -552,8 +537,7 @@ fun PlanBody(viewModel: PlanViewModel) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ── Task form card ───────────────────────────────────────────────────
-            Card(
+                        Card(
                 modifier = Modifier.fillMaxWidth().shadow(4.dp, RoundedCornerShape(16.dp)),
                 shape    = RoundedCornerShape(16.dp),
                 colors   = CardDefaults.cardColors(containerColor = Color.White)
@@ -784,8 +768,7 @@ private fun MonthGrid(
     datesWithEvents: Set<LocalDate>,
     onDateTapped: (LocalDate) -> Unit
 ) {
-    val firstDayOffset = displayedMonth.atDay(1).dayOfWeek.value - 1 // 0 = Monday
-    val daysInMonth = displayedMonth.lengthOfMonth()
+    val firstDayOffset = displayedMonth.atDay(1).dayOfWeek.value - 1     val daysInMonth = displayedMonth.lengthOfMonth()
     val rows = (firstDayOffset + daysInMonth + 6) / 7
 
     for (row in 0 until rows) {

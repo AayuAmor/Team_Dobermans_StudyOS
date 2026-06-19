@@ -1,18 +1,12 @@
-"""
-Pure-Python study notes generator.
-
-Designed for easy replacement: swap generate_notes() with an LLM/RAG
-implementation and the rest of the codebase stays unchanged.
-"""
 
 import re
 import logging
 from collections import Counter
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-# Broad English stop-word list for keyword extraction
 _STOP_WORDS = frozenset({
     "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
     "of", "with", "by", "from", "is", "it", "its", "as", "be", "was",
@@ -30,127 +24,112 @@ _STOP_WORDS = frozenset({
     "very", "much", "many", "most", "any", "all", "new", "old",
 })
 
+@dataclass
+class _StyleConfig:
+    summary_sentences: int
+    key_points: int
+    max_sections: int
+    bullets_per_section: int
+    max_terms: int
+    max_questions: int
 
-# ─── Public API ───────────────────────────────────────────────────────────────
+_STYLE_CONFIGS: Dict[str, _StyleConfig] = {
+    "short":    _StyleConfig(summary_sentences=2, key_points=4,  max_sections=2, bullets_per_section=3, max_terms=6,  max_questions=5),
+    "detailed": _StyleConfig(summary_sentences=4, key_points=8,  max_sections=4, bullets_per_section=5, max_terms=10, max_questions=10),
+    "exam":     _StyleConfig(summary_sentences=2, key_points=5,  max_sections=2, bullets_per_section=4, max_terms=12, max_questions=15),
+    "bullets":  _StyleConfig(summary_sentences=3, key_points=15, max_sections=2, bullets_per_section=5, max_terms=8,  max_questions=8),
+}
+_DEFAULT_CONFIG = _STYLE_CONFIGS["detailed"]
 
-def generate_notes(transcript: str, title: str = "") -> Dict[str, Any]:
-    """
-    Convert a raw transcript into structured study notes.
+                                                                                
 
-    Returns a dict matching the NotesOutput schema:
-        summary, key_points, important_terms, study_notes, possible_questions
-    """
+def generate_notes(transcript: str, title: str = "", summary_style: str = "detailed") -> Dict[str, Any]:
     transcript = transcript.strip()
     if not transcript:
         return _empty_notes()
 
-    logger.info("Generating study notes from transcript...")
+    cfg = _STYLE_CONFIGS.get(summary_style.lower(), _DEFAULT_CONFIG)
+    logger.info(f"Generating study notes (style={summary_style!r})...")
 
     sentences = _split_sentences(transcript)
     word_freq = _word_frequency(_tokenize(transcript))
 
     result = {
-        "summary": _build_summary(sentences),
-        "key_points": _extract_key_points(sentences, word_freq),
-        "important_terms": _extract_important_terms(transcript, sentences, word_freq),
-        "study_notes": _build_study_sections(sentences, word_freq),
-        "possible_questions": _build_questions(sentences, word_freq, title),
+        "summary":            _build_summary(sentences, n=cfg.summary_sentences),
+        "key_points":         _extract_key_points(sentences, word_freq, n=cfg.key_points),
+        "important_terms":    _extract_important_terms(transcript, sentences, word_freq, max_terms=cfg.max_terms),
+        "study_notes":        _build_study_sections(sentences, word_freq, max_sections=cfg.max_sections, bullets_per_section=cfg.bullets_per_section),
+        "possible_questions": _build_questions(sentences, word_freq, title, max_q=cfg.max_questions),
     }
 
     logger.info("Notes generation complete.")
     return result
 
-
-# ─── Sentence utilities ────────────────────────────────────────────────────────
+                                                                                 
 
 def _split_sentences(text: str) -> List[str]:
-    """Split text on sentence-ending punctuation."""
     text = re.sub(r"\s+", " ", text).strip()
     raw = re.split(r"(?<=[.!?])\s+", text)
     return [s.strip() for s in raw if len(s.strip()) > 25]
 
-
 def _tokenize(text: str) -> List[str]:
     return [w for w in re.findall(r"\b[a-zA-Z]{3,}\b", text.lower())]
-
 
 def _word_frequency(words: List[str]) -> Counter:
     return Counter(w for w in words if w not in _STOP_WORDS)
 
-
 def _score_sentence(sentence: str, freq: Counter) -> float:
-    """Rank a sentence by the average frequency of its significant words."""
     words = [w for w in _tokenize(sentence) if w not in _STOP_WORDS]
     if not words:
         return 0.0
     return sum(freq.get(w, 0) for w in words) / len(words)
 
-
 def _clip(text: str, limit: int) -> str:
     return text if len(text) <= limit else text[: limit - 3] + "..."
 
+                                                                                
 
-# ─── Summary ──────────────────────────────────────────────────────────────────
-
-def _build_summary(sentences: List[str]) -> str:
-    """
-    Use the first four meaningful sentences as an intro summary.
-    Transcripts typically start with the topic intro, making position a good heuristic.
-    """
+def _build_summary(sentences: List[str], n: int = 4) -> str:
     if not sentences:
         return "No content available."
-    intro = " ".join(sentences[:4])
+    intro = " ".join(sentences[:n])
     return _clip(intro, 900)
 
-
-# ─── Key points ───────────────────────────────────────────────────────────────
+                                                                                
 
 def _extract_key_points(sentences: List[str], freq: Counter, n: int = 8) -> List[str]:
-    """Return the top-N highest-scoring sentences in reading order."""
     if not sentences:
         return []
-
     scored = sorted(sentences, key=lambda s: _score_sentence(s, freq), reverse=True)
     top_set = set(scored[:n])
-    # Restore document order
     ordered = [s for s in sentences if s in top_set]
     return [_clip(s, 260) for s in ordered]
 
-
-# ─── Important terms ──────────────────────────────────────────────────────────
+                                                                                
 
 def _extract_important_terms(
-    text: str, sentences: List[str], freq: Counter
+    text: str, sentences: List[str], freq: Counter, max_terms: int = 10
 ) -> List[Dict[str, str]]:
-    """
-    Identify key terms using two strategies:
-    1. Capitalized multi-word phrases (proper nouns, named concepts)
-    2. High-frequency single content words
-    Attaches the first sentence that uses the term as its 'meaning'.
-    """
     terms: Dict[str, str] = {}
 
-    # Strategy 1: repeated capitalized phrases (2–4 words)
     cap_phrases = re.findall(r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})\b", text)
-    for phrase, count in Counter(cap_phrases).most_common(10):
+    for phrase, count in Counter(cap_phrases).most_common(max_terms):
         if count >= 2 and phrase.lower() not in _STOP_WORDS and phrase not in terms:
             terms[phrase] = _find_first_context(phrase, sentences)
-        if len(terms) >= 6:
+        if len(terms) >= max_terms // 2:
             break
 
-    # Strategy 2: high-frequency content words
-    for word, count in freq.most_common(30):
+    for word, count in freq.most_common(40):
         if count >= 3 and len(word) > 4:
             display = word.capitalize()
             if display not in terms:
                 ctx = _find_first_context(word, sentences)
                 if ctx:
                     terms[display] = ctx
-        if len(terms) >= 12:
+        if len(terms) >= max_terms:
             break
 
-    return [{"term": t, "meaning": m} for t, m in list(terms.items())[:10]]
-
+    return [{"term": t, "meaning": m} for t, m in list(terms.items())[:max_terms]]
 
 def _find_first_context(term: str, sentences: List[str]) -> str:
     for s in sentences:
@@ -158,21 +137,16 @@ def _find_first_context(term: str, sentences: List[str]) -> str:
             return _clip(s, 180)
     return "A key concept discussed in this content."
 
-
-# ─── Study sections ───────────────────────────────────────────────────────────
+                                                                                
 
 def _build_study_sections(
-    sentences: List[str], freq: Counter
+    sentences: List[str], freq: Counter, max_sections: int = 4, bullets_per_section: int = 5
 ) -> List[Dict[str, Any]]:
-    """
-    Chunk the transcript into 3–4 sections and pick the most informative
-    sentences from each chunk as bullet points.
-    """
     if not sentences:
         return []
 
     total = len(sentences)
-    n_sections = max(2, min(4, total // 6))
+    n_sections = max(2, min(max_sections, total // 6))
     chunk_size = max(2, total // n_sections)
 
     sections = []
@@ -184,14 +158,12 @@ def _build_study_sections(
             continue
 
         heading = _make_heading(chunk, freq, i + 1)
-        # Top 3–5 bullets from this chunk ranked by relevance
-        top = sorted(chunk, key=lambda s: _score_sentence(s, freq), reverse=True)[:5]
+        top = sorted(chunk, key=lambda s: _score_sentence(s, freq), reverse=True)[:bullets_per_section]
         bullets = [_clip(s, 210) for s in top]
 
         sections.append({"heading": heading, "points": bullets})
 
     return sections
-
 
 def _make_heading(chunk: List[str], freq: Counter, num: int) -> str:
     chunk_words = _tokenize(" ".join(chunk))
@@ -201,38 +173,37 @@ def _make_heading(chunk: List[str], freq: Counter, num: int) -> str:
         return f"Section {num}: {' & '.join(top_words[:2])}"
     return f"Section {num}: Core Concepts"
 
-
-# ─── Possible questions ───────────────────────────────────────────────────────
+                                                                                
 
 def _build_questions(
-    sentences: List[str], freq: Counter, title: str
+    sentences: List[str], freq: Counter, title: str, max_q: int = 10
 ) -> List[str]:
     questions: List[str] = []
 
     if title and title.lower() not in ("unknown video", "uploaded file", ""):
         questions.append(f"What is the main topic covered in '{title}'?")
 
-    # Convert top key-point sentences into questions
-    key = _extract_key_points(sentences, freq, n=6)
+    key = _extract_key_points(sentences, freq, n=min(8, max_q))
     for s in key:
         q = _sentence_to_question(s)
         if q:
             questions.append(q)
 
-    # Term-based questions from important terms
-    terms = _extract_important_terms("", sentences, freq)
-    for item in terms[:5]:
+    terms = _extract_important_terms("", sentences, freq, max_terms=min(6, max_q))
+    for item in terms[:6]:
         questions.append(f"What is '{item['term']}' and why is it important here?")
 
-    # Universal study questions
     questions += [
         "What are the three most important takeaways from this content?",
         "How would you explain this topic to someone hearing it for the first time?",
         "What real-world applications do the concepts in this content have?",
         "What prior knowledge is assumed by this content?",
+        "How do the key concepts in this content relate to each other?",
+        "What questions does this content leave unanswered?",
+        "Summarize this content in a single sentence.",
+        "What would be a good follow-up resource for this topic?",
     ]
 
-    # Deduplicate while preserving order
     seen: set = set()
     unique: List[str] = []
     for q in questions:
@@ -240,38 +211,30 @@ def _build_questions(
             seen.add(q)
             unique.append(q)
 
-    return unique[:10]
-
+    return unique[:max_q]
 
 def _sentence_to_question(sentence: str) -> Optional[str]:
-    """Heuristically convert a declarative sentence into a study question."""
     s = sentence.strip().rstrip(".")
     if not s or len(s.split()) < 5:
         return None
 
-    lower = s.lower()
-
-    # "X is Y" → "What is X?"
     match = re.match(r"^([A-Z][^,]+?)\s+is\s+", s)
     if match:
         subject = match.group(1).strip()
         if len(subject.split()) <= 6:
             return f"What is {subject}?"
 
-    # "X are Y" → "What are X?"
     match = re.match(r"^([A-Z][^,]+?)\s+are\s+", s)
     if match:
         subject = match.group(1).strip()
         if len(subject.split()) <= 6:
             return f"What are {subject}?"
 
-    # Generic fallback: "Explain: <first 7 words>..."
     words = s.split()
     snippet = " ".join(words[:7])
     return f"Explain the concept of: '{snippet}...'?"
 
-
-# ─── Helpers ──────────────────────────────────────────────────────────────────
+                                                                                
 
 def _empty_notes() -> Dict[str, Any]:
     return {

@@ -11,6 +11,7 @@ from app.core.exceptions import (
     FileTooLargeException,
     UnsupportedFileTypeException,
 )
+from app.utils.ffmpeg_utils import get_ffmpeg_location
 from app.utils.file_utils import generate_unique_stem, get_file_extension, safe_delete
 
 logger = logging.getLogger(__name__)
@@ -19,15 +20,9 @@ ALLOWED_VIDEO_EXTENSIONS: frozenset = frozenset({"mp4", "mkv", "mov", "webm"})
 ALLOWED_AUDIO_EXTENSIONS: frozenset = frozenset({"mp3", "wav", "m4a"})
 ALL_ALLOWED: frozenset = ALLOWED_VIDEO_EXTENSIONS | ALLOWED_AUDIO_EXTENSIONS
 
-_CHUNK_SIZE = 1024 * 1024  # 1 MB read chunks
-
+_CHUNK_SIZE = 1024 * 1024                    
 
 async def save_uploaded_file(file: UploadFile, upload_dir: Path) -> Path:
-    """
-    Validate, stream, and persist an uploaded file.
-    Raises on unsupported type or size exceeded.
-    Returns the saved file path.
-    """
     ext = get_file_extension(file.filename or "")
     if ext not in ALL_ALLOWED:
         raise UnsupportedFileTypeException(
@@ -54,21 +49,17 @@ async def save_uploaded_file(file: UploadFile, upload_dir: Path) -> Path:
     logger.info(f"Upload saved: {dest.name} ({size_mb:.1f} MB)")
     return dest
 
-
 def extract_audio_from_video(video_path: Path, audio_dir: Path) -> Path:
-    """
-    Use ffmpeg to strip audio from a video file and produce an MP3.
-    Raises AudioExtractionException on failure.
-    """
     audio_path = audio_dir / f"{generate_unique_stem()}.mp3"
+    ffmpeg_bin = get_ffmpeg_location()
 
     cmd = [
-        "ffmpeg",
+        ffmpeg_bin,
         "-i", str(video_path),
-        "-vn",               # drop video stream
+        "-vn",                                  
         "-acodec", "libmp3lame",
-        "-q:a", "2",         # VBR quality 2 ≈ 190 kbps
-        "-y",                # overwrite without prompt
+        "-q:a", "2",                                   
+        "-y",                                          
         str(audio_path),
     ]
 
@@ -78,10 +69,6 @@ def extract_audio_from_video(video_path: Path, audio_dir: Path) -> Path:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             timeout=300,
-        )
-    except FileNotFoundError:
-        raise AudioExtractionException(
-            "ffmpeg is not installed or not on PATH. Install it with: apt-get install ffmpeg"
         )
     except subprocess.TimeoutExpired:
         safe_delete(audio_path)
@@ -94,7 +81,6 @@ def extract_audio_from_video(video_path: Path, audio_dir: Path) -> Path:
 
     logger.info(f"Audio extracted: {audio_path.name}")
     return audio_path
-
 
 def is_video_file(extension: str) -> bool:
     return extension.lower() in ALLOWED_VIDEO_EXTENSIONS

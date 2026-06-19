@@ -3,7 +3,8 @@ package com.teamdobermans.studyos.model
 import com.google.gson.annotations.SerializedName
 
 data class UrlRequest(
-    val url: String
+    val url: String,
+    @SerializedName("summary_style") val summaryStyle: String = "detailed"
 )
 
 data class ImportantTerm(

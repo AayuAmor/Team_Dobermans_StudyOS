@@ -61,6 +61,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,8 +91,6 @@ import com.teamdobermans.studyos.viewModel.SaveState
 import com.teamdobermans.studyos.viewModel.VideoNotesUiState
 import com.teamdobermans.studyos.viewModel.VideoNotesViewModel
 
-// ── Activity shell (manifest entry point) ─────────────────────────────────────
-
 class VideotoNotes : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -103,8 +102,6 @@ class VideotoNotes : ComponentActivity() {
     }
 }
 
-// ── Private enums ─────────────────────────────────────────────────────────────
-
 private enum class InputMode { YOUTUBE, UPLOAD }
 
 private enum class SummaryStyle(val label: String) {
@@ -113,8 +110,6 @@ private enum class SummaryStyle(val label: String) {
     EXAM("Exam Notes"),
     BULLETS("Bullet Points")
 }
-
-// ── Main screen (nav-compatible signature) ────────────────────────────────────
 
 @Composable
 fun VideoToNotesScreen(
@@ -132,18 +127,18 @@ fun VideoToNotesScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val clipboard = LocalClipboardManager.current
 
-    // File picker launcher — video MIME types only
+            val currentSummaryStyle by rememberUpdatedState(summaryStyle)
+
     val fileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         if (uri != null) {
             selectedFileName = uri.lastPathSegment ?: "video"
-            vm.generateFromUpload(uri)
+            vm.generateFromUpload(uri, currentSummaryStyle.name.lowercase())
         }
     }
 
-    // Snackbar for save result
-    LaunchedEffect(saveState) {
+        LaunchedEffect(saveState) {
         when (saveState) {
             is SaveState.Saved       -> {
                 snackbarHostState.showSnackbar("Note saved successfully!")
@@ -163,11 +158,9 @@ fun VideoToNotesScreen(
             modifier       = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 40.dp)
         ) {
-            // Header
-            item { VideoNotesHeader(onBack = onBack) }
+                        item { VideoNotesHeader(onBack = onBack) }
 
-            // Input mode tabs
-            item {
+                        item {
                 Spacer(Modifier.height(20.dp))
                 InputModeTabRow(
                     selected = inputMode,
@@ -179,8 +172,7 @@ fun VideoToNotesScreen(
                 )
             }
 
-            // Input card
-            item {
+                        item {
                 Spacer(Modifier.height(16.dp))
                 AnimatedContent(targetState = inputMode, label = "input_mode") { mode ->
                     when (mode) {
@@ -196,40 +188,35 @@ fun VideoToNotesScreen(
                 }
             }
 
-            // Summary style (shown while idle or after result — not while loading)
-            if (uiState !is VideoNotesUiState.Loading) {
+                        if (uiState !is VideoNotesUiState.Loading) {
                 item {
                     Spacer(Modifier.height(20.dp))
                     SummaryStylePicker(selected = summaryStyle, onSelect = { summaryStyle = it })
                 }
             }
 
-            // Generate button
-            item {
+                        item {
                 Spacer(Modifier.height(20.dp))
                 val canGenerate = when (inputMode) {
                     InputMode.YOUTUBE -> youtubeUrl.isNotBlank() && uiState !is VideoNotesUiState.Loading
-                    InputMode.UPLOAD  -> false // upload triggers automatically on file pick
-                }
+                    InputMode.UPLOAD  -> false                 }
                 if (inputMode == InputMode.YOUTUBE) {
                     GenerateButton(
                         enabled      = canGenerate,
                         isLoading    = uiState is VideoNotesUiState.Loading,
-                        onClick      = { vm.generateFromUrl(youtubeUrl) }
+                        onClick      = { vm.generateFromUrl(youtubeUrl, summaryStyle.name.lowercase()) }
                     )
                 }
             }
 
-            // Upload loading indicator (upload fires immediately on file pick)
-            if (inputMode == InputMode.UPLOAD && uiState is VideoNotesUiState.Loading) {
+                        if (inputMode == InputMode.UPLOAD && uiState is VideoNotesUiState.Loading) {
                 item {
                     Spacer(Modifier.height(20.dp))
                     UploadLoadingCard(selectedFileName = selectedFileName)
                 }
             }
 
-            // Error state
-            item {
+                        item {
                 AnimatedVisibility(
                     visible = uiState is VideoNotesUiState.Error,
                     enter   = fadeIn() + slideInVertically { it / 2 },
@@ -243,8 +230,7 @@ fun VideoToNotesScreen(
                 }
             }
 
-            // Success — output card
-            item {
+                        item {
                 AnimatedVisibility(
                     visible = uiState is VideoNotesUiState.Success,
                     enter   = fadeIn() + slideInVertically { it / 2 },
@@ -279,8 +265,6 @@ fun VideoToNotesScreen(
         )
     }
 }
-
-// ── Header ────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun VideoNotesHeader(onBack: () -> Unit) {
@@ -372,8 +356,6 @@ private fun VideoNotesHeader(onBack: () -> Unit) {
     }
 }
 
-// ── Input mode tabs ───────────────────────────────────────────────────────────
-
 @Composable
 private fun InputModeTabRow(
     selected: InputMode,
@@ -422,8 +404,6 @@ private fun InputModeTabRow(
         }
     }
 }
-
-// ── YouTube input ─────────────────────────────────────────────────────────────
 
 @Composable
 private fun YoutubeInputCard(url: String, onUrlChange: (String) -> Unit) {
@@ -486,8 +466,6 @@ private fun YoutubeInputCard(url: String, onUrlChange: (String) -> Unit) {
         }
     }
 }
-
-// ── Upload input ──────────────────────────────────────────────────────────────
 
 @Composable
 private fun UploadInputCard(selectedFileName: String?, onPickFile: () -> Unit) {
@@ -554,8 +532,6 @@ private fun UploadInputCard(selectedFileName: String?, onPickFile: () -> Unit) {
     }
 }
 
-// ── Upload loading card ───────────────────────────────────────────────────────
-
 @Composable
 private fun UploadLoadingCard(selectedFileName: String?) {
     Card(
@@ -589,8 +565,6 @@ private fun UploadLoadingCard(selectedFileName: String?) {
         }
     }
 }
-
-// ── Summary style picker ──────────────────────────────────────────────────────
 
 @Composable
 private fun SummaryStylePicker(selected: SummaryStyle, onSelect: (SummaryStyle) -> Unit) {
@@ -648,8 +622,6 @@ private fun StyleChip(
     }
 }
 
-// ── Generate button ───────────────────────────────────────────────────────────
-
 @Composable
 private fun GenerateButton(enabled: Boolean, isLoading: Boolean, onClick: () -> Unit) {
     Button(
@@ -676,8 +648,6 @@ private fun GenerateButton(enabled: Boolean, isLoading: Boolean, onClick: () -> 
         }
     }
 }
-
-// ── Error card ────────────────────────────────────────────────────────────────
 
 @Composable
 private fun ErrorCard(message: String, onRetry: () -> Unit) {
@@ -721,8 +691,6 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
     }
 }
 
-// ── Output card ───────────────────────────────────────────────────────────────
-
 @Composable
 private fun OutputCard(
     response: VideoNotesResponse,
@@ -741,8 +709,7 @@ private fun OutputCard(
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
 
-            // ── Card header ───────────────────────────────────────────────────
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier         = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(StudyPurpleLight),
                     contentAlignment = Alignment.Center
@@ -769,16 +736,14 @@ private fun OutputCard(
                 }
             }
 
-            // ── Summary ───────────────────────────────────────────────────────
-            if (notes.summary.isNotBlank()) {
+                        if (notes.summary.isNotBlank()) {
                 Divider()
                 SectionTitle("Summary")
                 Spacer(Modifier.height(8.dp))
                 Text(notes.summary, color = TextPrimary, fontSize = 13.sp, lineHeight = 20.sp)
             }
 
-            // ── Key points ────────────────────────────────────────────────────
-            if (notes.keyPoints.isNotEmpty()) {
+                        if (notes.keyPoints.isNotEmpty()) {
                 Divider()
                 SectionTitle("Key Points")
                 Spacer(Modifier.height(10.dp))
@@ -791,8 +756,7 @@ private fun OutputCard(
                 }
             }
 
-            // ── Study notes (sections) ────────────────────────────────────────
-            if (notes.studyNotes.isNotEmpty()) {
+                        if (notes.studyNotes.isNotEmpty()) {
                 Divider()
                 SectionTitle("Study Notes")
                 Spacer(Modifier.height(10.dp))
@@ -810,8 +774,7 @@ private fun OutputCard(
                 }
             }
 
-            // ── Important terms ───────────────────────────────────────────────
-            if (notes.importantTerms.isNotEmpty()) {
+                        if (notes.importantTerms.isNotEmpty()) {
                 Divider()
                 SectionTitle("Important Terms")
                 Spacer(Modifier.height(10.dp))
@@ -829,8 +792,7 @@ private fun OutputCard(
                 }
             }
 
-            // ── Possible questions ────────────────────────────────────────────
-            if (notes.possibleQuestions.isNotEmpty()) {
+                        if (notes.possibleQuestions.isNotEmpty()) {
                 Divider()
                 SectionTitle("Possible Exam Questions")
                 Spacer(Modifier.height(10.dp))
@@ -843,8 +805,7 @@ private fun OutputCard(
                 }
             }
 
-            // ── Action buttons ────────────────────────────────────────────────
-            Divider()
+                        Divider()
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 ActionButton(
                     label     = when (saveState) {
@@ -868,8 +829,6 @@ private fun OutputCard(
         }
     }
 }
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 @Composable
 private fun Divider() {

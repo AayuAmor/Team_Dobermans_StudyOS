@@ -33,3 +33,11 @@ storage/uploads/*
 storage/audio/*
 storage/transcripts/*
 !storage/**/.gitkeep
+
+# Rotating log files
+logs/*.log
+logs/*.log.*
+
+# Test artifacts
+.pytest_cache/
+*.pyc

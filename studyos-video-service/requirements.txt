@@ -17,7 +17,10 @@ yt-dlp>=2024.4.9
 # Transcription (installs torch as a dependency)
 openai-whisper>=20231117
 
-# NOTE: ffmpeg must be installed at the OS level.
-# Ubuntu/Debian: sudo apt-get install ffmpeg
-# macOS:         brew install ffmpeg
-# Docker:        see Dockerfile
+# ffmpeg binary — bundled via imageio so no OS-level install is required.
+# Falls back to the system ffmpeg if one is found on PATH.
+imageio[ffmpeg]>=2.34.0
+
+# Development / testing (not needed in production container)
+# pytest>=8.0.0
+# httpx>=0.27.0

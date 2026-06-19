@@ -47,13 +47,10 @@ class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        // Ensure the notification channel exists as early as possible
-        StudyReminderScheduler.createChannel(this)
+                StudyReminderScheduler.createChannel(this)
         setContent { SettingsBody(viewModel = settingsViewModel) }
     }
 }
-
-// ── Main Settings composable ──────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,27 +67,22 @@ fun SettingsBody(
         if (signedOut) onSignOut()
     }
 
-    // Auto-clear success message after 3 seconds
-    LaunchedEffect(uiState.successMessage) {
+        LaunchedEffect(uiState.successMessage) {
         if (uiState.successMessage != null) {
             delay(3_000)
             viewModel.clearMessages()
         }
     }
 
-    // ── Android 13+ POST_NOTIFICATIONS permission ─────────────────────────
-    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            // Permission just granted — now enable reminders
-            viewModel.setRemindersEnabled(true)
+                        viewModel.setRemindersEnabled(true)
         }
-        // If denied, leave reminders disabled; toggle stays off
-    }
+            }
 
-    // Wrapped toggle handler: checks POST_NOTIFICATIONS before enabling
-    val onReminderToggle: (Boolean) -> Unit = { enabled ->
+        val onReminderToggle: (Boolean) -> Unit = { enabled ->
         if (!enabled) {
             viewModel.setRemindersEnabled(false)
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -98,15 +90,13 @@ fun SettingsBody(
                 context, android.Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            // Request permission first; enable in the launcher callback if granted
-            notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                        notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
         } else {
             viewModel.setRemindersEnabled(true)
         }
     }
 
-    // ── Time picker dialog state ──────────────────────────────────────────
-    var showTimePicker by remember { mutableStateOf(false) }
+        var showTimePicker by remember { mutableStateOf(false) }
 
     if (showTimePicker) {
         ReminderTimePickerDialog(
@@ -120,8 +110,7 @@ fun SettingsBody(
         )
     }
 
-    // ── Other local preferences (not yet persisted — out of this feature's scope) ──
-    var offlineMode by remember { mutableStateOf(true) }
+        var offlineMode by remember { mutableStateOf(true) }
     var focusSounds by remember { mutableStateOf(false) }
     var pinNotes    by remember { mutableStateOf(false) }
 
@@ -176,8 +165,7 @@ fun SettingsBody(
         )
     }
 
-    // ── Layout ────────────────────────────────────────────────────────────────
-    Column(modifier = Modifier.fillMaxSize().background(StudyPurple)) {
+        Column(modifier = Modifier.fillMaxSize().background(StudyPurple)) {
 
         Column(
             modifier = Modifier
@@ -201,8 +189,7 @@ fun SettingsBody(
                 .padding(16.dp)
         ) {
 
-            // ── App Preferences card ─────────────────────────────────────
-            Card(
+                        Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape  = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
@@ -228,8 +215,7 @@ fun SettingsBody(
                         onCheckedChange = onReminderToggle
                     )
 
-                    // Reminder time row — visible only when reminders are on
-                    if (uiState.remindersEnabled) {
+                                        if (uiState.remindersEnabled) {
                         HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
                         ReminderTimeRow(
                             hour    = uiState.reminderHour,
@@ -247,8 +233,7 @@ fun SettingsBody(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ── Daily Study Goal card ─────────────────────────────────────
-            Card(
+                        Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { goalInput = dailyGoalMin.toString(); goalDialog = true },
@@ -281,8 +266,7 @@ fun SettingsBody(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // ── Export and Data card ──────────────────────────────────────
-            Card(
+                        Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape  = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
@@ -346,8 +330,6 @@ fun SettingsBody(
         Spacer(modifier = Modifier.height(16.dp))
     }
 }
-
-// ── Sub-composables ───────────────────────────────────────────────────────────
 
 @Composable
 private fun StudyRemindersRow(
@@ -505,7 +487,6 @@ fun SettingsToggleRow(label: String, checked: Boolean, onCheckedChange: (Boolean
     }
 }
 
-/** Converts 24-hour [hour]/[minute] to a 12-hour "H:MM AM/PM" string. */
 private fun formatTime(hour: Int, minute: Int): String {
     val amPm        = if (hour < 12) "AM" else "PM"
     val displayHour = when {
@@ -515,8 +496,6 @@ private fun formatTime(hour: Int, minute: Int): String {
     }
     return "%d:%02d %s".format(displayHour, minute, amPm)
 }
-
-// ── Preview ───────────────────────────────────────────────────────────────────
 
 @Preview(showBackground = true)
 @Composable

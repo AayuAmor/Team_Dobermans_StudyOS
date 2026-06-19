@@ -20,8 +20,7 @@ data class HomeUiState(
     val lastNote: String        = "Design Patterns",
     val flashcardsDueToday: Int = 12,
     val todayStudyMinutes: Int  = 95,
-    val goals: List<VisionGoalModel> = emptyList() // CHANGED from List<String>
-)
+    val goals: List<VisionGoalModel> = emptyList() )
 
 class HomeViewModel : ViewModel() {
 

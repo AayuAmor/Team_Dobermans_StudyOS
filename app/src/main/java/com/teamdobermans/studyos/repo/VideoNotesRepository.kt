@@ -11,18 +11,20 @@ class VideoNotesRepository {
 
     private val api = RetrofitClient.videoNotesApiService
 
-    suspend fun notesFromUrl(url: String): Result<VideoNotesResponse> = runCatching {
-        api.urlToNotes(UrlRequest(url))
+    suspend fun notesFromUrl(url: String, summaryStyle: String = "detailed"): Result<VideoNotesResponse> = runCatching {
+        api.urlToNotes(UrlRequest(url, summaryStyle))
     }
 
     suspend fun notesFromUpload(
         fileName: String,
         fileBytes: ByteArray,
-        mimeType: String
+        mimeType: String,
+        summaryStyle: String = "detailed"
     ): Result<VideoNotesResponse> = runCatching {
         val requestBody = fileBytes.toRequestBody(mimeType.toMediaTypeOrNull())
         val part = MultipartBody.Part.createFormData("file", fileName, requestBody)
-        api.uploadToNotes(part)
+        val styleBody = summaryStyle.toRequestBody("text/plain".toMediaTypeOrNull())
+        api.uploadToNotes(part, styleBody)
     }
 
     suspend fun saveToNotes(
