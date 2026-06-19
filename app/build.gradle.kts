@@ -64,6 +64,11 @@ dependencies {
     // WorkManager — background sync
     implementation(libs.androidx.work.runtime.ktx)
 
+    // Retrofit + OkHttp — video service API
+    implementation(libs.retrofit.core)
+    implementation(libs.retrofit.gson)
+    implementation(libs.okhttp.logging)
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
