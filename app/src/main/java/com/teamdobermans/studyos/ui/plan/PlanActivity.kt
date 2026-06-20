@@ -768,7 +768,8 @@ private fun MonthGrid(
     datesWithEvents: Set<LocalDate>,
     onDateTapped: (LocalDate) -> Unit
 ) {
-    val firstDayOffset = displayedMonth.atDay(1).dayOfWeek.value - 1     val daysInMonth = displayedMonth.lengthOfMonth()
+    val firstDayOffset = displayedMonth.atDay(1).dayOfWeek.value - 1
+    val daysInMonth = displayedMonth.lengthOfMonth()
     val rows = (firstDayOffset + daysInMonth + 6) / 7
 
     for (row in 0 until rows) {

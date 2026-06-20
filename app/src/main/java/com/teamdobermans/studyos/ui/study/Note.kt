@@ -1,6 +1,7 @@
 package com.teamdobermans.studyos.ui.study
 import com.teamdobermans.studyos.R
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -30,12 +31,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.teamdobermans.studyos.model.NoteModel
 import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.viewModel.NoteViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 private val BrandPurpleLight = Color(0xFF7C6CEF)
 private val BackgroundGray = StudyPurpleFaint
@@ -61,8 +67,8 @@ fun NotesScreen(
     onBackClick: () -> Unit = {}
 ) {
     val resolvedVm: NoteViewModel = viewModel ?: androidx.lifecycle.viewmodel.compose.viewModel()
-    val allNotes    by resolvedVm.notes.collectAsState()
-    val saveResult  by resolvedVm.saveResult.collectAsState()
+    val allNotes   by resolvedVm.notes.collectAsState()
+    val saveResult by resolvedVm.saveResult.collectAsState()
     val context = LocalContext.current
 
     LaunchedEffect(saveResult) {
@@ -102,6 +108,8 @@ fun NotesScreenContent(
     var showEditor          by rememberSaveable { mutableStateOf(false) }
     var showNewFolderDialog by rememberSaveable { mutableStateOf(false) }
     var newFolderName       by rememberSaveable { mutableStateOf("") }
+
+    val context = LocalContext.current
 
     if (showNewFolderDialog) {
         AlertDialog(
@@ -171,7 +179,7 @@ fun NotesScreenContent(
         val visibleNotes = if (searchQuery.isNotEmpty()) {
             allNotes.filter { note ->
                 note.title.contains(searchQuery, ignoreCase = true) ||
-                        note.body.contains(searchQuery, ignoreCase = true)
+                note.body.contains(searchQuery, ignoreCase = true)
             }
         } else {
             allNotes.filter { note -> note.folder == activeFolder }
@@ -200,15 +208,15 @@ fun NotesScreenContent(
                 )
 
                 LazyColumn(
-                    modifier       = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp),
+                    modifier            = Modifier.fillMaxSize(),
+                    contentPadding      = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     if (searchQuery.isEmpty()) {
                         item {
                             FoldersSection(
-                                folders      = folders,
-                                activeFolder = activeFolder,
+                                folders       = folders,
+                                activeFolder  = activeFolder,
                                 onFolderClick = { activeFolder = it },
                                 onNewFolder   = { showNewFolderDialog = true }
                             )
@@ -216,9 +224,9 @@ fun NotesScreenContent(
                     } else {
                         item {
                             Text(
-                                text = "Results for \"$searchQuery\"",
-                                color = BrandPurple,
-                                fontSize = 14.sp,
+                                text       = "Results for \"$searchQuery\"",
+                                color      = BrandPurple,
+                                fontSize   = 14.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -228,30 +236,50 @@ fun NotesScreenContent(
                         NoteCard(
                             note    = note,
                             onClick = { selectedNote = note; showEditor = true },
-                            onClose = { onDeleteNote(note.id) }
+                            onClose = { onDeleteNote(note.id) },
+                            onGenerateQuiz = {
+                                val intent = Intent(context, MockTestActivity::class.java).apply {
+                                    putExtra("noteId",    note.id)
+                                    putExtra("noteTitle", note.title)
+                                    putExtra("noteBody",  note.body)
+                                }
+                                context.startActivity(intent)
+                            }
                         )
                     }
 
                     if (visibleNotes.isEmpty()) {
                         item {
                             Box(
-                                modifier = Modifier.fillMaxWidth().padding(top = 48.dp),
-                                contentAlignment = Alignment.Center
+                                modifier          = Modifier.fillMaxWidth().padding(top = 48.dp),
+                                contentAlignment  = Alignment.Center
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        text = if (searchQuery.isNotEmpty())
-                                            "No notes found for \"$searchQuery\""
-                                        else
+                                    if (searchQuery.isNotEmpty()) {
+                                        Text(
+                                            "No notes found for \"$searchQuery\"",
+                                            color    = Color.Gray,
+                                            fontSize = 15.sp,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    } else {
+                                        Text(
                                             "No notes in $activeFolder yet.",
-                                        color = Color.Gray,
-                                        fontSize = 15.sp
-                                    )
-                                    if (searchQuery.isEmpty()) {
+                                            color    = Color.Gray,
+                                            fontSize = 15.sp
+                                        )
                                         Spacer(modifier = Modifier.height(8.dp))
                                         Text(
-                                            text = "Tap the purple + button to write one!",
-                                            color = Color.Gray,
+                                            "Create or import notes to generate quizzes.",
+                                            color    = Color.Gray,
+                                            fontSize = 13.sp,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier.padding(horizontal = 24.dp)
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            "Tap the purple + button to write your first note!",
+                                            color    = Color.Gray,
                                             fontSize = 13.sp
                                         )
                                     }
@@ -292,14 +320,10 @@ fun CreateEditNoteScreen(
                         existingNote?.let { onDelete?.invoke(it.id) }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                ) {
-                    Text("Delete", color = Color.White)
-                }
+                ) { Text("Delete", color = Color.White) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
-                }
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
             }
         )
     }
@@ -313,9 +337,9 @@ fun CreateEditNoteScreen(
                 .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 20.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier              = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment     = Alignment.CenterVertically
             ) {
                 Box(
                     modifier = Modifier
@@ -326,32 +350,32 @@ fun CreateEditNoteScreen(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            painter = painterResource(id = R.drawable.baseline_arrow_back_24),
+                            painter           = painterResource(id = R.drawable.baseline_arrow_back_24),
                             contentDescription = "Back",
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
+                            tint              = Color.White,
+                            modifier          = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Back", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                     }
                 }
                 Text(
-                    text = if (isEditing) "Edit Note" else "New Note",
-                    color = Color.White,
-                    fontSize = 16.sp,
+                    text       = if (isEditing) "Edit Note" else "New Note",
+                    color      = Color.White,
+                    fontSize   = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
         }
 
         Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
+            modifier            = Modifier.fillMaxSize().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text("Folder", color = BrandPurple, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
 
             Row(
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                modifier              = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 folders.forEach { f ->
@@ -360,14 +384,14 @@ fun CreateEditNoteScreen(
             }
 
             OutlinedTextField(
-                value = title,
+                value         = title,
                 onValueChange = { title = it },
-                label = { Text("Title") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
+                label         = { Text("Title") },
+                modifier      = Modifier.fillMaxWidth(),
+                singleLine    = true,
+                shape         = RoundedCornerShape(12.dp),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                colors = OutlinedTextFieldDefaults.colors(
+                colors        = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = BrandPurple,
                     focusedLabelColor  = BrandPurple,
                     cursorColor        = BrandPurple
@@ -375,13 +399,13 @@ fun CreateEditNoteScreen(
             )
 
             OutlinedTextField(
-                value = body,
+                value         = body,
                 onValueChange = { body = it },
-                label = { Text("Content") },
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                maxLines = Int.MAX_VALUE,
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
+                label         = { Text("Content") },
+                modifier      = Modifier.fillMaxWidth().weight(1f),
+                maxLines      = Int.MAX_VALUE,
+                shape         = RoundedCornerShape(12.dp),
+                colors        = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = BrandPurple,
                     focusedLabelColor  = BrandPurple,
                     cursorColor        = BrandPurple
@@ -399,11 +423,30 @@ fun CreateEditNoteScreen(
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
-                    text = if (isEditing) "Update Note" else "Save Note",
-                    color = Color.White,
-                    fontSize = 16.sp,
+                    text       = if (isEditing) "Update Note" else "Save Note",
+                    color      = Color.White,
+                    fontSize   = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
+            }
+
+            if (isEditing && existingNote != null) {
+                val context = LocalContext.current
+                OutlinedButton(
+                    onClick = {
+                        val intent = Intent(context, MockTestActivity::class.java).apply {
+                            putExtra("noteId",    existingNote.id)
+                            putExtra("noteTitle", existingNote.title)
+                            putExtra("noteBody",  existingNote.body)
+                        }
+                        context.startActivity(intent)
+                    },
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape    = RoundedCornerShape(12.dp),
+                    colors   = ButtonDefaults.outlinedButtonColors(contentColor = BrandPurple)
+                ) {
+                    Text("Generate Quiz from this Note", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                }
             }
 
             if (isEditing && onDelete != null) {
@@ -434,9 +477,9 @@ fun NotesHeader(
             .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 20.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier              = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment     = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
@@ -447,10 +490,10 @@ fun NotesHeader(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        painter = painterResource(id = R.drawable.baseline_arrow_back_24),
+                        painter           = painterResource(id = R.drawable.baseline_arrow_back_24),
                         contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(16.dp)
+                        tint              = Color.White,
+                        modifier          = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Back", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
@@ -474,21 +517,21 @@ fun NotesHeader(
         Spacer(modifier = Modifier.height(16.dp))
 
         TextField(
-            value = searchQuery,
+            value         = searchQuery,
             onValueChange = onSearchChange,
-            modifier = Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(26.dp)),
-            placeholder = { Text("Search notes...", color = Color(0xFF9988CC), fontSize = 14.sp) },
-            leadingIcon = {
+            modifier      = Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(26.dp)),
+            placeholder   = { Text("Search notes...", color = Color(0xFF9988CC), fontSize = 14.sp) },
+            leadingIcon   = {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_search),
+                    painter           = painterResource(id = R.drawable.ic_search),
                     contentDescription = null,
-                    tint = Color(0xFF9988CC),
-                    modifier = Modifier.size(20.dp)
+                    tint              = Color(0xFF9988CC),
+                    modifier          = Modifier.size(20.dp)
                 )
             },
-            singleLine = true,
+            singleLine      = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            colors = TextFieldDefaults.colors(
+            colors          = TextFieldDefaults.colors(
                 focusedContainerColor   = Color.White.copy(alpha = 0.15f),
                 unfocusedContainerColor = Color.White.copy(alpha = 0.15f),
                 focusedIndicatorColor   = Color.Transparent,
@@ -510,14 +553,14 @@ fun FoldersSection(
 ) {
     Column {
         Text(
-            text = "Folders",
-            color = BrandPurple,
-            fontSize = 18.sp,
+            text       = "Folders",
+            color      = BrandPurple,
+            fontSize   = 18.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 12.dp)
+            modifier   = Modifier.padding(bottom = 12.dp)
         )
         Row(
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            modifier              = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             folders.forEach { folder ->
@@ -530,11 +573,7 @@ fun FoldersSection(
 
 @Composable
 fun FolderChip(label: String, isActive: Boolean, onClick: () -> Unit) {
-    val chipModifier = if (isActive) {
-        Modifier.shadow(4.dp, RoundedCornerShape(10.dp))
-    } else {
-        Modifier
-    }
+    val chipModifier = if (isActive) Modifier.shadow(4.dp, RoundedCornerShape(10.dp)) else Modifier
     Box(
         modifier = chipModifier
             .clip(RoundedCornerShape(10.dp))
@@ -544,72 +583,169 @@ fun FolderChip(label: String, isActive: Boolean, onClick: () -> Unit) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = label,
-            color = if (isActive) Color.White else TextSecondary,
-            fontSize = 15.sp,
+            text       = label,
+            color      = if (isActive) Color.White else TextSecondary,
+            fontSize   = 15.sp,
             fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium
         )
     }
 }
 
 @Composable
-fun NoteCard(note: NoteModel, onClick: () -> Unit, onClose: () -> Unit) {
+fun NoteCard(
+    note: NoteModel,
+    onClick: () -> Unit,
+    onClose: () -> Unit,
+    onGenerateQuiz: (() -> Unit)? = null
+) {
+    val dateFmt   = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
+    val dateStr   = remember(note.timestamp) {
+        if (note.timestamp == 0L) "" else dateFmt.format(Date(note.timestamp))
+    }
+    val wordCount = remember(note.body) {
+        note.body.split(Regex("\\s+")).filter { it.isNotBlank() }.size
+    }
+    val sourceLabel = when (note.sourceType) {
+        "VIDEO"    -> "Video Note"
+        "IMPORTED" -> "Imported"
+        else       -> "Manual Note"
+    }
 
-        var showDeleteDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
-        if (showDeleteDialog) {
+    if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Note Delete Confirmation", fontWeight = FontWeight.Bold) },
+            title = { Text("Delete Note", fontWeight = FontWeight.Bold) },
             text  = { Text("Are you sure you want to delete \"${note.title}\"?") },
             confirmButton = {
                 Button(
-                    onClick = {
-                        showDeleteDialog = false
-                        onClose()                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                ) {
-                    Text("Delete", color = Color.White)
-                }
+                    onClick = { showDeleteDialog = false; onClose() },
+                    colors  = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) { Text("Delete", color = Color.White) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
-                }
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
             }
         )
     }
 
     Card(
-        modifier  = Modifier.fillMaxWidth().clickable { onClick() },
+        modifier  = Modifier.fillMaxWidth(),
         shape     = RoundedCornerShape(16.dp),
         colors    = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier              = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment     = Alignment.CenterVertically
             ) {
+                Surface(shape = RoundedCornerShape(6.dp), color = StudyPurpleLight) {
+                    Text(
+                        text       = sourceLabel,
+                        color      = StudyPurple,
+                        fontSize   = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier   = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+                if (dateStr.isNotBlank()) {
+                    Text(text = dateStr, color = TextHint, fontSize = 11.sp)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Box(modifier = Modifier.fillMaxWidth().clickable { onClick() }) {
                 Text(
-                    text = note.title,
-                    color = BrandPurple,
-                    fontSize = 18.sp,
+                    text       = note.title.ifBlank { "Untitled Note" },
+                    color      = BrandPurple,
+                    fontSize   = 17.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
-                )
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_clear),
-                    contentDescription = "Delete",
-                    tint = Color.LightGray,
-                                        modifier = Modifier.size(20.dp).clickable { showDeleteDialog = true }
+                    maxLines   = 1,
+                    overflow   = TextOverflow.Ellipsis
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(text = note.body, color = Color.DarkGray, fontSize = 15.sp, lineHeight = 22.sp, maxLines = 3)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = note.folder, color = BrandPurple.copy(alpha = 0.6f), fontSize = 12.sp, fontWeight = FontWeight.Medium)
+
+            if (note.body.isNotBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text       = note.body.replace("\n", " "),
+                    color      = Color.DarkGray,
+                    fontSize   = 14.sp,
+                    maxLines   = 2,
+                    overflow   = TextOverflow.Ellipsis,
+                    lineHeight = 20.sp,
+                    modifier   = Modifier.clickable { onClick() }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Surface(shape = RoundedCornerShape(6.dp), color = StudyPurpleLight) {
+                    Text(
+                        text     = note.folder,
+                        color    = StudyPurple,
+                        fontSize = 11.sp,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+                if (wordCount > 0) {
+                    Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFFF0F0F0)) {
+                        Text(
+                            text     = "$wordCount words",
+                            color    = TextSecondary,
+                            fontSize = 11.sp,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                }
+            }
+
+            if (onGenerateQuiz != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment     = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick  = onGenerateQuiz,
+                        modifier = Modifier.weight(1f).height(38.dp),
+                        shape    = RoundedCornerShape(10.dp),
+                        colors   = ButtonDefaults.outlinedButtonColors(contentColor = BrandPurple)
+                    ) {
+                        Text("Generate Quiz", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    IconButton(
+                        onClick  = { showDeleteDialog = true },
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        Icon(
+                            painter           = painterResource(id = R.drawable.ic_clear),
+                            contentDescription = "Delete",
+                            tint              = Color.LightGray,
+                            modifier          = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            } else {
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Icon(
+                        painter           = painterResource(id = R.drawable.ic_clear),
+                        contentDescription = "Delete",
+                        tint              = Color.LightGray,
+                        modifier          = Modifier.size(20.dp).clickable { showDeleteDialog = true }
+                    )
+                }
+            }
         }
     }
 }
@@ -620,8 +756,8 @@ fun NotesScreenPreview() {
     StudyOSTheme {
         NotesScreenContent(
             allNotes = listOf(
-                NoteModel(id = "1", title = "Periodic Table", body = "Elements are organized by atomic number.", folder = "Science"),
-                NoteModel(id = "2", title = "Computer", body = "A computer is an electronic device.", folder = "Computer")
+                NoteModel(id = "1", title = "Periodic Table", body = "Elements are organized by atomic number. The periodic table arranges all known elements.", folder = "Science"),
+                NoteModel(id = "2", title = "Computer", body = "A computer is an electronic device that processes data.", folder = "Computer")
             ),
             onBackClick  = {},
             onCreateNote = { _, _, _ -> },
