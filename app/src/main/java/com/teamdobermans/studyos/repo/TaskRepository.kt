@@ -1,87 +1,56 @@
 package com.teamdobermans.studyos.repo
 
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.teamdobermans.studyos.model.Priority
 import com.teamdobermans.studyos.model.Task
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.flow.MutableStateFlow
 import java.time.LocalDate
 
 class TaskRepository {
 
-    private val db   = FirebaseFirestore.getInstance()
-    private val auth = FirebaseAuth.getInstance()
-    private val userId get() = auth.currentUser?.uid ?: ""
+    companion object {
+        private val store = mutableMapOf<String, Task>()
+        private val _flow = MutableStateFlow<List<Task>>(emptyList())
 
+        private fun emit() {
+            _flow.value = store.values.toList()
+        }
+    }
 
-    private val remoteTaskStore = mutableListOf<Task>()
-
-    fun getAllTasks(): List<Task> = remoteTaskStore
+    fun getAllTasks(): List<Task> = store.values.toList()
 
     fun insertTask(task: Task) {
-        remoteTaskStore.add(task)
+        store[task.id] = task
+        emit()
     }
 
     fun updateTask(updatedTask: Task) {
-        val index = remoteTaskStore.indexOfFirst { it.id == updatedTask.id }
-        if (index != -1) remoteTaskStore[index] = updatedTask
+        store[updatedTask.id] = updatedTask
+        emit()
     }
 
-
-    fun getActiveTasksFlow(): Flow<List<Task>> = callbackFlow {
-        if (userId.isEmpty()) {
-            trySend(emptyList())
-            close()
-            return@callbackFlow
-        }
-
-        val listener = db.collection("users").document(userId)
-            .collection("tasks")
-            .whereEqualTo("done", false)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null) {
-                    trySend(emptyList())
-                    return@addSnapshotListener
-                }
-                val tasks = snapshot.documents.mapNotNull { doc ->
-                    try {
-                        Task(
-                            id          = doc.id,
-                            title       = doc.getString("title")       ?: return@mapNotNull null,
-                            description = doc.getString("description") ?: "",
-                            startDate   = LocalDate.parse(doc.getString("startDate") ?: return@mapNotNull null),
-                            endDate     = doc.getString("endDate")?.let { LocalDate.parse(it) },
-                            priority    = Priority.valueOf(doc.getString("priority") ?: "MEDIUM"),
-                            subjectId   = doc.getString("subjectId")   ?: "",
-                            subjectName = doc.getString("subjectName") ?: "",
-                            done        = doc.getBoolean("done")        ?: false,
-                            linkedSessionIds = (doc.get("linkedSessionIds") as? List<*>)
-                                ?.filterIsInstance<String>() ?: emptyList()
-                        )
-                    } catch (e: Exception) {
-                        null
-                    }
-                }
-                trySend(tasks)
-            }
-
-        awaitClose { listener.remove() }
+    fun getTodaysTasks(): List<Task> {
+        val today = LocalDate.now()
+        return store.values.filter { !it.done && !it.startDate.isAfter(today) }
     }
 
+    fun getActiveTasksFlow(): Flow<List<Task>> = _flow
 
-    suspend fun linkSessionToTask(taskId: String, sessionId: String) {
-        if (userId.isEmpty() || taskId.isEmpty()) return
-        try {
-            db.collection("users").document(userId)
-                .collection("tasks").document(taskId)
-                .update("linkedSessionIds",
-                    com.google.firebase.firestore.FieldValue.arrayUnion(sessionId))
-                .await()
-        } catch (e: Exception) {
-            e.printStackTrace()
+    fun linkSessionToTask(taskId: String, sessionId: String) {}
+
+    fun getTasksForNote(noteId: String): List<Task> =
+        store.values.filter { noteId in it.linkedNoteIds }
+
+    fun attachNoteToTask(taskId: String, noteId: String) {
+        val task = store[taskId] ?: return
+        if (noteId !in task.linkedNoteIds) {
+            store[taskId] = task.copy(linkedNoteIds = task.linkedNoteIds + noteId)
+            emit()
         }
+    }
+
+    fun removeNoteFromTask(taskId: String, noteId: String) {
+        val task = store[taskId] ?: return
+        store[taskId] = task.copy(linkedNoteIds = task.linkedNoteIds.filter { it != noteId })
+        emit()
     }
 }

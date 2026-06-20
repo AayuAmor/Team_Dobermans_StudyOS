@@ -15,7 +15,7 @@ data class Task(
     val subjectId: String,
     val subjectName: String,
     val done: Boolean = false,
-    val linkedSessionIds: List<String> = emptyList()
+    val linkedNoteIds: List<String> = emptyList()
 ) {
 
     fun isOverdue(compareDate: LocalDate = LocalDate.now()): Boolean {

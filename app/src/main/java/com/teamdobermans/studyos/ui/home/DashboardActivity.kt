@@ -31,13 +31,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.firebase.auth.FirebaseAuth
 import com.teamdobermans.studyos.ui.profile.ProgressActivity
 import com.teamdobermans.studyos.ui.focus.BrainGameActivityShell
 import com.teamdobermans.studyos.ui.focus.PomodoroActivity
 import com.teamdobermans.studyos.ui.profile.ProfileActivity
 import com.teamdobermans.studyos.ui.study.Flashcards
 import com.teamdobermans.studyos.ui.study.MockTestActivity
+import com.teamdobermans.studyos.ui.study.NotesPage
 import com.teamdobermans.studyos.ui.study.QuizScreen
 import com.teamdobermans.studyos.ui.study.VideotoNotes
 import com.teamdobermans.studyos.ui.theme.*
@@ -46,6 +46,11 @@ import com.teamdobermans.studyos.viewModel.DashboardViewModel
 class DashboardActivity : ComponentActivity() {
 
     private val dashboardViewModel: DashboardViewModel by viewModels()
+
+    override fun onResume() {
+        super.onResume()
+        dashboardViewModel.loadUserName()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -79,6 +84,9 @@ class DashboardActivity : ComponentActivity() {
                 },
                 onNavigateMockTest = {
                     startActivity(Intent(this, MockTestActivity::class.java))
+                },
+                onNavigateNotes = {
+                    startActivity(Intent(this, NotesPage::class.java))
                 }
             )
         }
@@ -96,17 +104,16 @@ fun DashboardBody(
     onNavigateQuiz: () -> Unit = {},
     onNavigateBrainGame: () -> Unit = {},
     onNavigateVideoNotes: () -> Unit = {},
-    onNavigateMockTest: () -> Unit = {}
+    onNavigateMockTest: () -> Unit = {},
+    onNavigateNotes: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    // Added check for LocalInspectionMode to prevent FirebaseAuth crash in Previews
-    val isPreview = androidx.compose.ui.platform.LocalInspectionMode.current
-    val userName = if (isPreview) "User" else {
-        val user = FirebaseAuth.getInstance().currentUser
-        user?.displayName ?: user?.email?.substringBefore("@") ?: "User"
-    }
+    val userName by viewModel.userName.collectAsState()
 
-    val progress     by viewModel.progress.collectAsState()
+    val streakCount      by viewModel.streakCount.collectAsState()
+    val weeklyStudyHours by viewModel.weeklyStudyHours.collectAsState()
+    val pendingTaskCount by viewModel.pendingTaskCount.collectAsState()
+    val dailyProgress    by viewModel.dailyProgress.collectAsState()
     val timerRunning by viewModel.timerRunning.collectAsState()
     val timeLeft     by viewModel.timeLeft.collectAsState()
 
@@ -116,42 +123,6 @@ fun DashboardBody(
         }
     }
 
-    DashboardContent(
-        userName = userName,
-        progress = progress,
-        timerRunning = timerRunning,
-        timeLeft = timeLeft,
-        onToggleTimer = { viewModel.toggleTimer() },
-        onNavigatePomodoro = onNavigatePomodoro,
-        onNavigateVisionBoard = onNavigateVisionBoard,
-        onNavigateProfile = onNavigateProfile,
-        onNavigateAnalytics = onNavigateAnalytics,
-        onNavigateFlashcards = onNavigateFlashcards,
-        onNavigateQuiz = onNavigateQuiz,
-        onNavigateBrainGame = onNavigateBrainGame,
-        onNavigateVideoNotes = onNavigateVideoNotes,
-        onNavigateMockTest = onNavigateMockTest
-    )
-}
-
-@Composable
-fun DashboardContent(
-    userName: String,
-    progress: Float,
-    timerRunning: Boolean,
-    timeLeft: Long,
-    onToggleTimer: () -> Unit,
-    onNavigatePomodoro: () -> Unit = {},
-    onNavigateVisionBoard: () -> Unit = {},
-    onNavigateProfile: () -> Unit = {},
-    onNavigateAnalytics: () -> Unit = {},
-    onNavigateFlashcards: () -> Unit = {},
-    onNavigateQuiz: () -> Unit = {},
-    onNavigateBrainGame: () -> Unit = {},
-    onNavigateVideoNotes: () -> Unit = {},
-    onNavigateMockTest: () -> Unit = {}
-) {
-    val context = LocalContext.current
     val minutes  = timeLeft / 60
     val seconds  = timeLeft % 60
     val timeText = "%02d:%02d".format(minutes, seconds)
@@ -181,7 +152,7 @@ fun DashboardContent(
                         style = TextStyle(fontSize = 12.sp, color = Color.White.copy(alpha = 0.75f))
                     )
                     Text(
-                        text = userName,
+                        text = "$userName",
                         style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     )
                 }
@@ -204,7 +175,7 @@ fun DashboardContent(
                     .clip(RoundedCornerShape(20.dp))
                     .background(Color.White.copy(alpha = 0.18f))
                     .clickable {
-                        Toast.makeText(context, "15 day streak! Keep going", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "$streakCount day streak! Keep going", Toast.LENGTH_SHORT).show()
                     }
                     .padding(horizontal = 14.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -212,7 +183,7 @@ fun DashboardContent(
             ) {
                 Text(text = "Study Streak", style = TextStyle(fontSize = 13.sp, color = Color.White))
                 Text(
-                    text = "15 days",
+                    text = "$streakCount days",
                     style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 )
             }
@@ -248,13 +219,13 @@ fun DashboardContent(
                         style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
                     )
                     Text(
-                        text = "${progress.toInt()}%",
+                        text = "${dailyProgress.toInt()}%",
                         style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold, color = StudyPurple)
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 LinearProgressIndicator(
-                    progress = { progress / 100f },
+                    progress = { dailyProgress / 100f },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(8.dp)
@@ -313,7 +284,7 @@ fun DashboardContent(
                             .clip(CircleShape)
                             .background(Color.White)
                             .padding(8.dp)
-                            .clickable { onToggleTimer() }
+                            .clickable { viewModel.toggleTimer() }
                     )
                 }
                 Button(
@@ -444,7 +415,7 @@ fun DashboardContent(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             ToolCard(modifier = Modifier.weight(1f), iconRes = R.drawable.baseline_assignment_24, iconBg = Color(0xFFE8FFF4), iconTint = Color(0xFF1D9E75), name = "Mock Test", subtitle = "10 min", onClick = onNavigateMockTest)
-            Spacer(modifier = Modifier.weight(1f))
+            ToolCard(modifier = Modifier.weight(1f), iconRes = R.drawable.baseline_menu_book_24, iconBg = Color(0xFFF0F0F0), iconTint = StudyPurple, name = "Notes", subtitle = "Manage notes", onClick = onNavigateNotes)
         }
 
         Text(
@@ -486,11 +457,11 @@ fun DashboardContent(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    AnalyticsMiniStat(label = "Streak", value = "15d")
+                    AnalyticsMiniStat(label = "Streak", value = "${streakCount}d")
                     Box(modifier = Modifier.width(1.dp).height(32.dp).background(Color.White.copy(alpha = 0.25f)))
-                    AnalyticsMiniStat(label = "This Week", value = "8.4h")
+                    AnalyticsMiniStat(label = "This Week", value = "${"%.1f".format(weeklyStudyHours)}h")
                     Box(modifier = Modifier.width(1.dp).height(32.dp).background(Color.White.copy(alpha = 0.25f)))
-                    AnalyticsMiniStat(label = "Quiz Acc.", value = "78%")
+                    AnalyticsMiniStat(label = "Pending", value = "$pendingTaskCount")
                 }
                 Spacer(modifier = Modifier.height(14.dp))
                 Button(
@@ -560,12 +531,8 @@ fun AnalyticsMiniStat(label: String, value: String) {
 @Preview
 @Composable
 fun DashboardPreview() {
-    DashboardContent(
-        userName = "Preview User",
-        progress = 65f,
-        timerRunning = false,
-        timeLeft = 1500L,
-        onToggleTimer = {},
+    DashboardBody(
+        viewModel             = DashboardViewModel(),
         onNavigatePomodoro    = {},
         onNavigateVisionBoard = {},
         onNavigateProfile     = {},

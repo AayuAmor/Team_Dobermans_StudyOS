@@ -5,14 +5,24 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.teamdobermans.studyos.model.NoteModel
 import com.teamdobermans.studyos.model.Priority
 import com.teamdobermans.studyos.model.SubjectModel
 import com.teamdobermans.studyos.model.Task
+import com.teamdobermans.studyos.repo.NoteRepoImpl
 import com.teamdobermans.studyos.repo.TaskRepository
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import java.time.LocalDate
 
 class PlanViewModel : ViewModel() {
     private val repository = TaskRepository()
+    private val noteRepo = NoteRepoImpl()
+
+    val allNotes: StateFlow<List<NoteModel>> = noteRepo.getNotes()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val dynamicSubjects = mutableStateListOf(
         SubjectModel("sub_gen",     "General Study"),
@@ -33,6 +43,11 @@ class PlanViewModel : ViewModel() {
     var editingTaskId by mutableStateOf<String?>(null)
         private set
 
+    var showNotePicker by mutableStateOf(false)
+        private set
+    var notePickerTaskId by mutableStateOf<String?>(null)
+        private set
+
     init {
         syncFromRepository()
     }
@@ -47,6 +62,7 @@ class PlanViewModel : ViewModel() {
 
         val currentId = editingTaskId
         if (currentId != null) {
+            val existingLinkedNoteIds = tasks.find { it.id == currentId }?.linkedNoteIds ?: emptyList()
             val taskToUpdate = Task(
                 id = currentId,
                 title = taskTitle.trim(),
@@ -55,7 +71,8 @@ class PlanViewModel : ViewModel() {
                 endDate = selectedEndDate,
                 priority = selectedPriority,
                 subjectId = subjectId,
-                subjectName = subjectName
+                subjectName = subjectName,
+                linkedNoteIds = existingLinkedNoteIds
             )
             repository.updateTask(taskToUpdate)
             editingTaskId = null
@@ -94,6 +111,29 @@ class PlanViewModel : ViewModel() {
         editingTaskId = null
         resetFormInputs()
     }
+
+    fun openNotePicker(taskId: String) {
+        notePickerTaskId = taskId
+        showNotePicker = true
+    }
+
+    fun closeNotePicker() {
+        showNotePicker = false
+        notePickerTaskId = null
+    }
+
+    fun attachNote(taskId: String, noteId: String) {
+        repository.attachNoteToTask(taskId, noteId)
+        syncFromRepository()
+    }
+
+    fun detachNote(taskId: String, noteId: String) {
+        repository.removeNoteFromTask(taskId, noteId)
+        syncFromRepository()
+    }
+
+    fun getLinkedNoteIds(taskId: String): List<String> =
+        tasks.find { it.id == taskId }?.linkedNoteIds ?: emptyList()
 
     private fun resetFormInputs() {
         taskTitle = ""

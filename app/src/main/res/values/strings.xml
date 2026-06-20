@@ -25,6 +25,9 @@
     <string name="nav_settings">Settings</string>
     <string name="flashcards_subtitle">Biology</string>
     <string name="biology">Biology</string>
+    <string name="no_cards_due">No cards due!</string>
+    <string name="question">Question</string>
+    <string name="answer">Answer</string>
 
     <!-- Notes Strings -->
     <string name="folder_science">Science</string>
@@ -59,4 +62,5 @@
     <!-- Google Sign-In: replace with your Web Client ID from Firebase Console -->
     <!-- Project Settings -> Your App -> google-services.json -> oauth_client with client_type 3 -->
     <string name="default_web_client_id">YOUR_WEB_CLIENT_ID_HERE</string>
+    <string name="title_activity_note">Note</string>
 </resources>

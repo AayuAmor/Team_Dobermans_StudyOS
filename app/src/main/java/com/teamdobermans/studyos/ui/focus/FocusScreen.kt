@@ -114,7 +114,6 @@ fun FocusContent(
         PomodoroTab.LONG_BREAK -> "LONG BREAK"
     }
 
-
     var lastProcessedSessionCount by remember { mutableIntStateOf(sessionsToday) }
 
     LaunchedEffect(sessionsToday) {

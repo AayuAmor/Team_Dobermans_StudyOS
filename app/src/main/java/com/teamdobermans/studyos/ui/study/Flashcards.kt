@@ -1,6 +1,5 @@
 package com.teamdobermans.studyos.ui.study
 
-import com.teamdobermans.studyos.R
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -23,10 +22,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.teamdobermans.studyos.R
+import com.teamdobermans.studyos.model.FlashcardModel
 import com.teamdobermans.studyos.ui.theme.BrandPurple
 import com.teamdobermans.studyos.ui.theme.LightPurpleBg
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
-import com.teamdobermans.studyos.model.FlashcardModel
 import com.teamdobermans.studyos.viewModel.FlashcardViewModel
 
 class Flashcards : ComponentActivity() {
@@ -43,26 +43,25 @@ class Flashcards : ComponentActivity() {
 
 @Composable
 fun FlashcardsScreen(
-    modifier: Modifier = Modifier,
     onBack: () -> Unit = {},
     viewModel: FlashcardViewModel = viewModel()
 ) {
     val currentCard by viewModel.currentCard.collectAsState()
     val dueCards by viewModel.dueCards.collectAsState()
 
-    // Load due cards when screen opens
-    LaunchedEffect(Unit) { viewModel.loadDueCards() }
+    LaunchedEffect(Unit) {
+        viewModel.loadDueCards()
+    }
 
     FlashcardsScreenContent(
         currentCard = currentCard,
-        dueCards = dueCards,
-        modifier = modifier,
+        dueCardsCount = dueCards.size,
         onBack = onBack,
+        onReview = { quality ->
+            currentCard?.let { viewModel.submitReview(it, quality) }
+        },
         onAddCard = { question, answer ->
             viewModel.addCard(question, answer)
-        },
-        onSubmitReview = { card, quality ->
-            viewModel.submitReview(card, quality)
         }
     )
 }
@@ -70,21 +69,17 @@ fun FlashcardsScreen(
 @Composable
 fun FlashcardsScreenContent(
     currentCard: FlashcardModel?,
-    dueCards: List<FlashcardModel>,
-    modifier: Modifier = Modifier,
-    onBack: () -> Unit = {},
-    onAddCard: (String, String) -> Unit = { _, _ -> },
-    onSubmitReview: (FlashcardModel, Int) -> Unit = { _, _ -> }
+    dueCardsCount: Int,
+    onBack: () -> Unit,
+    onReview: (Int) -> Unit,
+    onAddCard: (String, String) -> Unit
 ) {
-    var showAnswer by remember { mutableStateOf(false) }
+    var showAnswer by remember(currentCard) { mutableStateOf(false) }
     var questionText by remember { mutableStateOf("") }
     var answerText by remember { mutableStateOf("") }
 
-    // Reset card flip whenever the card changes
-    LaunchedEffect(currentCard) { showAnswer = false }
-
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(LightPurpleBg)
     ) {
@@ -97,13 +92,11 @@ fun FlashcardsScreenContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-
-            // ── Flashcard ──────────────────────────────────────────────
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
-                    .clickable { if (currentCard != null) showAnswer = !showAnswer },
+                    .clickable { showAnswer = !showAnswer },
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -116,23 +109,15 @@ fun FlashcardsScreenContent(
                     verticalArrangement = Arrangement.Center
                 ) {
                     if (currentCard == null) {
-                        // No cards due state
                         Text(
-                            text = "🎉 All caught up!",
-                            style = MaterialTheme.typography.headlineMedium,
+                            text = stringResource(R.string.no_cards_due),
+                            style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                             color = BrandPurple
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "No cards due for review.\nAdd new cards below.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            textAlign = TextAlign.Center,
-                            color = Color.Gray
-                        )
                     } else {
                         Text(
-                            text = if (showAnswer) "Answer" else "Question — tap to reveal",
+                            text = if (showAnswer) stringResource(R.string.answer) else stringResource(R.string.question),
                             style = MaterialTheme.typography.labelLarge,
                             color = Color.Gray
                         )
@@ -148,15 +133,13 @@ fun FlashcardsScreenContent(
                 }
             }
 
-            // ── Progress dots + counter ────────────────────────────────
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val dotCount = dueCards.size.coerceIn(1, 7)
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    repeat(dotCount) { index ->
+                    repeat(minOf(dueCardsCount, 7)) { index ->
                         Box(
                             modifier = Modifier
                                 .size(12.dp)
@@ -168,42 +151,34 @@ fun FlashcardsScreenContent(
                     }
                 }
                 Text(
-                    text = if (dueCards.isEmpty()) "No cards due"
-                    else "${dueCards.size} card${if (dueCards.size > 1) "s" else ""} remaining",
+                    text = stringResource(R.string.swipe_or_tap),
                     style = MaterialTheme.typography.labelMedium,
                     color = Color.Gray
                 )
             }
 
-            // ── Again / Got it buttons (only shown after revealing) ────
-            if (currentCard != null && showAnswer) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    RecallButton(
-                        text = stringResource(R.string.again),
-                        iconRes = R.drawable.ic_clear,
-                        backgroundColor = Color(0xFFFFEBEE),
-                        contentColor = Color.Red,
-                        modifier = Modifier.weight(1f),
-                        onClick = { onSubmitReview(currentCard, 1) }
-                    )
-                    RecallButton(
-                        text = stringResource(R.string.got_it),
-                        iconRes = R.drawable.ic_check,
-                        backgroundColor = Color(0xFFE8F5E9),
-                        contentColor = Color(0xFF4CAF50),
-                        modifier = Modifier.weight(1f),
-                        onClick = { onSubmitReview(currentCard, 5) }
-                    )
-                }
-            } else if (currentCard != null) {
-                // Placeholder so layout doesn't jump
-                Spacer(modifier = Modifier.height(48.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                RecallButton(
+                    text = stringResource(R.string.again),
+                    iconRes = R.drawable.ic_clear,
+                    backgroundColor = Color(0xFFFFEBEE),
+                    contentColor = Color.Red,
+                    modifier = Modifier.weight(1f),
+                    onClick = { onReview(1) }
+                )
+                RecallButton(
+                    text = stringResource(R.string.got_it),
+                    iconRes = R.drawable.ic_check,
+                    backgroundColor = Color(0xFFE8F5E9),
+                    contentColor = Color(0xFF4CAF50),
+                    modifier = Modifier.weight(1f),
+                    onClick = { onReview(5) }
+                )
             }
 
-            // ── Add Card form ──────────────────────────────────────────
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -223,9 +198,7 @@ fun FlashcardsScreenContent(
                     TextField(
                         value = questionText,
                         onValueChange = { questionText = it },
-                        placeholder = {
-                            Text(stringResource(R.string.question_term), color = Color.White.copy(alpha = 0.7f))
-                        },
+                        placeholder = { Text(stringResource(R.string.question_term), color = Color.White.copy(alpha = 0.7f)) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
                         colors = TextFieldDefaults.colors(
@@ -241,9 +214,7 @@ fun FlashcardsScreenContent(
                     TextField(
                         value = answerText,
                         onValueChange = { answerText = it },
-                        placeholder = {
-                            Text(stringResource(R.string.answer_definition), color = Color.White.copy(alpha = 0.7f))
-                        },
+                        placeholder = { Text(stringResource(R.string.answer_definition), color = Color.White.copy(alpha = 0.7f)) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
                         colors = TextFieldDefaults.colors(
@@ -259,25 +230,18 @@ fun FlashcardsScreenContent(
                     Button(
                         onClick = {
                             if (questionText.isNotBlank() && answerText.isNotBlank()) {
-                                onAddCard(
-                                    questionText.trim(),
-                                    answerText.trim()
-                                )
+                                onAddCard(questionText, answerText)
                                 questionText = ""
                                 answerText = ""
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (questionText.isNotBlank() && answerText.isNotBlank())
-                                BrandPurple else Color(0xFFF0F7FF)
-                        )
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF0F7FF))
                     ) {
                         Text(
                             text = stringResource(R.string.add_card_button),
-                            color = if (questionText.isNotBlank() && answerText.isNotBlank())
-                                Color.White else Color(0xFFAAB8C2),
+                            color = Color(0xFF4A90E2),
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -331,10 +295,7 @@ fun FlashcardsHeader(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
                         color = Color.White.copy(alpha = 0.8f)
                     )
                 }
-                Surface(
-                    color = Color.White.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
+                Surface(color = Color.White.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
                     Row(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -364,8 +325,8 @@ fun RecallButton(
     iconRes: Int,
     backgroundColor: Color,
     contentColor: Color,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit = {}          // ← now wired up
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Button(
         onClick = onClick,
@@ -390,14 +351,16 @@ fun RecallButton(
 @Preview(showBackground = true)
 @Composable
 fun FlashcardsScreenPreview() {
-    val mockCard = FlashcardModel(
-        question = "What is Photosynthesis?",
-        answer = "The process by which green plants and some other organisms use sunlight to synthesize foods from carbon dioxide and water."
-    )
     StudyOSTheme {
         FlashcardsScreenContent(
-            currentCard = mockCard,
-            dueCards = listOf(mockCard)
+            currentCard = FlashcardModel(
+                question = "What is Mitosis?",
+                answer = "A type of cell division that results in two daughter cells each having the same number and kind of chromosomes as the parent nucleus."
+            ),
+            dueCardsCount = 5,
+            onBack = {},
+            onReview = {},
+            onAddCard = { _, _ -> }
         )
     }
 }

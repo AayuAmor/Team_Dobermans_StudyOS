@@ -9,7 +9,7 @@ import kotlinx.coroutines.tasks.await
 class FlashcardRepoImpl : FlashcardRepo {
 
     private val db = FirebaseFirestore.getInstance()
-    
+
     private fun getCollection(): CollectionReference? {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid.isNullOrBlank()) return null
@@ -45,7 +45,7 @@ class FlashcardRepoImpl : FlashcardRepo {
         try {
             collection.document(card.id).set(card).await()
         } catch (e: Exception) {
-            // Log error or handle
+            // Log or handle error
         }
     }
 
@@ -55,7 +55,7 @@ class FlashcardRepoImpl : FlashcardRepo {
             val doc = collection.document()
             doc.set(card.copy(id = doc.id)).await()
         } catch (e: Exception) {
-            // Log error or handle
+            // Log or handle error
         }
     }
 }
