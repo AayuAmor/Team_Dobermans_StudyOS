@@ -197,8 +197,9 @@ fun StudyOSNavGraph(
             composable(AppRoutes.Notes.route) {
                 val vm = viewModel<NoteViewModel>()
                 NotesScreen(
-                    viewModel   = vm,
-                    onBackClick = { navController.popBackStack() }
+                    viewModel            = vm,
+                    onBackClick          = { navController.popBackStack() },
+                    onNavigateVideoNotes = { navController.navigate(AppRoutes.VideoNotes.route) }
                 )
             }
 
