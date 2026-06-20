@@ -1,11 +1,14 @@
 package com.teamdobermans.studyos.viewModel
 
+import android.app.Application
 import android.os.CountDownTimer
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.teamdobermans.studyos.data.analytics.AnalyticsRepository
+import com.teamdobermans.studyos.model.NoteModel
 import com.teamdobermans.studyos.model.Task
+import com.teamdobermans.studyos.repo.ReviewReminderRepository
 import com.teamdobermans.studyos.repo.TaskRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,10 +21,12 @@ data class DashboardUiState(
     val todayTasks: List<Task> = emptyList()
 )
 
-class DashboardViewModel : ViewModel() {
+class DashboardViewModel(application: Application) : AndroidViewModel(application) {
+
     private val auth           = FirebaseAuth.getInstance()
     private val taskRepository = TaskRepository()
     private val analytics      = AnalyticsRepository()
+    private val reviewRepo     = ReviewReminderRepository(application)
 
     private val _userName = MutableStateFlow(resolveUserName())
     val userName: StateFlow<String> = _userName.asStateFlow()
@@ -42,6 +47,9 @@ class DashboardViewModel : ViewModel() {
 
     val dailyProgress: StateFlow<Float> = analytics.getDailyTaskProgress()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0f)
+
+    val upcomingReviews: StateFlow<List<NoteModel>> = reviewRepo.getUpcomingReviews()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _timerRunning = MutableStateFlow(false)
     val timerRunning: StateFlow<Boolean> = _timerRunning.asStateFlow()

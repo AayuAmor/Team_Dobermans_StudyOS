@@ -24,6 +24,10 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.EventNote
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -41,14 +45,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.teamdobermans.studyos.model.NoteModel
+import com.teamdobermans.studyos.repo.ReviewReminderRepository
 import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.viewModel.AutoSaveStatus
 import com.teamdobermans.studyos.viewModel.NoteViewModel
+import com.teamdobermans.studyos.viewModel.ReviewUiState
+import com.teamdobermans.studyos.viewModel.ReviewViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
-// ─── Source filter ────────────────────────────────────────────────────────────
 
 private enum class SourceFilter(val label: String, val key: String?) {
     ALL("All", null),
@@ -57,14 +62,10 @@ private enum class SourceFilter(val label: String, val key: String?) {
     IMPORTED("Imported", "IMPORTED")
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 private fun wordCount(body: String): Int =
     body.split(Regex("\\s+")).count { it.isNotBlank() }
 
 private fun isQuizReady(body: String): Boolean = wordCount(body) >= 50
-
-// ─── Activity shell ───────────────────────────────────────────────────────────
 
 class NotesPage : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -76,8 +77,6 @@ class NotesPage : ComponentActivity() {
         }
     }
 }
-
-// ─── Public entry point (used by NavGraph + NotesPage) ────────────────────────
 
 @Composable
 fun NotesScreen(
@@ -140,7 +139,7 @@ fun NotesScreen(
         if (searchQuery.isNotBlank()) {
             list = list.filter { n ->
                 n.title.contains(searchQuery, ignoreCase = true) ||
-                n.body.contains(searchQuery, ignoreCase = true)
+                        n.body.contains(searchQuery, ignoreCase = true)
             }
         }
         if (sourceFilter != SourceFilter.ALL) {
@@ -166,8 +165,6 @@ fun NotesScreen(
         onNavigateVideoNotes = onNavigateVideoNotes
     )
 }
-
-// ─── Workspace screen ─────────────────────────────────────────────────────────
 
 @Composable
 private fun NotesWorkspaceScreen(
@@ -203,12 +200,10 @@ private fun NotesWorkspaceScreen(
             modifier       = Modifier.fillMaxSize().padding(innerPadding),
             contentPadding = PaddingValues(bottom = 96.dp)
         ) {
-            // Top bar
             item {
                 NotesTopBar(onBackClick = onBackClick)
             }
 
-            // Title + subtitle + search
             item {
                 Column(
                     modifier = Modifier
@@ -233,7 +228,6 @@ private fun NotesWorkspaceScreen(
                 }
             }
 
-            // Source filter chips
             item {
                 NoteSourceFilterChips(
                     selected   = sourceFilter,
@@ -244,7 +238,6 @@ private fun NotesWorkspaceScreen(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // Empty state — no notes at all
             if (allNotes.isEmpty() && searchQuery.isBlank()) {
                 item {
                     NotesEmptyState(
@@ -256,7 +249,6 @@ private fun NotesWorkspaceScreen(
                 return@LazyColumn
             }
 
-            // Filtered empty state
             if (notes.isEmpty()) {
                 item {
                     Box(
@@ -268,9 +260,9 @@ private fun NotesWorkspaceScreen(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 text       = if (searchQuery.isNotBlank())
-                                                 "No notes match \"$searchQuery\""
-                                             else
-                                                 "No ${sourceFilter.label.lowercase()} notes yet",
+                                    "No notes match \"$searchQuery\""
+                                else
+                                    "No ${sourceFilter.label.lowercase()} notes yet",
                                 color      = TextSecondary,
                                 fontSize   = 16.sp,
                                 fontWeight = FontWeight.SemiBold,
@@ -291,7 +283,6 @@ private fun NotesWorkspaceScreen(
                 return@LazyColumn
             }
 
-            // Note count label
             item {
                 Text(
                     text     = "${notes.size} note${if (notes.size != 1) "s" else ""}",
@@ -301,7 +292,6 @@ private fun NotesWorkspaceScreen(
                 )
             }
 
-            // Note cards
             items(notes, key = { it.id }) { note ->
                 ProfessionalNoteCard(
                     note     = note,
@@ -322,8 +312,6 @@ private fun NotesWorkspaceScreen(
         }
     }
 }
-
-// ─── Top bar ──────────────────────────────────────────────────────────────────
 
 @Composable
 private fun NotesTopBar(onBackClick: () -> Unit) {
@@ -354,8 +342,6 @@ private fun NotesTopBar(onBackClick: () -> Unit) {
     }
 }
 
-// ─── Search bar ───────────────────────────────────────────────────────────────
-
 @Composable
 private fun NotesSearchBar(query: String, onQueryChange: (String) -> Unit) {
     OutlinedTextField(
@@ -381,8 +367,6 @@ private fun NotesSearchBar(query: String, onQueryChange: (String) -> Unit) {
         )
     )
 }
-
-// ─── Source filter chips ──────────────────────────────────────────────────────
 
 @Composable
 private fun NoteSourceFilterChips(
@@ -425,8 +409,6 @@ private fun NoteSourceFilterChips(
         }
     }
 }
-
-// ─── Professional note card ───────────────────────────────────────────────────
 
 @Composable
 fun ProfessionalNoteCard(
@@ -477,7 +459,6 @@ fun ProfessionalNoteCard(
     ) {
         Column(modifier = Modifier.clickable(onClick = onClick).padding(16.dp)) {
 
-            // Row 1: source badge + date
             Row(
                 modifier              = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -499,7 +480,6 @@ fun ProfessionalNoteCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Title
             Text(
                 text       = note.title.ifBlank { "Untitled Note" },
                 color      = TextPrimary,
@@ -509,7 +489,6 @@ fun ProfessionalNoteCard(
                 overflow   = TextOverflow.Ellipsis
             )
 
-            // Body preview
             if (note.body.isNotBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -524,7 +503,6 @@ fun ProfessionalNoteCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Row 3: word count + quiz readiness
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (words > 0) {
                     Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFFF0EEF9)) {
@@ -541,7 +519,6 @@ fun ProfessionalNoteCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Row 4: Generate Quiz + delete
             Row(
                 modifier              = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -593,8 +570,6 @@ fun ProfessionalNoteCard(
     }
 }
 
-// ─── Quiz readiness badge ─────────────────────────────────────────────────────
-
 @Composable
 fun QuizReadinessBadge(isReady: Boolean, modifier: Modifier = Modifier) {
     val bg    = if (isReady) Color(0xFFE8F5E9) else Color(0xFFF5F5F5)
@@ -617,8 +592,6 @@ fun QuizReadinessBadge(isReady: Boolean, modifier: Modifier = Modifier) {
         }
     }
 }
-
-// ─── Empty state ──────────────────────────────────────────────────────────────
 
 @Composable
 private fun NotesEmptyState(
@@ -679,8 +652,6 @@ private fun NotesEmptyState(
     }
 }
 
-// ─── Note editor screen ───────────────────────────────────────────────────────
-
 @Composable
 fun NoteEditorScreen(
     existingNote:    NoteModel? = null,
@@ -728,7 +699,6 @@ fun NoteEditorScreen(
             .background(Color.White)
             .imePadding()
     ) {
-        // ── Top bar ────────────────────────────────────────────────────────
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -795,7 +765,6 @@ fun NoteEditorScreen(
 
         HorizontalDivider(color = Color(0xFFEEEAFF))
 
-        // ── Editor canvas ──────────────────────────────────────────────────
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -804,7 +773,6 @@ fun NoteEditorScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Source type badge (readonly)
             Surface(shape = RoundedCornerShape(6.dp), color = StudyPurpleLight) {
                 Text(
                     text       = when (existingNote?.sourceType?.uppercase()) {
@@ -821,7 +789,6 @@ fun NoteEditorScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Title field
             EditorTextField(
                 value       = title,
                 onChange    = { title = it },
@@ -837,7 +804,6 @@ fun NoteEditorScreen(
             HorizontalDivider(color = Color(0xFFF0EEF9))
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Body field
             EditorTextField(
                 value       = body,
                 onChange    = { body = it },
@@ -850,10 +816,16 @@ fun NoteEditorScreen(
                 minLines    = 14
             )
 
+            if (isEditing && existingNote != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(color = Color(0xFFF0EEF9))
+                Spacer(modifier = Modifier.height(16.dp))
+                NoteReviewSection(existingNote = existingNote)
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
         }
 
-        // ── Bottom action bar ──────────────────────────────────────────────
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -934,8 +906,6 @@ fun NoteEditorScreen(
     }
 }
 
-// ─── Editor text field helper ─────────────────────────────────────────────────
-
 @Composable
 private fun EditorTextField(
     value:       String,
@@ -960,5 +930,240 @@ private fun EditorTextField(
             minLines       = minLines,
             modifier       = Modifier.fillMaxWidth()
         )
+    }
+}
+
+@Composable
+private fun NoteReviewSection(existingNote: NoteModel) {
+    val reviewVm: ReviewViewModel = viewModel()
+    val reviewState by reviewVm.reviewState.collectAsState()
+
+    LaunchedEffect(existingNote.id) {
+        reviewVm.loadNote(existingNote.id)
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
+        Row(
+            modifier              = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment     = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector        = Icons.Rounded.EventNote,
+                    contentDescription = null,
+                    tint               = BrandPurple,
+                    modifier           = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text       = "Review Reminders",
+                    fontSize   = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color      = TextPrimary
+                )
+            }
+
+            when (val s = reviewState) {
+                is ReviewUiState.Loaded -> Switch(
+                    checked         = s.reminderEnabled,
+                    onCheckedChange = { reviewVm.toggleReminder() },
+                    colors          = SwitchDefaults.colors(
+                        checkedThumbColor  = BrandPurple,
+                        checkedTrackColor  = StudyPurpleLight
+                    )
+                )
+                is ReviewUiState.Saving,
+                is ReviewUiState.Loading -> CircularProgressIndicator(
+                    modifier    = Modifier.size(22.dp),
+                    strokeWidth = 2.dp,
+                    color       = BrandPurple
+                )
+                else -> Switch(checked = false, onCheckedChange = {}, enabled = false)
+            }
+        }
+
+        val loaded = reviewState as? ReviewUiState.Loaded
+        if (loaded != null) {
+            if (loaded.reminderEnabled) {
+
+                val progress = loaded.reviewStage / 3f
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        modifier              = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Progress", fontSize = 11.sp, color = TextHint)
+                        Text(
+                            "${loaded.reviewStage}/3 reviews",
+                            fontSize   = 11.sp,
+                            color      = BrandPurple,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    LinearProgressIndicator(
+                        progress   = { progress },
+                        modifier   = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(6.dp)),
+                        color      = BrandPurple,
+                        trackColor = StudyPurpleLight
+                    )
+                }
+
+                ReviewPlanRow(stage = loaded.reviewStage)
+
+                if (loaded.nextReviewAt > 0L) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector        = Icons.Rounded.Schedule,
+                            contentDescription = null,
+                            tint               = TextHint,
+                            modifier           = Modifier.size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            "Next review: ${relativeReviewTime(loaded.nextReviewAt)}",
+                            fontSize = 12.sp,
+                            color    = TextHint
+                        )
+                    }
+                }
+
+                if (loaded.reviewStage < ReviewReminderRepository.MAX_STAGE) {
+                    Button(
+                        onClick  = { reviewVm.markReviewed() },
+                        modifier = Modifier.fillMaxWidth().height(42.dp),
+                        shape    = RoundedCornerShape(10.dp),
+                        colors   = ButtonDefaults.buttonColors(containerColor = BrandPurple)
+                    ) {
+                        Icon(
+                            imageVector        = Icons.Rounded.CheckCircle,
+                            contentDescription = null,
+                            tint               = Color.White,
+                            modifier           = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            "Mark as Reviewed",
+                            color      = Color.White,
+                            fontSize   = 13.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                } else {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape    = RoundedCornerShape(10.dp),
+                        color    = Color(0xFFE8F8F0)
+                    ) {
+                        Row(
+                            modifier              = Modifier.padding(12.dp),
+                            verticalAlignment     = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector        = Icons.Rounded.CheckCircle,
+                                contentDescription = null,
+                                tint               = Color(0xFF1D9E75),
+                                modifier           = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                "All reviews complete!",
+                                color      = Color(0xFF1D9E75),
+                                fontSize   = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+
+            } else {
+                Text(
+                    text       = "Enable to receive reminders on Day 1, Day 4, and Day 7 to reinforce what you've learned.",
+                    fontSize   = 12.sp,
+                    color      = TextHint,
+                    lineHeight = 18.sp
+                )
+            }
+        }
+
+        val error = reviewState as? ReviewUiState.Error
+        if (error != null) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape    = RoundedCornerShape(8.dp),
+                color    = Color(0xFFFFF0F0)
+            ) {
+                Row(
+                    modifier          = Modifier.padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text     = error.message,
+                        fontSize = 12.sp,
+                        color    = Color(0xFFB00020),
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(onClick = { reviewVm.dismissError() }) {
+                        Text("Dismiss", fontSize = 11.sp, color = Color(0xFFB00020))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReviewPlanRow(stage: Int) {
+    Row(
+        modifier              = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        ReviewStageChip(label = "Day 1", done = stage > 0)
+        ReviewStageChip(label = "Day 4", done = stage > 1)
+        ReviewStageChip(label = "Day 7", done = stage > 2)
+    }
+}
+
+@Composable
+private fun ReviewStageChip(label: String, done: Boolean) {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = if (done) Color(0xFFE8F8F0) else StudyPurpleLight
+    ) {
+        Row(
+            modifier              = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment     = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            if (done) {
+                Icon(
+                    imageVector        = Icons.Rounded.CheckCircle,
+                    contentDescription = null,
+                    tint               = Color(0xFF1D9E75),
+                    modifier           = Modifier.size(11.dp)
+                )
+            }
+            Text(
+                text       = label,
+                fontSize   = 11.sp,
+                color      = if (done) Color(0xFF1D9E75) else BrandPurple,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
+private fun relativeReviewTime(nextReviewAt: Long): String {
+    val diff = nextReviewAt - System.currentTimeMillis()
+    val days = (diff / (24L * 60 * 60 * 1000)).toInt()
+    return when {
+        days <= 0 -> "Today"
+        days == 1 -> "Tomorrow"
+        else      -> "In $days days"
     }
 }

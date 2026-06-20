@@ -114,8 +114,9 @@ fun DashboardBody(
     val weeklyStudyHours by viewModel.weeklyStudyHours.collectAsState()
     val pendingTaskCount by viewModel.pendingTaskCount.collectAsState()
     val dailyProgress    by viewModel.dailyProgress.collectAsState()
-    val timerRunning by viewModel.timerRunning.collectAsState()
-    val timeLeft     by viewModel.timeLeft.collectAsState()
+    val timerRunning     by viewModel.timerRunning.collectAsState()
+    val timeLeft         by viewModel.timeLeft.collectAsState()
+    val upcomingReviews  by viewModel.upcomingReviews.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.onSessionComplete = {
@@ -475,6 +476,24 @@ fun DashboardBody(
             }
         }
 
+        if (upcomingReviews.isNotEmpty()) {
+            Text(
+                text     = "Review Reminders",
+                style    = TextStyle(
+                    fontSize     = 14.sp,
+                    fontWeight   = FontWeight.Bold,
+                    color        = TextPrimary,
+                    letterSpacing = 0.3.sp
+                ),
+                modifier = Modifier.padding(start = 14.dp, top = 16.dp, bottom = 10.dp)
+            )
+            UpcomingReviewsCard(
+                notes           = upcomingReviews,
+                onNavigateNotes = onNavigateNotes,
+                modifier        = Modifier.padding(horizontal = 14.dp)
+            )
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
     }
 }
@@ -526,17 +545,5 @@ fun AnalyticsMiniStat(label: String, value: String) {
         Text(value, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
         Text(label, color = Color.White.copy(alpha = 0.70f), fontSize = 10.sp)
     }
-}
-
-@Preview
-@Composable
-fun DashboardPreview() {
-    DashboardBody(
-        viewModel             = DashboardViewModel(),
-        onNavigatePomodoro    = {},
-        onNavigateVisionBoard = {},
-        onNavigateProfile     = {},
-        onNavigateAnalytics   = {}
-    )
 }
 
