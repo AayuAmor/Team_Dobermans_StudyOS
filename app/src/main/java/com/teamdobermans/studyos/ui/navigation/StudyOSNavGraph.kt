@@ -37,6 +37,7 @@ import com.teamdobermans.studyos.ui.study.MockTestBody
 import com.teamdobermans.studyos.ui.study.NotesScreen
 import com.teamdobermans.studyos.ui.study.QuizScreen
 import com.teamdobermans.studyos.ui.study.StudyScreen
+import com.teamdobermans.studyos.ui.study.StudyTimeScreen
 import com.teamdobermans.studyos.ui.study.VideoToNotesScreen
 import com.teamdobermans.studyos.utils.GoogleSignInHelper
 import com.teamdobermans.studyos.viewModel.*
@@ -158,8 +159,13 @@ fun StudyOSNavGraph(
                     onNavigateNotes      = { navController.navigate(AppRoutes.Notes.route) },
                     onNavigateFlashcards = { navController.navigate(AppRoutes.Flashcards.route) },
                     onNavigateMockTest   = { navController.navigate(AppRoutes.MockTest.route) },
-                    onNavigateVideoNotes = { navController.navigate(AppRoutes.VideoNotes.route) }
+                    onNavigateVideoNotes = { navController.navigate(AppRoutes.VideoNotes.route) },
+                    onNavigateStudyTime  = { navController.navigate(AppRoutes.StudyTime.route) }
                 )
+            }
+
+            composable(AppRoutes.StudyTime.route) {
+                StudyTimeScreen()
             }
 
             composable(AppRoutes.Focus.route) {

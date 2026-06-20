@@ -36,7 +36,8 @@ fun StudyScreen(
     onNavigateNotes: () -> Unit = {},
     onNavigateFlashcards: () -> Unit = {},
     onNavigateMockTest: () -> Unit = {},
-    onNavigateVideoNotes: () -> Unit = {}
+    onNavigateVideoNotes: () -> Unit = {},
+    onNavigateStudyTime: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val subjects = viewModel.filteredSubjects
@@ -65,7 +66,8 @@ fun StudyScreen(
                     onVideoNotes  = onNavigateVideoNotes,
                     onFlashcards  = onNavigateFlashcards,
                     onQuiz        = onNavigateMockTest,
-                    onNotes       = onNavigateNotes
+                    onNotes       = onNavigateNotes,
+                    onStudyTime   = onNavigateStudyTime
                 )
             }
         } else {
@@ -342,7 +344,8 @@ private fun AiToolsSection(
     onVideoNotes: () -> Unit,
     onFlashcards: () -> Unit,
     onQuiz: () -> Unit,
-    onNotes: () -> Unit
+    onNotes: () -> Unit,
+    onStudyTime: () -> Unit
 ) {
     Column(modifier = Modifier.padding(top = 20.dp, start = 16.dp, end = 16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -371,12 +374,12 @@ private fun AiToolsSection(
             )
             AiToolCard(
                 modifier  = Modifier.weight(1f),
-                icon      = Icons.Rounded.Summarize,
+                icon      = Icons.Rounded.Timer,
                 iconBg    = Color(0xFFF0E8FF),
                 iconTint  = StudyPurple,
-                title     = "Summarize",
-                subtitle  = "Condense notes",
-                onClick   = onNotes
+                title     = "Study Timer",
+                subtitle  = "Track sessions",
+                onClick   = onStudyTime
             )
         }
         Spacer(modifier = Modifier.height(10.dp))

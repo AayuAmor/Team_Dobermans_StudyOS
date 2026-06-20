@@ -8,6 +8,7 @@ sealed class AppRoutes(val route: String) {
 
     object Home        : AppRoutes("home")
     object Study       : AppRoutes("study")
+    object StudyTime   : AppRoutes("study_time")
     object Focus       : AppRoutes("focus")
     object Plan        : AppRoutes("plan")
     object Profile     : AppRoutes("profile")
