@@ -39,6 +39,7 @@ import com.teamdobermans.studyos.ui.study.Flashcards
 import com.teamdobermans.studyos.ui.study.MockTestActivity
 import com.teamdobermans.studyos.ui.study.NotesPage
 import com.teamdobermans.studyos.ui.study.QuizScreen
+import com.teamdobermans.studyos.ui.analytics.WeeklyTrendCard
 import com.teamdobermans.studyos.ui.study.VideotoNotes
 import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.viewModel.DashboardViewModel
@@ -475,6 +476,21 @@ fun DashboardBody(
                 }
             }
         }
+
+        Text(
+            text = "Weekly Trends",
+            style = TextStyle(
+                fontSize      = 14.sp,
+                fontWeight    = FontWeight.Bold,
+                color         = TextPrimary,
+                letterSpacing = 0.3.sp
+            ),
+            modifier = Modifier.padding(start = 14.dp, top = 16.dp, bottom = 10.dp)
+        )
+
+        WeeklyTrendCard(
+            modifier = Modifier.padding(horizontal = 14.dp)
+        )
 
         if (upcomingReviews.isNotEmpty()) {
             Text(

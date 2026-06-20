@@ -1,10 +1,16 @@
 package com.teamdobermans.studyos.viewModel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.teamdobermans.studyos.model.WeeklyTrendPoint
+import com.teamdobermans.studyos.model.WeeklyTrendType
+import com.teamdobermans.studyos.repo.WeeklyAnalyticsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
+// Kept for backward-compatibility with AnalyticsCharts.kt and ProgressActivity
 data class WeeklyBarData(val day: String, val hours: Float)
 
 data class SubjectBreakdownItem(
@@ -14,29 +20,78 @@ data class SubjectBreakdownItem(
 )
 
 data class AnalyticsUiState(
-    val studyStreak: Int               = 14,
-    val monthlyHours: Float            = 36.5f,
-    val quizAccuracy: Float            = 0.78f,
-    val focusScore: Int                = 72,
-    val weeklyData: List<WeeklyBarData> = listOf(
-        WeeklyBarData("Mon", 1.5f),
-        WeeklyBarData("Tue", 2.0f),
-        WeeklyBarData("Wed", 0.5f),
-        WeeklyBarData("Thu", 3.0f),
-        WeeklyBarData("Fri", 2.5f),
-        WeeklyBarData("Sat", 1.0f),
-        WeeklyBarData("Sun", 0.0f)
-    ),
-    val subjectBreakdown: List<SubjectBreakdownItem> = listOf(
-        SubjectBreakdownItem("Mathematics",     0.35f, 0xFF5B4FD4),
-        SubjectBreakdownItem("Physics",         0.25f, 0xFFE04F7B),
-        SubjectBreakdownItem("Chemistry",       0.20f, 0xFF3A82E0),
-        SubjectBreakdownItem("Computer Sci",    0.20f, 0xFF1D9E75)
-    )
+    // Weekly trend chart fields
+    val isLoading: Boolean = true,
+    val selectedTrendType: WeeklyTrendType = WeeklyTrendType.STUDY_TIME,
+    val weeklyTrendPoints: List<WeeklyTrendPoint> = emptyList(),
+    val totalThisWeek: Float = 0f,
+    val errorMessage: String? = null,
+    val isEmpty: Boolean = false,
+    // Legacy fields for ProgressActivity — populated from real data, no hardcoded values
+    val studyStreak: Int = 0,
+    val monthlyHours: Float = 0f,
+    val quizAccuracy: Float = 0f,
+    val focusScore: Int = 0,
+    val weeklyData: List<WeeklyBarData> = emptyList(),
+    val subjectBreakdown: List<SubjectBreakdownItem> = emptyList()
 )
 
 class AnalyticsViewModel : ViewModel() {
+
+    private val repo = WeeklyAnalyticsRepository()
+
     private val _state = MutableStateFlow(AnalyticsUiState())
     val state: StateFlow<AnalyticsUiState> = _state.asStateFlow()
-}
 
+    init { reload() }
+
+    fun selectTrendType(type: WeeklyTrendType) {
+        _state.value = _state.value.copy(selectedTrendType = type)
+        reload()
+    }
+
+    private fun reload() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
+            try {
+                val type = _state.value.selectedTrendType
+                val points = when (type) {
+                    WeeklyTrendType.STUDY_TIME      -> repo.getWeeklyStudyTime()
+                    WeeklyTrendType.TASKS_COMPLETED -> repo.getWeeklyTasksCompleted()
+                    WeeklyTrendType.QUIZ_SCORE      -> repo.getWeeklyQuizScores()
+                    WeeklyTrendType.REVIEW_COUNT    -> repo.getWeeklyReviewCount()
+                }
+                val total = computeTotal(type, points)
+                val isEmpty = points.all { it.value == 0f }
+                // Keep ProgressActivity's WeeklyBarChartCard fed with real study-time data
+                val legacyBars = if (type == WeeklyTrendType.STUDY_TIME) {
+                    points.map { WeeklyBarData(it.dayLabel, it.value / 60f) }
+                } else {
+                    _state.value.weeklyData
+                }
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    weeklyTrendPoints = points,
+                    totalThisWeek = total,
+                    isEmpty = isEmpty,
+                    weeklyData = legacyBars,
+                    errorMessage = null
+                )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    errorMessage = e.message
+                )
+            }
+        }
+    }
+
+    private fun computeTotal(type: WeeklyTrendType, points: List<WeeklyTrendPoint>): Float {
+        if (type == WeeklyTrendType.QUIZ_SCORE) {
+            val nonZero = points.filter { it.value > 0f }
+            return if (nonZero.isEmpty()) 0f
+            else nonZero.sumOf { it.value.toDouble() }.toFloat() / nonZero.size
+        }
+        return points.sumOf { it.value.toDouble() }.toFloat()
+    }
+}
