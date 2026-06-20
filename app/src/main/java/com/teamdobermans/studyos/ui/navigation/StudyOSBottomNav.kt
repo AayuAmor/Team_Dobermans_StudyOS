@@ -57,6 +57,12 @@ val bottomNavTabs = listOf(
         label        = "Profile",
         selectedIcon = Icons.Rounded.Person,
         defaultIcon  = Icons.Outlined.Person
+    ),
+    NavTab(
+        route        = AppRoutes.StudyTime.route,
+        label        = "Study Time",
+        selectedIcon = Icons.Rounded.Schedule,
+        defaultIcon  = Icons.Outlined.Schedule
     )
 )
 
@@ -76,7 +82,7 @@ fun StudyOSBottomNav(navController: NavController) {
             NavigationBarItem(
                 icon = {
                     Icon(
-                        imageVector     = if (isSelected) tab.selectedIcon else tab.defaultIcon,
+                        imageVector        = if (isSelected) tab.selectedIcon else tab.defaultIcon,
                         contentDescription = tab.label
                     )
                 },
@@ -108,4 +114,3 @@ fun StudyOSBottomNav(navController: NavController) {
         }
     }
 }
-
