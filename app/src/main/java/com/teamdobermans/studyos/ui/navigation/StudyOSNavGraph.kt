@@ -33,7 +33,7 @@ import com.teamdobermans.studyos.ui.plan.PlanBody
 import com.teamdobermans.studyos.ui.profile.ProfileScreenV2
 import com.teamdobermans.studyos.ui.profile.SettingsBody
 import com.teamdobermans.studyos.ui.study.FlashcardsScreen
-import com.teamdobermans.studyos.ui.study.MockTestBody
+import com.teamdobermans.studyos.ui.study.QuizSetupBody
 import com.teamdobermans.studyos.ui.study.NotesScreen
 import com.teamdobermans.studyos.ui.study.QuizScreen
 import com.teamdobermans.studyos.ui.study.StudyScreen
@@ -138,7 +138,7 @@ fun StudyOSNavGraph(
                             Intent(ctx, PomodoroActivity::class.java).putExtra("auto_start", true)
                         )
                     },
-                    onNavigateVisionBoard = { 
+                    onNavigateVisionBoard = {
                         navController.navigate(AppRoutes.VisionBoard.route)
                     },
                     onNavigateProfile     = { navController.navigate(AppRoutes.Profile.route) },
@@ -189,7 +189,7 @@ fun StudyOSNavGraph(
                 ProfileScreenV2(
                     viewModel             = vm,
                     onNavigateAnalytics   = { navController.navigate(AppRoutes.Analytics.route) },
-                    onNavigateVisionBoard = { 
+                    onNavigateVisionBoard = {
                         navController.navigate(AppRoutes.VisionBoard.route)
                     },
                     onSignOut             = {
@@ -203,9 +203,9 @@ fun StudyOSNavGraph(
             composable(AppRoutes.Notes.route) {
                 val vm = viewModel<NoteViewModel>()
                 NotesScreen(
-                    viewModel   = vm,
-                    navController = navController,
-                    onBackClick = { navController.popBackStack() }
+                    viewModel            = vm,
+                    onBackClick          = { navController.popBackStack() },
+                    onNavigateVideoNotes = { navController.navigate(AppRoutes.VideoNotes.route) }
                 )
             }
 
@@ -218,7 +218,8 @@ fun StudyOSNavGraph(
             }
 
             composable(AppRoutes.Flashcards.route) {
-                FlashcardsScreen(onBack = { navController.popBackStack() })
+                val vm = viewModel<FlashcardViewModel>()
+                FlashcardsScreen(onBack = { navController.popBackStack() }, viewModel = vm)
             }
 
             composable(AppRoutes.BrainGame.route) {
@@ -231,9 +232,9 @@ fun StudyOSNavGraph(
 
             composable(AppRoutes.MockTest.route) {
                 val vm = viewModel<MockTestViewModel>()
-                MockTestBody(
-                    viewModel = vm,
-                    onBack    = { navController.popBackStack() }
+                QuizSetupBody(
+                    vm     = vm,
+                    onBack = { navController.popBackStack() }
                 )
             }
 
@@ -264,4 +265,3 @@ fun StudyOSNavGraph(
         }
     }
 }
-

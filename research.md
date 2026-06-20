@@ -2101,6 +2101,538 @@ Quick answers for each feature under exam conditions.
 
 ---
 
+# FEATURE DEEP DIVE — PROFILE UPDATE SYSTEM
+
+**Sprint:** 6 (Enhancement)  
+**Status:** Implemented  
+**Owner:** Ayush Kumar Raut  
+**Date:** June 2026
+
+---
+
+## Feature Name
+
+Profile Update System
+
+---
+
+## Problem Solved
+
+Before this feature, users had no way to change their display name or email address after account creation. The profile screen only showed the email extracted from Firebase Auth and allowed password changes. The display name shown on the Dashboard was hardcoded to fallback values rather than reading from a persisted user record. This feature gives users control over their identity data and keeps Firebase Auth and Firestore in sync.
+
+---
+
+## Architecture Placement
+
+```
+ProfileActivity (UI)
+        ↓
+ProfileViewModel (state machine + validation)
+        ↓
+ProfileRepository (Firebase communication)
+        ↓
+Firebase Auth (displayName + email update)
+        ↓
+Cloud Firestore (users/{uid} document merge)
+```
+
+Dashboard integration:
+
+```
+DashboardActivity.onResume()
+        ↓
+DashboardViewModel.loadUserName()
+        ↓
+FirebaseAuth.currentUser.displayName
+        ↓
+DashboardHeader greeting updated
+```
+
+---
+
+## New Files Created
+
+| File | Purpose |
+|---|---|
+| `model/UserProfile.kt` | Data class: `uid`, `name`, `email` — maps Firestore `users/{uid}` |
+
+---
+
+## Modified Files
+
+| File | What Changed |
+|---|---|
+| `repo/ProfileRepository.kt` | Added `getProfile()`, `updateProfile(name, email)`; `updateDisplayName()` now also updates Firebase Auth via `UserProfileChangeRequest` |
+| `viewModel/ProfileViewModel.kt` | Added `ProfileUiState` sealed class, `profile` StateFlow, `uiState` StateFlow, `nameError`/`emailError` StateFlows, `loadProfile()`, `updateProfile()`, `validateProfile()`; kept `email` and `saveResult` for backward compat with `ProfileScreen.kt` |
+| `ui/profile/ProfileActivity.kt` | Added email editing field; replaced Toast feedback with inline success/error banners; replaced direct `ProfileViewModel()` instantiation with `by viewModels()` for ViewModel lifecycle correctness; loading indicator on Save button during async call |
+| `viewModel/DashboardViewModel.kt` | Added `userName: StateFlow<String>` and `loadUserName()` which reads live from `FirebaseAuth.currentUser` |
+| `ui/home/DashboardActivity.kt` | Overrides `onResume()` to call `dashboardViewModel.loadUserName()`; `DashboardBody` collects `userName` from ViewModel via `collectAsState()` instead of reading FirebaseAuth directly |
+
+---
+
+## Workflow (Save Changes)
+
+1. User opens Profile screen — `ProfileViewModel.init {}` calls `loadProfile()`
+2. `ProfileRepository.getProfile()` reads Firestore `users/{uid}`, falls back to Firebase Auth fields
+3. Fields pre-fill with current `name` and `email` from loaded `UserProfile`
+4. User edits name and/or email → presses "Save Changes"
+5. `ProfileViewModel.updateProfile(name, email)` runs:
+   - `validateProfile()` checks: name ≥ 2 chars, email matches `Patterns.EMAIL_ADDRESS`
+   - If invalid: sets `_nameError` and/or `_emailError` StateFlows → inline errors shown
+   - If valid: sets `_uiState = Loading` → button shows spinner
+6. `ProfileRepository.updateProfile()` runs three operations in order:
+   - `UserProfileChangeRequest.Builder().setDisplayName(name)` → `user.updateProfile().await()` (Firebase Auth)
+   - `user.updateEmail(email).await()` only if email changed (throws `FirebaseAuthRecentLoginRequiredException` → caught and rethrown with friendly message)
+   - `db.collection("users").document(uid).set(data, SetOptions.merge()).await()` — writes `displayName`, `email`, `updatedAt` without touching other fields
+7. On success: `_uiState = Success` → green banner shown → auto-dismissed after 3 seconds
+8. On failure: `_uiState = Error(message)` → red banner shown with specific error message
+9. User returns to Dashboard → `DashboardActivity.onResume()` → `dashboardViewModel.loadUserName()` → greeting refreshes
+
+---
+
+## Repository Participation
+
+`ProfileRepository` is the sole Firebase communication layer. It:
+- Reads profile from Firestore with Auth fallback
+- Updates Firebase Auth `displayName` via `UserProfileChangeRequest`
+- Updates Firebase Auth `email` via `updateEmail()` with re-auth detection
+- Writes to Firestore using `SetOptions.merge()` to avoid overwriting unrelated fields
+- Returns `Result<T>` via `runCatching` so ViewModel handles success/failure uniformly
+
+---
+
+## Firebase Integration
+
+### Firebase Auth
+
+```kotlin
+// Display name update
+UserProfileChangeRequest.Builder().setDisplayName(name).build()
+user.updateProfile(profileChange).await()
+
+// Email update (requires recent sign-in)
+user.updateEmail(email).await()
+```
+
+### Firestore
+
+```kotlin
+// Merge update — preserves existing fields
+db.collection("users").document(uid).set(
+    mapOf("displayName" to name, "email" to email, "updatedAt" to Timestamp.now()),
+    SetOptions.merge()
+).await()
+```
+
+Firestore path: `users/{uid}`  
+Fields written: `displayName`, `email`, `updatedAt`  
+Fields preserved: all existing fields (e.g., streak, sessions)
+
+---
+
+## Validation Strategy
+
+Validation runs client-side inside `ProfileViewModel.validateProfile()` before any Firebase call.
+
+| Field | Rule | Error Message |
+|---|---|---|
+| Name | Not empty | "Name cannot be empty" |
+| Name | ≥ 2 characters | "Name must be at least 2 characters" |
+| Email | Not empty | "Email cannot be empty" |
+| Email | Matches `Patterns.EMAIL_ADDRESS` | "Invalid email format" |
+
+Errors are exposed as `StateFlow<String?>` and rendered inline below each field using `isError` on `OutlinedTextField`. No Toasts are used for validation errors.
+
+---
+
+## ProfileUiState
+
+```kotlin
+sealed class ProfileUiState {
+    object Idle    : ProfileUiState()
+    object Loading : ProfileUiState()
+    data class Success(val message: String = "Profile updated successfully") : ProfileUiState()
+    data class Error(val message: String) : ProfileUiState()
+}
+```
+
+| State | UI Effect |
+|---|---|
+| `Idle` | Normal state, button enabled |
+| `Loading` | Button disabled, spinner shown |
+| `Success` | Green banner shown, auto-clears after 3s |
+| `Error` | Red banner shown with message |
+
+---
+
+## Dashboard Integration
+
+`DashboardActivity.onResume()` calls `dashboardViewModel.loadUserName()`. This reads `FirebaseAuth.currentUser.displayName` live (which was just updated by `updateProfile()`). The `DashboardBody` composable collects `viewModel.userName` as `StateFlow`, so it recomposes automatically when the value changes. The greeting "Good Morning, [name]" reflects the updated name immediately on return from ProfileActivity.
+
+---
+
+## Edge Cases Handled
+
+| Edge Case | Handling |
+|---|---|
+| Firebase requires recent sign-in for email update | Caught as `FirebaseAuthRecentLoginRequiredException` → shows "Please sign out and sign back in before changing your email address" |
+| Network failure during save | `runCatching` propagates exception → `ProfileUiState.Error` shown |
+| Email unchanged from current | `updateEmail()` is skipped (guarded by `email != user.email`) |
+| Profile not yet loaded (Firestore slow) | Fields start empty, fill in once `getProfile()` resolves via `remember(profile.name)` key |
+| ViewModel recreated on configuration change | `by viewModels()` in Activity ensures same ViewModel instance survives rotation |
+| `ProfileScreen.kt` backward compat | `email` and `saveResult` StateFlows retained in ViewModel; not removed |
+
+---
+
+## Future Improvements
+
+- Migrate to `user.verifyBeforeUpdateEmail()` for safer email change flow (Firebase recommended)
+- Add profile photo upload using Firebase Storage
+- Show Firestore `updatedAt` timestamp on the profile card
+- Re-authentication dialog: when `FirebaseAuthRecentLoginRequiredException` is caught, prompt user to re-enter password inline instead of requiring full sign-out/sign-in
+- Migrate Tasks to Firestore so they survive process death (Sprint 7)
+
+---
+
+## Viva Explanation
+
+> "The Profile Update System follows MVVM strictly. The Activity only sets content and injects the ViewModel via `by viewModels()`. The ViewModel owns all state through `ProfileUiState` — a sealed class with Idle, Loading, Success, and Error states. Validation happens in the ViewModel before any Firebase call. The Repository does three things: updates Firebase Auth display name via `UserProfileChangeRequest`, updates the email via `updateEmail()` with re-auth error handling, and merges the data into Firestore using `SetOptions.merge()` to avoid wiping existing fields. On return to the Dashboard, `onResume()` triggers `loadUserName()` which reads the freshly updated `displayName` from Firebase Auth, causing the greeting to update without reinstalling the app."
+
+---
+
+## Rebuild From Memory
+
+1. Create `model/UserProfile.kt` with `uid`, `name`, `email`
+2. In `ProfileRepository`, add `getProfile()` reading Firestore → falls back to Auth fields. Add `updateProfile(name, email)` that: (a) updates Auth displayName via `UserProfileChangeRequest`, (b) calls `updateEmail()` if email changed, catching `FirebaseAuthRecentLoginRequiredException`, (c) writes to Firestore with `SetOptions.merge()`
+3. In `ProfileViewModel`, define `ProfileUiState` sealed class. Add `profile`, `uiState`, `nameError`, `emailError` as `MutableStateFlow`. `loadProfile()` calls repo and populates `_profile`. `validateProfile()` sets error flows and returns `Boolean`. `updateProfile()` calls validate first, then repo, then sets success/error state
+4. In `ProfileActivity`, use `by viewModels()`. Collect `profile`, `uiState`, `nameError`, `emailError`. Pre-fill fields with `remember(profile.name)`. Add email `OutlinedTextField`. Show inline errors. Replace Toast with success/error banner cards. `LaunchedEffect(uiState)` auto-clears Success after 3 seconds
+5. In `DashboardViewModel`, add `_userName = MutableStateFlow(resolveUserName())` where `resolveUserName()` reads `auth.currentUser.displayName`. Add `loadUserName()` that refreshes it
+6. In `DashboardActivity`, override `onResume()` to call `dashboardViewModel.loadUserName()`. In `DashboardBody`, replace local FirebaseAuth read with `val userName by viewModel.userName.collectAsState()`
+
+---
+
+---
+
+# FEATURE DEEP DIVE — NOTIFICATION PREFERENCE TOGGLE
+
+**Sprint:** 6 (Enhancement)  
+**Status:** Implemented  
+**Owner:** Ayush Kumar Raut  
+**Date:** June 2026
+
+---
+
+## Problem Statement
+
+Before this feature, the settings screen had a "Weekly Summary Notification" toggle that was purely in-memory. Toggling it had no effect: the state was discarded on app restart, it was not saved to Firebase Auth or Firestore, and it could not be read by any notification scheduling code. Users who turned off notifications would see them re-enabled on next launch. There was no persistent user preference for notifications anywhere in the system.
+
+---
+
+## User Story
+
+As a user, I want to turn study reminders on or off so that StudyOS respects my preference for notifications — both immediately and after I restart the app or log out and log back in.
+
+---
+
+## Why Preference Persistence Matters
+
+- A notification preference that resets on restart is worse than no preference at all — it creates a false expectation
+- Firebase Auth does not store arbitrary user settings, so Firestore is required for persistence across devices/sessions
+- Local SharedPreferences is required for zero-latency reads on app start (Firestore reads are async and cannot block the UI)
+- Both layers together give: instant local read + authoritative remote sync
+
+---
+
+## Architecture Placement
+
+```
+SettingsActivity (UI)
+        ↓
+SettingsViewModel (AndroidViewModel — needs Application for context)
+        ↓
+SettingsRepository (dual-write: SharedPrefs + Firestore)
+        ↓
+SharedPreferences "StudyOSPrefs" (local cache, key: reminders_enabled)
+        +
+Firestore users/{uid} (remote source of truth, field: remindersEnabled)
+```
+
+---
+
+## New Files Created
+
+| File | Purpose |
+|---|---|
+| `model/UserSettings.kt` | Data class: `remindersEnabled: Boolean`, `updatedAt: Long` |
+| `repo/SettingsRepository.kt` | Dual-write: SharedPrefs + Firestore; `getCachedReminderPreference()`, `getReminderPreference()`, `setReminderPreference()` |
+
+---
+
+## Modified Files
+
+| File | What Changed |
+|---|---|
+| `viewModel/SettingsViewModel.kt` | Changed from `ViewModel` to `AndroidViewModel(application)` for context access; added `SettingsUiState` data class; added `_uiState` StateFlow; added `loadSettings()`, `setRemindersEnabled()`, `clearMessages()`; kept `signedOut`, `notificationsEnabled`, `darkMode`, `signOut()` for backward compat |
+| `ui/profile/SettingActivity.kt` | `SettingsActivity` now uses `by viewModels()` instead of direct `SettingsViewModel()` instantiation; `SettingsBody` signature made non-default for ViewModel; replaced "Weekly Summary Notification" local toggle with `StudyRemindersRow` persistent toggle; added `StudyRemindersRow` composable with subtitle, spinner during save, and status line; added `LaunchedEffect` for auto-clear of success messages; static preview updated |
+
+---
+
+## Workflow
+
+1. `SettingsActivity.onCreate()` → `by viewModels()` creates `SettingsViewModel(application)`
+2. `SettingsViewModel.init {}` calls `loadSettings()`
+3. `SettingsRepository.getCachedReminderPreference()` reads SharedPrefs immediately → populates `_uiState` with local value so toggle renders instantly
+4. `SettingsRepository.getReminderPreference()` reads Firestore → on success, syncs local SharedPrefs to remote value and updates `_uiState`
+5. User toggles "Study Reminders" → `setRemindersEnabled(enabled)` is called
+6. Optimistic update: `_uiState.remindersEnabled = enabled`, `saving = true` → spinner replaces toggle
+7. `SettingsRepository.setReminderPreference(enabled)` runs:
+   - Writes `prefs.edit().putBoolean("reminders_enabled", enabled).apply()` immediately
+   - Writes Firestore `users/{uid}` with `{remindersEnabled, updatedAt}` using `SetOptions.merge()`
+8. On success: spinner clears, toggle shows, `successMessage = "Saved"` shows in green for 3 seconds then clears
+9. On failure: toggle reverts to previous value, `errorMessage = "Failed to save preference"` shows in red
+
+---
+
+## Firestore Strategy
+
+```
+Collection: users
+Document:   {uid}
+Fields written: remindersEnabled (Boolean), updatedAt (Timestamp)
+Strategy: SetOptions.merge() — does NOT overwrite displayName, email, or any other field
+```
+
+The flat `users/{uid}` document is consistent with how `ProfileRepository` writes `displayName`, `email`, and `updatedAt`. All user settings live in the same document.
+
+---
+
+## Local Cache Strategy
+
+```
+SharedPreferences file: "StudyOSPrefs"  (same file already used for onboarding_completed and IS_REMEMBERED)
+Key: "reminders_enabled"
+Default: true
+```
+
+Read order on app start:
+1. `getCachedReminderPreference()` → immediate (no I/O wait) — provides instant toggle state
+2. `getReminderPreference()` → async Firestore read → overwrites local if remote differs (keeps remote authoritative)
+
+Write order on toggle change:
+1. SharedPrefs write → instant (survives process death, no network needed)
+2. Firestore write → async (survives logout/login, accessible on new device)
+
+---
+
+## Notification System Integration
+
+No notification engine (NotificationManager, WorkManager, AlarmManager) exists in this project as of Sprint 6. When notification scheduling is added (Sprint 7+), it must check the preference before scheduling:
+
+```kotlin
+// Future notification scheduling code should check:
+val remindersEnabled = context
+    .getSharedPreferences("StudyOSPrefs", Context.MODE_PRIVATE)
+    .getBoolean(SettingsRepository.KEY_REMINDERS, true)
+
+if (!remindersEnabled) return  // Do not schedule
+
+// Otherwise proceed with WorkManager / AlarmManager scheduling
+```
+
+`SettingsRepository.KEY_REMINDERS` is a `const val` intentionally exposed so notification code can reference it without hardcoding the string.
+
+---
+
+## SettingsUiState
+
+```kotlin
+data class SettingsUiState(
+    val remindersEnabled: Boolean = true,
+    val loading: Boolean = false,
+    val saving: Boolean = false,
+    val errorMessage: String? = null,
+    val successMessage: String? = null
+)
+```
+
+| State field | Meaning | UI effect |
+|---|---|---|
+| `loading` | `loadSettings()` in progress | Spinner replaces toggle during initial load |
+| `saving` | `setReminderPreference()` in progress | Spinner replaces toggle, "Saving..." status line |
+| `successMessage` | Save succeeded | "Saved" in green, auto-clears after 3 seconds |
+| `errorMessage` | Save failed | Error text in red, toggle reverts to previous value |
+
+---
+
+## Edge Cases Handled
+
+| Edge Case | Handling |
+|---|---|
+| No logged-in user | `auth.currentUser?.uid ?: return false` — repo returns local cached value, Firestore write skipped silently |
+| Network failure during save | `runCatching { ... }.getOrDefault(false)` → returns false → ViewModel reverts toggle + shows error |
+| Firestore write fails | Same as network failure — local write succeeds, remote fails, error shown |
+| App restart | SharedPrefs has the preference → `getCachedReminderPreference()` fires instantly on next start |
+| Logout/login (same device) | SharedPrefs persists → preference still applied locally |
+| Logout/login (new device) | No SharedPrefs → default `true`; `getReminderPreference()` reads Firestore and syncs local |
+| Preference missing in Firestore | `doc.contains("remindersEnabled")` is false → falls back to local cached value |
+| Rapid toggle spam | Each call to `setRemindersEnabled()` is a new coroutine; optimistic update keeps UI responsive |
+
+---
+
+## Viva Explanation
+
+> "The Notification Preference Toggle follows MVVM with a dual-persistence strategy. The View — `SettingsActivity` — uses `by viewModels()` to get a lifecycle-aware `SettingsViewModel` which extends `AndroidViewModel` so it can access SharedPreferences through the Application context. The ViewModel exposes a `SettingsUiState` StateFlow with loading, saving, and error/success states. When the user toggles Study Reminders, `setRemindersEnabled()` first applies an optimistic update so the UI responds instantly, then calls `SettingsRepository.setReminderPreference()`. The repository writes to SharedPreferences immediately for local durability, then writes to Firestore `users/{uid}` using `SetOptions.merge()` so no other fields are overwritten. If Firestore fails, the ViewModel reverts the toggle and shows an error. On app restart, SharedPreferences provides the cached value instantly — Firestore provides the authoritative value asynchronously and syncs local to remote. The `KEY_REMINDERS` constant is public so future notification scheduling code can check it without a hard-coded string."
+
+---
+
+## Rebuild From Memory
+
+1. Create `model/UserSettings.kt` — `data class UserSettings(val remindersEnabled: Boolean = true, val updatedAt: Long = ...)`
+2. Create `repo/SettingsRepository(context: Context)` — holds SharedPrefs (`"StudyOSPrefs"`, key `"reminders_enabled"`) and Firestore. `getCachedReminderPreference()` reads local. `getReminderPreference()` reads Firestore and syncs local. `setReminderPreference(enabled)` writes local first, then Firestore `users/{uid}` with `SetOptions.merge()`
+3. Change `SettingsViewModel` to extend `AndroidViewModel(application: Application)`. Add `SettingsUiState`. Initialize `_uiState` from `getCachedReminderPreference()`. `init {}` calls `loadSettings()`. `setRemindersEnabled()` does optimistic update → repo call → success/revert. Keep `signOut()`, `signedOut`, `notificationsEnabled` for compat
+4. In `SettingsActivity`, change to `by viewModels()`. In `SettingsBody`, collect `uiState`. Replace "Weekly Summary Notification" row with `StudyRemindersRow(checked = uiState.remindersEnabled, saving = uiState.saving, ...)`. `StudyRemindersRow` shows title, subtitle, spinner during saving, and a status line. `LaunchedEffect(uiState.successMessage)` auto-clears after 3 seconds
+
+---
+
+# Feature 3 — Study Reminder Notification System
+
+**User story:** As a student, I want a notification to remind me to start studying at a time I choose, so I don't miss my daily study session.
+
+**Acceptance criteria:**
+1. Notification triggers at a user-set time every day
+2. Tapping the notification opens the app
+
+---
+
+## Technology Choice: AlarmManager vs WorkManager
+
+WorkManager is designed for deferrable background tasks and does not guarantee exact timing. For user-facing reminders at a precise time, `AlarmManager` is the correct choice:
+
+| | AlarmManager | WorkManager |
+|---|---|---|
+| Exact timing | Yes (`setExactAndAllowWhileIdle`) | No (min 15 min intervals) |
+| Works in Doze | Yes (with `WAKEUP` flags) | Yes |
+| Survives reboot | Only with BootReceiver | Built-in |
+| Best for | Time-critical alarms | Background sync / uploads |
+
+WorkManager is also not a project dependency in StudyOS, so AlarmManager is the only viable option.
+
+---
+
+## Architecture
+
+```
+SettingsActivity (UI)
+    → SettingsViewModel.setReminderTime(h, m) / .setRemindersEnabled(enabled)
+        → StudyReminderScheduler.schedule(ctx, h, m) / .cancel(ctx)
+            → AlarmManager.setExactAndAllowWhileIdle (or setAndAllowWhileIdle fallback)
+                → [alarm fires at set time]
+                    → StudyReminderReceiver.onReceive()
+                        → NotificationManagerCompat.notify()
+                        → StudyReminderScheduler.schedule() [re-arms for next day]
+
+[device reboot]
+    → BootReceiver.onReceive()
+        → StudyReminderScheduler.rescheduleIfEnabled()
+```
+
+---
+
+## Files Changed
+
+| File | Type | Purpose |
+|---|---|---|
+| `notification/StudyReminderScheduler.kt` | Created | Singleton — channel creation, schedule, cancel, reschedule, build notification |
+| `notification/StudyReminderReceiver.kt` | Created | BroadcastReceiver — posts notification, re-arms alarm for next day |
+| `notification/BootReceiver.kt` | Created | BroadcastReceiver — reschedules alarms after device reboot |
+| `repo/SettingsRepository.kt` | Modified | Added `KEY_REMINDER_HOUR`, `KEY_REMINDER_MINUTE`, `getCachedReminderTime()`, `getReminderTime()`, `setReminderTime()` |
+| `viewModel/SettingsViewModel.kt` | Modified | Added `reminderHour`/`reminderMinute` to `SettingsUiState`, `setReminderTime()`, scheduler calls in `setRemindersEnabled()` |
+| `ui/profile/SettingActivity.kt` | Modified | `ReminderTimeRow`, `ReminderTimePickerDialog`, POST_NOTIFICATIONS permission launcher, `onReminderToggle` wrapper |
+| `AndroidManifest.xml` | Modified | `POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`, `RECEIVE_BOOT_COMPLETED` permissions + receiver declarations |
+
+---
+
+## Key Implementation Decisions
+
+### One-Shot Alarm Pattern
+`AlarmManager.setExactAndAllowWhileIdle()` fires only once. `StudyReminderReceiver` re-arms the alarm for the next day in `onReceive()` after every fire. This is the standard Android pattern for daily repeating alarms — `setRepeating()` does not wake the device in Doze mode.
+
+### Exact Alarm Permission (API 31+)
+`SCHEDULE_EXACT_ALARM` is declared in the manifest, but on Android 12+ users can revoke it via Settings > Apps > Alarms & Reminders. The scheduler checks `alarmManager.canScheduleExactAlarms()` at runtime and falls back to `setAndAllowWhileIdle()` if not granted. This is inexact (may fire up to ~10 minutes late in Doze) but still reliable.
+
+### POST_NOTIFICATIONS Runtime Permission (API 33+)
+Declared in the manifest for the Play Store listing. Requested at runtime in `SettingsActivity` via `rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission())`. The toggle only calls `viewModel.setRemindersEnabled(true)` if the user grants the permission (in the launcher callback). If denied, the toggle stays off.
+
+### Notification Channel
+Created in both `StudyReminderScheduler.createChannel()` (called from `SettingsActivity.onCreate()` and from `StudyReminderReceiver.onReceive()`) and guarded with `Build.VERSION.SDK_INT >= Build.VERSION_CODES.O`. Creating a channel that already exists is a no-op.
+
+### SharedPreferences as Ground Truth for Receivers
+`StudyReminderReceiver` and `BootReceiver` read directly from `SharedPreferences("StudyOSPrefs")` since they cannot access the ViewModel. The repository constants `KEY_REMINDERS`, `KEY_REMINDER_HOUR`, `KEY_REMINDER_MINUTE` are public so receivers and repository always use the same keys.
+
+### Dual Persistence: Time Setting
+`reminderHour` / `reminderMinute` are written to both SharedPreferences (instant, offline-safe) and Firestore `users/{uid}` with `SetOptions.merge()`. On a fresh install / new device, Firestore provides the values; `getReminderTime()` reads Firestore and syncs local before the scheduler is invoked.
+
+---
+
+## Permissions Added
+
+| Permission | API Level | Why |
+|---|---|---|
+| `POST_NOTIFICATIONS` | 33+ (Android 13) | Required to show notifications; requested at runtime when user enables reminders |
+| `SCHEDULE_EXACT_ALARM` | 31+ (Android 12) | Required for `setExactAndAllowWhileIdle()`; falls back gracefully if revoked |
+| `RECEIVE_BOOT_COMPLETED` | All | Required so `BootReceiver` gets `ACTION_BOOT_COMPLETED` system broadcast |
+
+---
+
+## Limitations
+
+| Limitation | Why |
+|---|---|
+| Notification may arrive ≤10 min late on Android 12+ devices where exact alarm permission is revoked | Doze mode batches inexact alarms |
+| BootReceiver uses `android:exported="true"` | Required for system broadcast receivers on Android 8+; mitigated by no `data` or `scheme` in intent-filter |
+| No notification on first install until user opens Settings once | Alarm is only scheduled when user enables the toggle or changes the time — not on first app launch |
+| `SCHEDULE_EXACT_ALARM` may be auto-revoked by battery saver | User must re-grant in Settings > Apps > Alarms & Reminders; `canScheduleExactAlarms()` guard ensures we don't crash |
+
+---
+
+## Acceptance Validation
+
+| Acceptance Criteria | Status | Evidence |
+|---|---|---|
+| Notification triggers at set time | PASS | `StudyReminderScheduler.schedule(ctx, h, m)` → `AlarmManager.setExactAndAllowWhileIdle(RTC_WAKEUP, triggerAt, pendingIntent)` → `StudyReminderReceiver.onReceive()` → `NotificationManagerCompat.notify()` |
+| Tapping notification opens app | PASS | `StudyReminderScheduler.buildNotification()` uses `PendingIntent` wrapping `Intent(context, MainActivity::class.java)` with `FLAG_ACTIVITY_NEW_TASK or FLAG_ACTIVITY_CLEAR_TASK` |
+
+---
+
+## How to Test
+
+1. Open Settings → toggle "Study Reminders" ON → grant POST_NOTIFICATIONS if prompted
+2. Tap "Change" under Reminder Time → set time 1–2 minutes from now → tap "Set"
+3. Lock the screen / put device in Doze → wait for the notification to appear
+4. Tap the notification → app should open to the main screen (MainActivity)
+5. Reboot device → wait for the scheduled time → notification should still appear (BootReceiver)
+6. Toggle "Study Reminders" OFF → notification should NOT appear at the scheduled time
+
+---
+
+## Viva Explanation
+
+> "The Study Reminder Notification System uses AlarmManager rather than WorkManager because we need exact-time delivery, which WorkManager cannot guarantee. When the user enables reminders in `SettingsActivity`, the `POST_NOTIFICATIONS` permission is checked first on Android 13+ via `ActivityResultContracts.RequestPermission()`; if already granted, `SettingsViewModel.setRemindersEnabled(true)` is called directly. The ViewModel calls `StudyReminderScheduler.schedule(context, hour, minute)` which creates the notification channel, computes the next occurrence of the chosen time as a `Calendar` millis value, and registers a `PendingIntent` pointing at `StudyReminderReceiver` via `setExactAndAllowWhileIdle()`. When the alarm fires, `StudyReminderReceiver.onReceive()` checks SharedPreferences to confirm reminders are still enabled, posts the notification using `NotificationCompat.Builder` with a `PendingIntent` that opens `MainActivity`, then immediately re-arms the alarm for the next day — because `setExactAndAllowWhileIdle` is one-shot. `BootReceiver` handles device restarts by listening for `ACTION_BOOT_COMPLETED` and calling `rescheduleIfEnabled()` which reads the stored time from SharedPreferences. All PendingIntents use `FLAG_IMMUTABLE` as required on API 23+. The reminder time is persisted to both SharedPreferences (for receivers and fast reads) and Firestore `users/{uid}` (for cross-device sync via `SetOptions.merge()`)."
+
+---
+
+## Rebuild From Memory
+
+1. Create `notification/StudyReminderScheduler.kt` as a Kotlin `object`. Implement `createChannel()` (API 26+ guard), `schedule(ctx, h, m)` (Calendar → triggerAt, exact/inexact based on `canScheduleExactAlarms()`), `cancel()` (FLAG_NO_CREATE), `rescheduleIfEnabled(ctx)` (reads SharedPrefs), `buildNotification(ctx)` (BigTextStyle, tap opens MainActivity)
+2. Create `notification/StudyReminderReceiver.kt` — check prefs enabled, call `createChannel`, notify if `areNotificationsEnabled()`, re-arm via `schedule()`
+3. Create `notification/BootReceiver.kt` — call `rescheduleIfEnabled()` on `ACTION_BOOT_COMPLETED`
+4. Add `KEY_REMINDER_HOUR`/`KEY_REMINDER_MINUTE` to `SettingsRepository`. Add `getCachedReminderTime()`, `getReminderTime()`, `setReminderTime()` with dual write
+5. Extend `SettingsUiState` with `reminderHour: Int = 8`, `reminderMinute: Int = 0`. Add `setReminderTime()` to `SettingsViewModel`. In `setRemindersEnabled()`, call `schedule()`/`cancel()` after successful save
+6. In `SettingsActivity.onCreate()`, call `StudyReminderScheduler.createChannel(this)`. In `SettingsBody`, add `notificationPermissionLauncher`, `onReminderToggle` wrapper, `showTimePicker` state, `ReminderTimePickerDialog`, `ReminderTimeRow` (visible only when `remindersEnabled`)
+7. Declare three permissions and two receivers in `AndroidManifest.xml`
+
+---
+
 *End of StudyOS Engineering Research Book — Version 2.0*  
 *Package: com.teamdobermans.studyos*  
 *Documented: June 2026*  

@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.stateIn
 import java.time.LocalDate
 
 class PlanViewModel : ViewModel() {
-    private val repository = TaskRepository
+    private val repository = TaskRepository()
     private val noteRepo = NoteRepoImpl()
 
     val allNotes: StateFlow<List<NoteModel>> = noteRepo.getNotes()
@@ -43,7 +43,6 @@ class PlanViewModel : ViewModel() {
     var editingTaskId by mutableStateOf<String?>(null)
         private set
 
-    // ── Note picker state ────────────────────────────────────────────────────
     var showNotePicker by mutableStateOf(false)
         private set
     var notePickerTaskId by mutableStateOf<String?>(null)
@@ -113,8 +112,6 @@ class PlanViewModel : ViewModel() {
         resetFormInputs()
     }
 
-    // ── Note ↔ Task relationship ─────────────────────────────────────────────
-
     fun openNotePicker(taskId: String) {
         notePickerTaskId = taskId
         showNotePicker = true
@@ -137,8 +134,6 @@ class PlanViewModel : ViewModel() {
 
     fun getLinkedNoteIds(taskId: String): List<String> =
         tasks.find { it.id == taskId }?.linkedNoteIds ?: emptyList()
-
-    // ── Private helpers ──────────────────────────────────────────────────────
 
     private fun resetFormInputs() {
         taskTitle = ""

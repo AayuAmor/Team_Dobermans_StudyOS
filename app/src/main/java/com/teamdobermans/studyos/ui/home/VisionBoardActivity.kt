@@ -38,10 +38,10 @@ import com.teamdobermans.studyos.viewModel.VisionBoardViewModel
 class VisionBoardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         val currentUser = FirebaseAuth.getInstance().currentUser
         val uid = currentUser?.uid ?: "mock_user_id"
-        
+
         if (currentUser == null) {
             android.util.Log.w("VisionBoard", "No user found, using mock_user_id for testing")
             Toast.makeText(this, "Testing with mock user", Toast.LENGTH_SHORT).show()
@@ -164,7 +164,6 @@ fun VisionBoardContent(
         )
     }
 
-
     editingGoal?.let { goal ->
         var editText   by remember(goal.id) { mutableStateOf(goal.text) }
         var editTarget by remember(goal.id) { mutableStateOf(goal.targetValue) }
@@ -242,7 +241,6 @@ fun VisionBoardContent(
         )
     }
 
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -250,7 +248,6 @@ fun VisionBoardContent(
             .imePadding()
     ) {
 
-        // Top bar
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -288,7 +285,6 @@ fun VisionBoardContent(
             )
         }
 
-        // Scrollable body
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -297,7 +293,6 @@ fun VisionBoardContent(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-
 
             Card(
                 modifier = Modifier
@@ -337,7 +332,6 @@ fun VisionBoardContent(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         emojiOptions.forEach { emoji ->
                             Surface(
@@ -360,7 +354,6 @@ fun VisionBoardContent(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Subject picker
                     Text(
                         "Subject",
                         color      = StudyPurple,
@@ -419,7 +412,7 @@ fun VisionBoardContent(
                             HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
                             DropdownMenuItem(
                                 text    = { Text("Add subject...", color = StudyPurple, fontWeight = FontWeight.SemiBold) },
-                                onClick = { 
+                                onClick = {
                                     subjectDropdown = false
                                     showAddSubjectDialog = true
                                 }
@@ -429,7 +422,6 @@ fun VisionBoardContent(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Target value
                     Text(
                         "Target value",
                         color      = StudyPurple,
@@ -477,7 +469,6 @@ fun VisionBoardContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-
             if (pinnedGoals.isNotEmpty()) {
                 pinnedGoals.chunked(2).forEach { rowGoals ->
                     Row(
@@ -499,7 +490,6 @@ fun VisionBoardContent(
                                         verticalAlignment     = Alignment.Top
                                     ) {
                                         Text(goal.emoji, fontSize = 30.sp)
-                                        // Edit + Delete buttons
                                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                             Text(
                                                 "✏️",

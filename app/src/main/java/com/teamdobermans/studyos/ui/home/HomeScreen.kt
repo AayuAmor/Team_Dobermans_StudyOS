@@ -621,7 +621,6 @@ private fun VisionBoardWidget(goals: List<VisionGoalModel>) {
             }
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Show max 3 goals as preview
             goals.take(3).forEach { goal ->
                 Row(
                     modifier = Modifier
@@ -648,7 +647,6 @@ private fun VisionBoardWidget(goals: List<VisionGoalModel>) {
                 }
             }
 
-            // Show "x more" if more than 3 goals
             if (goals.size > 3) {
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(

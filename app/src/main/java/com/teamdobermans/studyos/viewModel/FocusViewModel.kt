@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.teamdobermans.studyos.model.FocusSessionModel
+import java.util.UUID
 import com.teamdobermans.studyos.model.Task
 import com.teamdobermans.studyos.repo.FocusSessionRepoImpl
 import com.teamdobermans.studyos.repo.TaskRepository
@@ -18,9 +19,9 @@ data class FocusUiState(
 
 class FocusViewModel : ViewModel() {
 
-    private val repo         = FocusSessionRepoImpl()
-    private val taskRepo     = TaskRepository()          // ADD THIS
-    private val auth         = FirebaseAuth.getInstance()
+    private val repo     = FocusSessionRepoImpl()
+    private val taskRepo = TaskRepository()
+    private val auth     = FirebaseAuth.getInstance()
 
     private val _state = MutableStateFlow(FocusUiState())
     val state: StateFlow<FocusUiState> = _state.asStateFlow()
@@ -35,7 +36,6 @@ class FocusViewModel : ViewModel() {
         loadTasks()
     }
 
-    // UPDATED: now uses Firestore Flow instead of one-shot fetch
     private fun loadTasks() {
         viewModelScope.launch {
             taskRepo.getActiveTasksFlow().collect { tasks ->
@@ -52,26 +52,29 @@ class FocusViewModel : ViewModel() {
         _selectedTask.value = null
     }
 
-    // UPDATED: now also links session to task in Firestore
     fun completeSession(durationMinutes: Float) {
         val uid  = auth.currentUser?.uid ?: return
         val task = _selectedTask.value
 
         viewModelScope.launch {
+            val sessionId   = UUID.randomUUID().toString()
+            val completedAt = System.currentTimeMillis()
+            val startedAt   = completedAt - (durationMinutes * 60_000L).toLong()
+
             val session = FocusSessionModel(
+                id              = sessionId,
                 taskId          = task?.id    ?: "",
                 taskTitle       = task?.title ?: "No Task",
                 durationMinutes = durationMinutes.toInt(),
-                completedAt     = System.currentTimeMillis(),
+                startedAt       = startedAt,
+                completedAt     = completedAt,
                 userId          = uid
             )
 
-            // 1. save the session
             repo.saveSession(session)
 
-            // 2. link session to task in Firestore
-            if (task != null && session.id.isNotEmpty()) {
-                taskRepo.linkSessionToTask(task.id, session.id)
+            if (task != null) {
+                taskRepo.linkSessionToTask(task.id, sessionId)
             }
         }
     }

@@ -35,7 +35,6 @@ class VisionBoardViewModel : ViewModel() {
     private val _pinnedGoals     = MutableStateFlow<List<VisionGoalModel>>(emptyList())
     val pinnedGoals: StateFlow<List<VisionGoalModel>> = _pinnedGoals.asStateFlow()
 
-    // For edit dialog state
     private val _editingGoal = MutableStateFlow<VisionGoalModel?>(null)
     val editingGoal: StateFlow<VisionGoalModel?> = _editingGoal.asStateFlow()
 
@@ -54,12 +53,10 @@ class VisionBoardViewModel : ViewModel() {
     fun stopEditing()                       { _editingGoal.value = null }
 
     init {
-        // Listen for auth state changes
         auth.addAuthStateListener { firebaseAuth ->
             val uid = firebaseAuth.currentUser?.uid ?: "mock_user_id"
             listenToGoals(uid)
         }
-        // Also trigger it immediately in case listener is slow
         listenToGoals(userId)
     }
 
@@ -94,7 +91,7 @@ class VisionBoardViewModel : ViewModel() {
             onComplete(false, "Goal text is empty")
             return
         }
-        
+
         val data = hashMapOf(
             "text"        to currentText,
             "emoji"       to _selectedEmoji.value,
@@ -107,11 +104,11 @@ class VisionBoardViewModel : ViewModel() {
             try {
                 db.collection("users").document(currentUid)
                     .collection("visionBoard").add(data).await()
-                
+
                 _goalText.value    = ""
                 _targetValue.value = ""
                 onComplete(true, "Pinned successfully!")
-            } catch (e: Exception) { 
+            } catch (e: Exception) {
                 android.util.Log.e("VisionBoard", "Error adding goal", e)
                 onComplete(false, "Failed to pin: ${e.message}")
             }
@@ -131,7 +128,7 @@ class VisionBoardViewModel : ViewModel() {
                 db.collection("users").document(userId)
                     .collection("visionBoard").document(goal.id)
                     .update(data as Map<String, Any>).await()
-                _editingGoal.value = null  // close edit dialog after save
+                _editingGoal.value = null
             } catch (e: Exception) { e.printStackTrace() }
         }
     }

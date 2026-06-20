@@ -6,4 +6,5 @@ import com.teamdobermans.studyos.model.Task
 interface FocusSessionRepo {
     suspend fun getTasks(userId: String): List<Task>
     suspend fun saveSession(session: FocusSessionModel): Boolean
+    suspend fun getSessions(userId: String): List<FocusSessionModel>
 }
