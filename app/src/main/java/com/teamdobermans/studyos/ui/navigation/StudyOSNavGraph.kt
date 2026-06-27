@@ -35,9 +35,7 @@ import com.teamdobermans.studyos.ui.profile.SettingsBody
 import com.teamdobermans.studyos.ui.study.FlashcardsScreen
 import com.teamdobermans.studyos.ui.study.QuizSetupBody
 import com.teamdobermans.studyos.ui.study.NotesScreen
-import com.teamdobermans.studyos.ui.study.QuizScreen
 import com.teamdobermans.studyos.ui.study.StudyScreen
-import com.teamdobermans.studyos.ui.study.StudyTimeScreen
 import com.teamdobermans.studyos.ui.study.VideoToNotesScreen
 import com.teamdobermans.studyos.utils.GoogleSignInHelper
 import com.teamdobermans.studyos.viewModel.*
@@ -48,8 +46,8 @@ fun StudyOSNavGraph(
     startDestination: String
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute   = backStackEntry?.destination?.route
-    val showBottomNav  = currentRoute in bottomNavRoutes
+    val currentRoute = backStackEntry?.destination?.route
+    val showBottomNav = currentRoute in bottomNavRoutes
 
     Scaffold(
         bottomBar = {
@@ -60,9 +58,9 @@ fun StudyOSNavGraph(
     ) { innerPadding ->
 
         NavHost(
-            navController    = navController,
+            navController = navController,
             startDestination = startDestination,
-            modifier         = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding)
         ) {
 
             composable(AppRoutes.Auth.route) {
@@ -73,14 +71,14 @@ fun StudyOSNavGraph(
             }
 
             composable(AppRoutes.Login.route) {
-                val vm      = viewModel<AuthViewModel>()
+                val vm = viewModel<AuthViewModel>()
                 val context = LocalContext.current
                 val launcher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.StartActivityForResult()
                 ) { result ->
                     val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
                     try {
-                        val account    = task.getResult(ApiException::class.java)
+                        val account = task.getResult(ApiException::class.java)
                         val credential = GoogleAuthProvider.getCredential(account.idToken, null)
                         vm.signInWithCredential(credential)
                     } catch (e: ApiException) {
@@ -88,27 +86,27 @@ fun StudyOSNavGraph(
                     }
                 }
                 LoginBody(
-                    viewModel      = vm,
+                    viewModel = vm,
                     onLoginSuccess = {
                         navController.navigate(AppRoutes.Home.route) {
                             popUpTo(AppRoutes.Auth.route) { inclusive = true }
                         }
                     },
-                    onBack        = { navController.popBackStack() },
+                    onBack = { navController.popBackStack() },
                     onSignUpClick = { navController.navigate(AppRoutes.SignUp.route) },
                     onGoogleSignIn = { launcher.launch(GoogleSignInHelper.getSignInIntent(context)) }
                 )
             }
 
             composable(AppRoutes.SignUp.route) {
-                val vm      = viewModel<AuthViewModel>()
+                val vm = viewModel<AuthViewModel>()
                 val context = LocalContext.current
                 val launcher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.StartActivityForResult()
                 ) { result ->
                     val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
                     try {
-                        val account    = task.getResult(ApiException::class.java)
+                        val account = task.getResult(ApiException::class.java)
                         val credential = GoogleAuthProvider.getCredential(account.idToken, null)
                         vm.signInWithCredential(credential)
                     } catch (e: ApiException) {
@@ -116,13 +114,13 @@ fun StudyOSNavGraph(
                     }
                 }
                 SignUpBody(
-                    viewModel       = vm,
+                    viewModel = vm,
                     onSignUpSuccess = {
                         navController.navigate(AppRoutes.Home.route) {
                             popUpTo(AppRoutes.Auth.route) { inclusive = true }
                         }
                     },
-                    onBack        = { navController.popBackStack() },
+                    onBack = { navController.popBackStack() },
                     onSignInClick = { navController.navigate(AppRoutes.Login.route) },
                     onGoogleSignIn = { launcher.launch(GoogleSignInHelper.getSignInIntent(context)) }
                 )
@@ -141,40 +139,34 @@ fun StudyOSNavGraph(
                     onNavigateVisionBoard = {
                         navController.navigate(AppRoutes.VisionBoard.route)
                     },
-                    onNavigateProfile     = { navController.navigate(AppRoutes.Profile.route) },
-                    onNavigateAnalytics   = { navController.navigate(AppRoutes.Analytics.route) },
-                    onNavigateFlashcards  = { navController.navigate(AppRoutes.Flashcards.route) },
-                    onNavigateQuiz        = {
-                        ctx.startActivity(Intent(ctx, QuizScreen::class.java))
-                    },
-                    onNavigateBrainGame   = { navController.navigate(AppRoutes.BrainGame.route) },
-                    onNavigateVideoNotes  = { navController.navigate(AppRoutes.VideoNotes.route) },
-                    onNavigateMockTest    = { navController.navigate(AppRoutes.MockTest.route) },
-                    onNavigateNotes       = { navController.navigate(AppRoutes.Notes.route) }
+                    onNavigateProfile = { navController.navigate(AppRoutes.Profile.route) },
+                    onNavigateAnalytics = { navController.navigate(AppRoutes.Analytics.route) },
+                    onNavigateFlashcards = { navController.navigate(AppRoutes.Flashcards.route) },
+                    onNavigateQuiz = { navController.navigate(AppRoutes.MockTest.route) },
+                    onNavigateBrainGame = { navController.navigate(AppRoutes.BrainGame.route()) },
+                    onNavigateVideoNotes = { navController.navigate(AppRoutes.VideoNotes.route) },
+                    onNavigateMockTest = { navController.navigate(AppRoutes.MockTest.route) },
+                    onNavigateNotes = { navController.navigate(AppRoutes.Notes.route) }
                 )
             }
 
             composable(AppRoutes.Study.route) {
                 val vm = viewModel<StudyViewModel>()
                 StudyScreen(
-                    viewModel            = vm,
-                    onNavigateNotes      = { navController.navigate(AppRoutes.Notes.route) },
+                    viewModel = vm,
+                    onNavigateNotes = { navController.navigate(AppRoutes.Notes.route) },
                     onNavigateFlashcards = { navController.navigate(AppRoutes.Flashcards.route) },
-                    onNavigateMockTest   = { navController.navigate(AppRoutes.MockTest.route) },
+                    onNavigateMockTest = { navController.navigate(AppRoutes.MockTest.route) },
                     onNavigateVideoNotes = { navController.navigate(AppRoutes.VideoNotes.route) },
-                    onNavigateStudyTime  = { navController.navigate(AppRoutes.StudyTime.route) }
+                    onNavigateFocusTimer = { navController.navigate(AppRoutes.Focus.route) }
                 )
-            }
-
-            composable(AppRoutes.StudyTime.route) {
-                StudyTimeScreen()
             }
 
             composable(AppRoutes.Focus.route) {
                 val vm = viewModel<FocusViewModel>()
                 FocusScreen(
-                    focusViewModel       = vm,
-                    onNavigateBrainGame  = { navController.navigate(AppRoutes.BrainGame.route) }
+                    focusViewModel = vm,
+                    onNavigateBrainGame = { mode -> navController.navigate(AppRoutes.BrainGame.route(mode)) }
                 )
             }
 
@@ -187,12 +179,13 @@ fun StudyOSNavGraph(
                 val vm = viewModel<ProfileViewModel>()
                 val ctx = LocalContext.current
                 ProfileScreenV2(
-                    viewModel             = vm,
-                    onNavigateAnalytics   = { navController.navigate(AppRoutes.Analytics.route) },
+                    viewModel = vm,
+                    onNavigateAnalytics = { navController.navigate(AppRoutes.Analytics.route) },
                     onNavigateVisionBoard = {
                         navController.navigate(AppRoutes.VisionBoard.route)
                     },
-                    onSignOut             = {
+                    onNavigateSettings = { navController.navigate(AppRoutes.Settings.route) },
+                    onSignOut = {
                         navController.navigate(AppRoutes.Auth.route) {
                             popUpTo(0) { inclusive = true }
                         }
@@ -203,8 +196,8 @@ fun StudyOSNavGraph(
             composable(AppRoutes.Notes.route) {
                 val vm = viewModel<NoteViewModel>()
                 NotesScreen(
-                    viewModel            = vm,
-                    onBackClick          = { navController.popBackStack() },
+                    viewModel = vm,
+                    onBackClick = { navController.popBackStack() },
                     onNavigateVideoNotes = { navController.navigate(AppRoutes.VideoNotes.route) }
                 )
             }
@@ -213,17 +206,22 @@ fun StudyOSNavGraph(
                 val vm = viewModel<AnalyticsViewModel>()
                 ProgressBody(
                     analyticsViewModel = vm,
-                    onBack             = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() }
                 )
             }
 
             composable(AppRoutes.Flashcards.route) {
                 val vm = viewModel<FlashcardViewModel>()
-                FlashcardsScreen(onBack = { navController.popBackStack() }, viewModel = vm)
+                FlashcardsScreen(
+                    onBack = { navController.popBackStack() },
+                    onCreateNote = { navController.navigate(AppRoutes.Notes.route) },
+                    viewModel = vm
+                )
             }
 
-            composable(AppRoutes.BrainGame.route) {
-                BrainGameScreen(onBack = { navController.popBackStack() })
+            composable(AppRoutes.BrainGame.route) { entry ->
+                val mode = entry.arguments?.getString("mode") ?: AppRoutes.BrainGame.MODE_HUB
+                BrainGameScreen(mode = mode, onBack = { navController.popBackStack() })
             }
 
             composable(AppRoutes.VideoNotes.route) {
@@ -233,7 +231,7 @@ fun StudyOSNavGraph(
             composable(AppRoutes.MockTest.route) {
                 val vm = viewModel<MockTestViewModel>()
                 QuizSetupBody(
-                    vm     = vm,
+                    vm = vm,
                     onBack = { navController.popBackStack() }
                 )
             }
@@ -246,15 +244,15 @@ fun StudyOSNavGraph(
                 val vm = viewModel<VisionBoardViewModel>()
                 VisionBoardBody(
                     viewModel = vm,
-                    onBack    = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() }
                 )
             }
 
             composable(AppRoutes.Settings.route) {
                 val vm = viewModel<SettingsViewModel>()
                 SettingsBody(
-                    viewModel         = vm,
-                    onSignOut         = {
+                    viewModel = vm,
+                    onSignOut = {
                         navController.navigate(AppRoutes.Auth.route) {
                             popUpTo(0) { inclusive = true }
                         }

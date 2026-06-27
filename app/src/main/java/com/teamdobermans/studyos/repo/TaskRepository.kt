@@ -30,7 +30,9 @@ class TaskRepository {
 
     fun getTodaysTasks(): List<Task> {
         val today = LocalDate.now()
-        return store.values.filter { !it.done && !it.startDate.isAfter(today) }
+        return store.values.filter { task ->
+            !task.startDate.isAfter(today) && (task.endDate == null || !task.endDate.isBefore(today))
+        }
     }
 
     fun getActiveTasksFlow(): Flow<List<Task>> = _flow

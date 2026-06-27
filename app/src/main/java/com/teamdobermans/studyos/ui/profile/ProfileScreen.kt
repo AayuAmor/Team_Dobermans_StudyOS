@@ -25,6 +25,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
+import com.teamdobermans.studyos.ui.components.StudyOSDestructiveButton
+import com.teamdobermans.studyos.ui.components.StudyOSPrimaryButton
+import com.teamdobermans.studyos.ui.components.StudyOSTextButton
 import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.viewModel.ProfileViewModel
 
@@ -33,11 +36,12 @@ fun ProfileScreenV2(
     viewModel: ProfileViewModel,
     onNavigateAnalytics: () -> Unit = {},
     onNavigateVisionBoard: () -> Unit = {},
+    onNavigateSettings: () -> Unit = {},
     onSignOut: () -> Unit = {}
 ) {
-    val email      by viewModel.email.collectAsState()
+    val email by viewModel.email.collectAsState()
     val saveResult by viewModel.saveResult.collectAsState()
-    val context    = LocalContext.current
+    val context = LocalContext.current
 
     LaunchedEffect(saveResult) {
         saveResult?.let {
@@ -47,7 +51,7 @@ fun ProfileScreenV2(
     }
 
     val displayName = email.substringBefore("@").ifEmpty { "User" }
-    val initials    = displayName.take(2).uppercase()
+    val initials = displayName.take(2).uppercase()
 
     Column(
         modifier = Modifier
@@ -60,26 +64,22 @@ fun ProfileScreenV2(
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            StudyStatsCard()
+            AccountIdentityCard(displayName = displayName, email = email)
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            AnalyticsAccessCard(onClick = onNavigateAnalytics)
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            VisionBoardAccessCard(onClick = onNavigateVisionBoard)
+            QuickLinksCard(
+                onAnalytics = onNavigateAnalytics,
+                onVisionBoard = onNavigateVisionBoard,
+                onSettings = onNavigateSettings
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             AccountSettingsCard(
                 displayName = displayName,
-                onSaveName  = { name -> if (name.isNotBlank()) viewModel.updateDisplayName(name) }
+                onSaveName = { name -> if (name.isNotBlank()) viewModel.updateDisplayName(name) }
             )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            AppSettingsCard()
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -114,10 +114,7 @@ private fun ProfileHeader(initials: String, displayName: String, email: String) 
             Spacer(modifier = Modifier.height(2.dp))
             Text(text = email, color = Color.White.copy(alpha = 0.70f), fontSize = 13.sp)
             Spacer(modifier = Modifier.height(14.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StudyBadge(icon = Icons.Rounded.Whatshot, label = "15 day streak")
-                StudyBadge(icon = Icons.Rounded.Star,      label = "Active learner")
-            }
+            StudyBadge(icon = Icons.Rounded.VerifiedUser, label = "StudyOS account")
         }
     }
 }
@@ -138,25 +135,20 @@ private fun StudyBadge(icon: ImageVector, label: String) {
 }
 
 @Composable
-private fun StudyStatsCard() {
+private fun AccountIdentityCard(displayName: String, email: String) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(16.dp)),
-        shape  = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            StatColumn(value = "14",   label = "Day Streak")
-            StatDivider()
-            StatColumn(value = "36h",  label = "This Month")
-            StatDivider()
-            StatColumn(value = "78%",  label = "Quiz Acc.")
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            SectionTitle(icon = Icons.Rounded.Badge, title = "Student identity")
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(displayName, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(email.ifBlank { "No email available" }, color = TextSecondary, fontSize = 13.sp)
         }
     }
 }
@@ -175,13 +167,58 @@ private fun StatDivider() {
 }
 
 @Composable
+private fun QuickLinksCard(
+    onAnalytics: () -> Unit,
+    onVisionBoard: () -> Unit,
+    onSettings: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth().shadow(4.dp, RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            SectionTitle(icon = Icons.Rounded.Apps, title = "Quick links")
+            Spacer(modifier = Modifier.height(8.dp))
+            ProfileLinkRow(Icons.Rounded.Analytics, "Analytics", "Track real study performance", onAnalytics)
+            HorizontalDivider(color = StudyPurpleFaint)
+            ProfileLinkRow(Icons.Rounded.Star, "Vision Board", "Manage goals and motivation", onVisionBoard)
+            HorizontalDivider(color = StudyPurpleFaint)
+            ProfileLinkRow(Icons.Rounded.Settings, "Settings", "Reminders, account, and sync", onSettings)
+        }
+    }
+}
+
+@Composable
+private fun ProfileLinkRow(icon: ImageVector, title: String, description: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onClick() }
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(StudyPurpleFaint),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = StudyPurple, modifier = Modifier.size(22.dp))
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text(description, color = TextSecondary, fontSize = 11.sp)
+        }
+        Icon(Icons.Rounded.ChevronRight, contentDescription = null, tint = TextHint, modifier = Modifier.size(20.dp))
+    }
+}
+
+@Composable
 private fun AnalyticsAccessCard(onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(16.dp))
             .clickable { onClick() },
-        shape  = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = StudyPurple)
     ) {
         Row(
@@ -199,7 +236,12 @@ private fun AnalyticsAccessCard(onClick: () -> Unit) {
                         .background(Color.White.copy(alpha = 0.20f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(imageVector = Icons.Rounded.Analytics, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                    Icon(
+                        imageVector = Icons.Rounded.Analytics,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
@@ -207,7 +249,12 @@ private fun AnalyticsAccessCard(onClick: () -> Unit) {
                     Text("Track your study performance", color = Color.White.copy(alpha = 0.70f), fontSize = 11.sp)
                 }
             }
-            Icon(imageVector = Icons.Rounded.ChevronRight, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+            Icon(
+                imageVector = Icons.Rounded.ChevronRight,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(22.dp)
+            )
         }
     }
 }
@@ -219,7 +266,7 @@ private fun VisionBoardAccessCard(onClick: () -> Unit) {
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(16.dp))
             .clickable { onClick() },
-        shape  = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Row(
@@ -237,7 +284,12 @@ private fun VisionBoardAccessCard(onClick: () -> Unit) {
                         .background(StudyPurpleFaint),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(imageVector = Icons.Rounded.Star, contentDescription = null, tint = StudyPurple, modifier = Modifier.size(22.dp))
+                    Icon(
+                        imageVector = Icons.Rounded.Star,
+                        contentDescription = null,
+                        tint = StudyPurple,
+                        modifier = Modifier.size(22.dp)
+                    )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
@@ -245,7 +297,12 @@ private fun VisionBoardAccessCard(onClick: () -> Unit) {
                     Text("Manage your goals and motivation", color = TextSecondary, fontSize = 11.sp)
                 }
             }
-            Icon(imageVector = Icons.Rounded.ChevronRight, contentDescription = null, tint = TextHint, modifier = Modifier.size(22.dp))
+            Icon(
+                imageVector = Icons.Rounded.ChevronRight,
+                contentDescription = null,
+                tint = TextHint,
+                modifier = Modifier.size(22.dp)
+            )
         }
     }
 }
@@ -253,92 +310,58 @@ private fun VisionBoardAccessCard(onClick: () -> Unit) {
 @Composable
 private fun AccountSettingsCard(displayName: String, onSaveName: (String) -> Unit) {
     var editName by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(16.dp)),
-        shape  = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             SectionTitle(icon = Icons.Rounded.ManageAccounts, title = "Account")
             Spacer(modifier = Modifier.height(12.dp))
             OutlinedTextField(
-                value         = editName,
+                value = editName,
                 onValueChange = { editName = it },
-                modifier      = Modifier.fillMaxWidth(),
-                shape         = RoundedCornerShape(12.dp),
-                singleLine    = true,
-                placeholder   = { Text("Display name (current: $displayName)", color = TextHint, fontSize = 12.sp) },
-                colors        = TextFieldDefaults.colors(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                placeholder = { Text("Display name (current: $displayName)", color = TextHint, fontSize = 12.sp) },
+                colors = TextFieldDefaults.colors(
                     unfocusedContainerColor = StudyPurpleFaint,
-                    focusedContainerColor   = StudyPurpleFaint,
+                    focusedContainerColor = StudyPurpleFaint,
                     unfocusedIndicatorColor = Color.Transparent,
-                    focusedIndicatorColor   = StudyPurple
+                    focusedIndicatorColor = StudyPurple
                 )
             )
             Spacer(modifier = Modifier.height(10.dp))
-            Button(
-                onClick  = { onSaveName(editName); editName = "" },
-                enabled  = editName.isNotBlank(),
-                modifier = Modifier.fillMaxWidth().height(44.dp),
-                shape    = RoundedCornerShape(12.dp),
-                colors   = ButtonDefaults.buttonColors(containerColor = StudyPurple)
-            ) {
-                Text("Save Name", color = Color.White, fontWeight = FontWeight.SemiBold)
-            }
+            StudyOSPrimaryButton(
+                text = "Save Name",
+                onClick = {
+                    when {
+                        editName.isBlank() -> Toast.makeText(context, "Please enter your full name", Toast.LENGTH_SHORT)
+                            .show()
+
+                        editName.trim() == displayName -> Toast.makeText(
+                            context,
+                            "No changes to save",
+                            Toast.LENGTH_SHORT
+                        ).show()
+
+                        else -> {
+                            onSaveName(editName.trim())
+                            editName = ""
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
 
-@Composable
-private fun AppSettingsCard() {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(16.dp)),
-        shape  = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            SectionTitle(icon = Icons.Rounded.Settings, title = "Preferences")
-            Spacer(modifier = Modifier.height(8.dp))
-            SettingsRow(icon = Icons.Rounded.Notifications, label = "Notifications", description = "Study reminders")
-            HorizontalDivider(color = StudyPurpleFaint)
-            SettingsRow(icon = Icons.Rounded.Palette, label = "Theme", description = "Light mode")
-            HorizontalDivider(color = StudyPurpleFaint)
-            SettingsRow(icon = Icons.Rounded.Language, label = "Language", description = "English")
-        }
-    }
-}
-
-@Composable
-private fun SettingsRow(icon: ImageVector, label: String, description: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { }
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(StudyPurpleFaint),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(imageVector = icon, contentDescription = null, tint = StudyPurple, modifier = Modifier.size(18.dp))
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = label,       fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
-            Text(text = description, fontSize = 11.sp, color = TextSecondary)
-        }
-        Icon(imageVector = Icons.Rounded.ChevronRight, contentDescription = null, tint = TextHint, modifier = Modifier.size(18.dp))
-    }
-}
 
 @Composable
 private fun SignOutCard(onSignOut: () -> Unit) {
@@ -347,15 +370,13 @@ private fun SignOutCard(onSignOut: () -> Unit) {
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title  = { Text("Sign Out?") },
-            text   = { Text("You'll need to sign in again to access your data.") },
+            title = { Text("Sign Out?") },
+            text = { Text("You'll need to sign in again to access your data.") },
             confirmButton = {
-                TextButton(onClick = { showDialog = false; onSignOut() }) {
-                    Text("Sign Out", color = PriorityHigh, fontWeight = FontWeight.Bold)
-                }
+                StudyOSTextButton(text = "Sign Out", onClick = { showDialog = false; onSignOut() })
             },
             dismissButton = {
-                TextButton(onClick = { showDialog = false }) { Text("Cancel") }
+                StudyOSTextButton(text = "Cancel", onClick = { showDialog = false })
             }
         )
     }
@@ -364,7 +385,7 @@ private fun SignOutCard(onSignOut: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(16.dp)),
-        shape  = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Row(
@@ -381,11 +402,27 @@ private fun SignOutCard(onSignOut: () -> Unit) {
                     .background(PriorityHighBg),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(imageVector = Icons.AutoMirrored.Rounded.Logout, contentDescription = null, tint = PriorityHigh, modifier = Modifier.size(18.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.Logout,
+                    contentDescription = null,
+                    tint = PriorityHigh,
+                    modifier = Modifier.size(18.dp)
+                )
             }
             Spacer(modifier = Modifier.width(12.dp))
-            Text(text = "Sign Out", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = PriorityHigh, modifier = Modifier.weight(1f))
-            Icon(imageVector = Icons.Rounded.ChevronRight, contentDescription = null, tint = PriorityHigh, modifier = Modifier.size(18.dp))
+            Text(
+                text = "Sign Out",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = PriorityHigh,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = Icons.Rounded.ChevronRight,
+                contentDescription = null,
+                tint = PriorityHigh,
+                modifier = Modifier.size(18.dp)
+            )
         }
     }
 }
@@ -398,4 +435,3 @@ private fun SectionTitle(icon: ImageVector, title: String) {
         Text(text = title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
     }
 }
-

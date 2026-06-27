@@ -26,6 +26,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
+import com.teamdobermans.studyos.ui.components.StudyOSOutlinedButton
+import com.teamdobermans.studyos.ui.components.StudyOSPrimaryButton
 import com.teamdobermans.studyos.ui.navigation.AppRoutes
 import com.teamdobermans.studyos.ui.navigation.StudyOSNavGraph
 import com.teamdobermans.studyos.ui.onboarding.OnboardingActivity1_WelcomePage
@@ -99,53 +101,19 @@ fun AuthScreen(
 
             Spacer(modifier = Modifier.height(44.dp))
 
-            Button(
+            StudyOSPrimaryButton(
+                text = "Sign Up",
                 onClick = onSignUpClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .border(
-                        width = 1.5.dp,
-                        color = Color.White.copy(alpha = 0.6f),
-                        shape = RoundedCornerShape(30.dp)
-                    ),
-                shape = RoundedCornerShape(30.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.2f)),
-                elevation = ButtonDefaults.buttonElevation(0.dp)
-            ) {
-                Text(
-                    "Sign Up",
-                    color = Color.White,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 0.3.sp
-                )
-            }
+                modifier = Modifier.fillMaxWidth()
+            )
 
             Spacer(modifier = Modifier.height(30.dp))
 
-            Button(
+            StudyOSOutlinedButton(
+                text = "Sign In",
                 onClick = onSignInClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .border(
-                        width = 1.5.dp,
-                        color = Color.White.copy(alpha = 0.35f),
-                        shape = RoundedCornerShape(30.dp)
-                    ),
-                shape = RoundedCornerShape(30.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.12f)),
-                elevation = ButtonDefaults.buttonElevation(0.dp)
-            ) {
-                Text(
-                    "Sign In",
-                    color = Color.White,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 0.3.sp
-                )
-            }
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
@@ -155,4 +123,3 @@ fun AuthScreen(
 fun AuthScreenPreview() {
     AuthScreen(onSignUpClick = {}, onSignInClick = {})
 }
-

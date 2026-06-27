@@ -1,5 +1,7 @@
 package com.teamdobermans.studyos.ui.home
+
 import com.teamdobermans.studyos.R
+import com.teamdobermans.studyos.MainActivity
 
 import android.content.Intent
 import android.os.Bundle
@@ -31,8 +33,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.teamdobermans.studyos.ui.components.StudyOSOutlinedButton
+import com.teamdobermans.studyos.ui.components.StudyOSPrimaryButton
+import com.teamdobermans.studyos.ui.components.StudyOSSecondaryButton
 import com.teamdobermans.studyos.ui.profile.ProgressActivity
-import com.teamdobermans.studyos.ui.focus.BrainGameActivityShell
 import com.teamdobermans.studyos.ui.focus.PomodoroActivity
 import com.teamdobermans.studyos.ui.profile.ProfileActivity
 import com.teamdobermans.studyos.ui.study.Flashcards
@@ -75,10 +79,10 @@ class DashboardActivity : ComponentActivity() {
                     startActivity(Intent(this, Flashcards::class.java))
                 },
                 onNavigateQuiz = {
-                    startActivity(Intent(this, QuizScreen::class.java))
+                    startActivity(Intent(this, MockTestActivity::class.java))
                 },
                 onNavigateBrainGame = {
-                    startActivity(Intent(this, BrainGameActivityShell::class.java))
+                    startActivity(Intent(this, MainActivity::class.java))
                 },
                 onNavigateVideoNotes = {
                     startActivity(Intent(this, VideotoNotes::class.java))
@@ -111,13 +115,18 @@ fun DashboardBody(
     val context = LocalContext.current
     val userName by viewModel.userName.collectAsState()
 
-    val streakCount      by viewModel.streakCount.collectAsState()
+    val streakCount by viewModel.streakCount.collectAsState()
     val weeklyStudyHours by viewModel.weeklyStudyHours.collectAsState()
     val pendingTaskCount by viewModel.pendingTaskCount.collectAsState()
-    val dailyProgress    by viewModel.dailyProgress.collectAsState()
-    val timerRunning     by viewModel.timerRunning.collectAsState()
-    val timeLeft         by viewModel.timeLeft.collectAsState()
-    val upcomingReviews  by viewModel.upcomingReviews.collectAsState()
+    val timerRunning by viewModel.timerRunning.collectAsState()
+    val timeLeft by viewModel.timeLeft.collectAsState()
+    val upcomingReviews by viewModel.upcomingReviews.collectAsState()
+    val dashboardState by viewModel.state.collectAsState()
+    val totalTodayTasks = dashboardState.todayTasks.size
+    val completedTodayTasks = dashboardState.todayTasks.count { it.done }
+    val dailyProgress = if (totalTodayTasks > 0) (completedTodayTasks.toFloat() / totalTodayTasks) * 100f else 0f
+    val progressLabel =
+        if (totalTodayTasks > 0) "$completedTodayTasks of $totalTodayTasks tasks completed today" else "No progress yet"
 
     LaunchedEffect(Unit) {
         viewModel.onSessionComplete = {
@@ -125,8 +134,8 @@ fun DashboardBody(
         }
     }
 
-    val minutes  = timeLeft / 60
-    val seconds  = timeLeft % 60
+    val minutes = timeLeft / 60
+    val seconds = timeLeft % 60
     val timeText = "%02d:%02d".format(minutes, seconds)
 
     Column(
@@ -217,7 +226,7 @@ fun DashboardBody(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Software Development",
+                        text = progressLabel,
                         style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
                     )
                     Text(
@@ -273,7 +282,12 @@ fun DashboardBody(
                         )
                         Text(
                             text = timeText,
-                            style = TextStyle(fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White, letterSpacing = 1.sp)
+                            style = TextStyle(
+                                fontSize = 26.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                letterSpacing = 1.sp
+                            )
                         )
                     }
                     Image(
@@ -289,22 +303,26 @@ fun DashboardBody(
                             .clickable { viewModel.toggleTimer() }
                     )
                 }
-                Button(
-                    onClick = onNavigatePomodoro,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                        .height(40.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text(
-                        "Start Session",
-                        color = StudyPurpleDeep,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold
+                    StudyOSSecondaryButton(
+                        text = if (timerRunning) "Pause" else "Start",
+                        onClick = { if (timerRunning) viewModel.pauseFocusSession() else viewModel.startFocusSession() },
+                        modifier = Modifier.weight(1f)
+                    )
+                    StudyOSOutlinedButton(
+                        text = "Reset",
+                        onClick = { viewModel.resetFocusSession() },
+                        modifier = Modifier.weight(1f)
                     )
                 }
+                StudyOSSecondaryButton(
+                    text = "Open full Pomodoro",
+                    onClick = onNavigatePomodoro,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+                )
             }
         }
 
@@ -363,15 +381,12 @@ fun DashboardBody(
                     }
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                Button(
+                StudyOSPrimaryButton(
+                    text = "Open Board",
                     onClick = onNavigateVisionBoard,
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = StudyPurple),
-                    modifier = Modifier.height(36.dp),
+                    modifier = Modifier.height(40.dp),
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
-                ) {
-                    Text("Open Board", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                }
+                )
             }
         }
 
@@ -392,8 +407,24 @@ fun DashboardBody(
                 .padding(horizontal = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            ToolCard(modifier = Modifier.weight(1f), iconRes = R.drawable.baseline_credit_card_24, iconBg = Color(0xFFFFF0E0), iconTint = Color(0xFFE07B39), name = "Flash Cards",     subtitle = "8 sets",           onClick = onNavigateFlashcards)
-            ToolCard(modifier = Modifier.weight(1f), iconRes = R.drawable.baseline_quiz_24,         iconBg = Color(0xFFF0E8FF), iconTint = Color(0xFF7B4FE0), name = "Quiz Mode",      subtitle = "13 questions",     onClick = onNavigateQuiz)
+            ToolCard(
+                modifier = Modifier.weight(1f),
+                iconRes = R.drawable.baseline_credit_card_24,
+                iconBg = Color(0xFFFFF0E0),
+                iconTint = Color(0xFFE07B39),
+                name = "Flash Cards",
+                subtitle = "Review due cards",
+                onClick = onNavigateFlashcards
+            )
+            ToolCard(
+                modifier = Modifier.weight(1f),
+                iconRes = R.drawable.baseline_quiz_24,
+                iconBg = Color(0xFFF0E8FF),
+                iconTint = Color(0xFF7B4FE0),
+                name = "Quiz Mode",
+                subtitle = "Generate from notes",
+                onClick = onNavigateQuiz
+            )
         }
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -404,8 +435,24 @@ fun DashboardBody(
                 .padding(horizontal = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            ToolCard(modifier = Modifier.weight(1f), iconRes = R.drawable.baseline_sports_esports_24, iconBg = Color(0xFFFFE8EE), iconTint = Color(0xFFE04F7B), name = "Brain Game",      subtitle = "6 min break",      onClick = onNavigateBrainGame)
-            ToolCard(modifier = Modifier.weight(1f), iconRes = R.drawable.baseline_video_library_24,  iconBg = Color(0xFFE8F4FF), iconTint = Color(0xFF3A82E0), name = "Videos to Notes", subtitle = "Convert into notes", onClick = onNavigateVideoNotes)
+            ToolCard(
+                modifier = Modifier.weight(1f),
+                iconRes = R.drawable.baseline_sports_esports_24,
+                iconBg = Color(0xFFFFE8EE),
+                iconTint = Color(0xFFE04F7B),
+                name = "Brain Games",
+                subtitle = "Memory and math",
+                onClick = onNavigateBrainGame
+            )
+            ToolCard(
+                modifier = Modifier.weight(1f),
+                iconRes = R.drawable.baseline_video_library_24,
+                iconBg = Color(0xFFE8F4FF),
+                iconTint = Color(0xFF3A82E0),
+                name = "Videos to Notes",
+                subtitle = "Convert into notes",
+                onClick = onNavigateVideoNotes
+            )
         }
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -416,8 +463,24 @@ fun DashboardBody(
                 .padding(horizontal = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            ToolCard(modifier = Modifier.weight(1f), iconRes = R.drawable.baseline_assignment_24, iconBg = Color(0xFFE8FFF4), iconTint = Color(0xFF1D9E75), name = "Mock Test", subtitle = "10 min", onClick = onNavigateMockTest)
-            ToolCard(modifier = Modifier.weight(1f), iconRes = R.drawable.baseline_menu_book_24, iconBg = Color(0xFFF0F0F0), iconTint = StudyPurple, name = "Notes", subtitle = "Manage notes", onClick = onNavigateNotes)
+            ToolCard(
+                modifier = Modifier.weight(1f),
+                iconRes = R.drawable.baseline_assignment_24,
+                iconBg = Color(0xFFE8FFF4),
+                iconTint = Color(0xFF1D9E75),
+                name = "Mock Test",
+                subtitle = "10 min",
+                onClick = onNavigateMockTest
+            )
+            ToolCard(
+                modifier = Modifier.weight(1f),
+                iconRes = R.drawable.baseline_menu_book_24,
+                iconBg = Color(0xFFF0F0F0),
+                iconTint = StudyPurple,
+                name = "Notes",
+                subtitle = "Manage notes",
+                onClick = onNavigateNotes
+            )
         }
 
         Text(
@@ -466,23 +529,20 @@ fun DashboardBody(
                     AnalyticsMiniStat(label = "Pending", value = "$pendingTaskCount")
                 }
                 Spacer(modifier = Modifier.height(14.dp))
-                Button(
+                StudyOSSecondaryButton(
+                    text = "View Full Analytics",
                     onClick = onNavigateAnalytics,
-                    modifier = Modifier.fillMaxWidth().height(38.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White)
-                ) {
-                    Text("View Full Analytics", color = StudyPurpleDeep, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                }
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
 
         Text(
             text = "Weekly Trends",
             style = TextStyle(
-                fontSize      = 14.sp,
-                fontWeight    = FontWeight.Bold,
-                color         = TextPrimary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
                 letterSpacing = 0.3.sp
             ),
             modifier = Modifier.padding(start = 14.dp, top = 16.dp, bottom = 10.dp)
@@ -494,19 +554,19 @@ fun DashboardBody(
 
         if (upcomingReviews.isNotEmpty()) {
             Text(
-                text     = "Review Reminders",
-                style    = TextStyle(
-                    fontSize     = 14.sp,
-                    fontWeight   = FontWeight.Bold,
-                    color        = TextPrimary,
+                text = "Review Reminders",
+                style = TextStyle(
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
                     letterSpacing = 0.3.sp
                 ),
                 modifier = Modifier.padding(start = 14.dp, top = 16.dp, bottom = 10.dp)
             )
             UpcomingReviewsCard(
-                notes           = upcomingReviews,
+                notes = upcomingReviews,
                 onNavigateNotes = onNavigateNotes,
-                modifier        = Modifier.padding(horizontal = 14.dp)
+                modifier = Modifier.padding(horizontal = 14.dp)
             )
         }
 
@@ -549,8 +609,11 @@ fun ToolCard(
                     colorFilter = ColorFilter.tint(iconTint)
                 )
             }
-            Text(text = name,     style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary))
-            Text(text = subtitle, style = TextStyle(fontSize = 10.sp,  color = TextSecondary))
+            Text(
+                text = name,
+                style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+            )
+            Text(text = subtitle, style = TextStyle(fontSize = 10.sp, color = TextSecondary))
         }
     }
 }
@@ -562,4 +625,3 @@ fun AnalyticsMiniStat(label: String, value: String) {
         Text(label, color = Color.White.copy(alpha = 0.70f), fontSize = 10.sp)
     }
 }
-

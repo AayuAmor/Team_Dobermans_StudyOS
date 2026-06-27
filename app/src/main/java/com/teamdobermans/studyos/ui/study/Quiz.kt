@@ -35,6 +35,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.teamdobermans.studyos.model.NoteModel
 import com.teamdobermans.studyos.model.QuizAttemptModel
 import com.teamdobermans.studyos.model.QuizQuestionModel
+import com.teamdobermans.studyos.ui.components.StudyOSOutlinedButton
+import com.teamdobermans.studyos.ui.components.StudyOSPrimaryButton
+import com.teamdobermans.studyos.ui.components.StudyOSTextButton
 import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.viewModel.QuizFlowState
 import com.teamdobermans.studyos.viewModel.QuizViewModel
@@ -42,23 +45,23 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private val QuizPurple      = Color(0xFF5B4DDB)
-private val QuizPurpleDark  = Color(0xFF3D30A0)
+private val QuizPurple = Color(0xFF5B4DDB)
+private val QuizPurpleDark = Color(0xFF3D30A0)
 private val QuizPurpleLight = Color(0xFFEAE5FF)
-private val QuizGradient    = listOf(Color(0xFF5B4DDB), Color(0xFF6A5AF9))
-private val CorrectGreen    = Color(0xFF1B7A3E)
-private val CorrectGreenBg  = Color(0xFFE8F5E9)
-private val WrongRed        = Color(0xFFE53935)
-private val WrongRedBg      = Color(0xFFFFF0F0)
+private val QuizGradient = listOf(Color(0xFF5B4DDB), Color(0xFF6A5AF9))
+private val CorrectGreen = Color(0xFF1B7A3E)
+private val CorrectGreenBg = Color(0xFFE8F5E9)
+private val WrongRed = Color(0xFFE53935)
+private val WrongRedBg = Color(0xFFFFF0F0)
 
 class QuizScreen : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val noteId    = intent.getStringExtra("noteId")
+        val noteId = intent.getStringExtra("noteId")
         val noteTitle = intent.getStringExtra("noteTitle") ?: ""
-        val noteBody  = intent.getStringExtra("noteBody") ?: ""
+        val noteBody = intent.getStringExtra("noteBody") ?: ""
 
         setContent {
             StudyOSTheme {
@@ -80,17 +83,17 @@ class QuizScreen : ComponentActivity() {
 
 @Composable
 fun QuizRoot(vm: QuizViewModel, onFinish: () -> Unit) {
-    val quizState    by vm.quizState.collectAsState()
-    val notes        by vm.notes.collectAsState()
+    val quizState by vm.quizState.collectAsState()
+    val notes by vm.notes.collectAsState()
     val notesLoading by vm.notesLoading.collectAsState()
-    val attempts     by vm.attempts.collectAsState()
+    val attempts by vm.attempts.collectAsState()
 
     var showHistory by remember { mutableStateOf(false) }
 
     if (showHistory) {
         QuizHistoryScreen(
             attempts = attempts,
-            onBack   = { showHistory = false }
+            onBack = { showHistory = false }
         )
         return
     }
@@ -98,12 +101,12 @@ fun QuizRoot(vm: QuizViewModel, onFinish: () -> Unit) {
     when (val state = quizState) {
         is QuizFlowState.Idle, is QuizFlowState.Error -> {
             NotePickerScreen(
-                notes        = notes,
-                isLoading    = notesLoading,
+                notes = notes,
+                isLoading = notesLoading,
                 errorMessage = (quizState as? QuizFlowState.Error)?.message,
                 onSelectNote = { vm.generateQuiz(it) },
                 onShowHistory = { showHistory = true },
-                onBack        = onFinish
+                onBack = onFinish
             )
         }
 
@@ -113,22 +116,22 @@ fun QuizRoot(vm: QuizViewModel, onFinish: () -> Unit) {
 
         is QuizFlowState.Playing -> {
             QuizPlayingScreen(
-                state      = state,
-                onAnswer   = { idx, ans -> vm.selectAnswer(idx, ans) },
-                onNext     = { vm.nextQuestion() },
+                state = state,
+                onAnswer = { idx, ans -> vm.selectAnswer(idx, ans) },
+                onNext = { vm.nextQuestion() },
                 onPrevious = { vm.previousQuestion() },
-                onSubmit   = { vm.submitQuiz() },
-                onBack     = { vm.reset() }
+                onSubmit = { vm.submitQuiz() },
+                onBack = { vm.reset() }
             )
         }
 
         is QuizFlowState.Result -> {
             QuizResultScreen(
-                state     = state,
-                onRetake  = { vm.retakeQuiz() },
+                state = state,
+                onRetake = { vm.retakeQuiz() },
                 onNewQuiz = { vm.reset() },
                 onHistory = { showHistory = true },
-                onFinish  = onFinish
+                onFinish = onFinish
             )
         }
     }
@@ -157,29 +160,29 @@ private fun NotePickerScreen(
         ) {
             Column {
                 Row(
-                    modifier              = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment     = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     QuizBackButton(onClick = onBack)
                     IconButton(onClick = onShowHistory) {
                         Icon(
-                            imageVector        = Icons.Default.History,
+                            imageVector = Icons.Default.History,
                             contentDescription = "History",
-                            tint               = Color.White
+                            tint = Color.White
                         )
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text       = "Generate Quiz",
-                    color      = Color.White,
-                    fontSize   = 26.sp,
+                    text = "Generate Quiz",
+                    color = Color.White,
+                    fontSize = 26.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text     = "Pick a note to quiz yourself on",
-                    color    = Color.White.copy(alpha = 0.75f),
+                    text = "Pick a note to quiz yourself on",
+                    color = Color.White.copy(alpha = 0.75f),
                     fontSize = 14.sp
                 )
             }
@@ -187,17 +190,17 @@ private fun NotePickerScreen(
 
         if (errorMessage != null) {
             Card(
-                modifier  = Modifier
+                modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                colors    = CardDefaults.cardColors(containerColor = WrongRedBg),
-                shape     = RoundedCornerShape(12.dp)
+                colors = CardDefaults.cardColors(containerColor = WrongRedBg),
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
-                    text      = errorMessage,
-                    color     = WrongRed,
-                    fontSize  = 14.sp,
-                    modifier  = Modifier.padding(16.dp),
+                    text = errorMessage,
+                    color = WrongRed,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(16.dp),
                     textAlign = TextAlign.Center
                 )
             }
@@ -206,7 +209,7 @@ private fun NotePickerScreen(
         when {
             isLoading -> {
                 Box(
-                    modifier         = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(color = QuizPurple)
@@ -215,23 +218,23 @@ private fun NotePickerScreen(
 
             notes.isEmpty() -> {
                 Box(
-                    modifier         = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text       = "No notes yet",
-                            color      = TextSecondary,
-                            fontSize   = 18.sp,
+                            text = "No notes yet",
+                            color = TextSecondary,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text      = "Create some notes first, then come back to generate a quiz.",
-                            color     = TextHint,
-                            fontSize  = 14.sp,
+                            text = "Create some notes first, then come back to generate a quiz.",
+                            color = TextHint,
+                            fontSize = 14.sp,
                             textAlign = TextAlign.Center,
-                            modifier  = Modifier.padding(horizontal = 32.dp)
+                            modifier = Modifier.padding(horizontal = 32.dp)
                         )
                     }
                 }
@@ -239,7 +242,7 @@ private fun NotePickerScreen(
 
             else -> {
                 LazyColumn(
-                    contentPadding      = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(notes, key = { it.id }) { note ->
@@ -254,30 +257,30 @@ private fun NotePickerScreen(
 @Composable
 private fun NotePickerCard(note: NoteModel, onClick: () -> Unit) {
     Card(
-        modifier  = Modifier
+        modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape     = RoundedCornerShape(16.dp),
-        colors    = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
-            modifier          = Modifier.padding(16.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text       = note.title,
-                    color      = TextPrimary,
-                    fontSize   = 16.sp,
+                    text = note.title,
+                    color = TextPrimary,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
-                    maxLines   = 1,
-                    overflow   = TextOverflow.Ellipsis
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text     = note.body.take(80).replace("\n", " "),
-                    color    = TextSecondary,
+                    text = note.body.take(80).replace("\n", " "),
+                    color = TextSecondary,
                     fontSize = 13.sp,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
@@ -290,16 +293,16 @@ private fun NotePickerCard(note: NoteModel, onClick: () -> Unit) {
                         .padding(horizontal = 8.dp, vertical = 3.dp)
                 ) {
                     Text(
-                        text       = note.folder,
-                        color      = QuizPurple,
-                        fontSize   = 11.sp,
+                        text = note.folder,
+                        color = QuizPurple,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
             }
             Spacer(modifier = Modifier.width(12.dp))
             Box(
-                modifier         = Modifier
+                modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
                     .background(QuizPurple),
@@ -314,45 +317,45 @@ private fun NotePickerCard(note: NoteModel, onClick: () -> Unit) {
 @Composable
 private fun GeneratingScreen() {
     Box(
-        modifier         = Modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(StudyPurpleFaint),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Card(
-                modifier  = Modifier
+                modifier = Modifier
                     .size(96.dp)
                     .shadow(8.dp, CircleShape),
-                shape     = CircleShape,
-                colors    = CardDefaults.cardColors(
+                shape = CircleShape,
+                colors = CardDefaults.cardColors(
                     containerColor = Color.Transparent
                 )
             ) {
                 Box(
-                    modifier         = Modifier
+                    modifier = Modifier
                         .fillMaxSize()
                         .background(Brush.verticalGradient(QuizGradient)),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(
-                        color       = Color.White,
+                        color = Color.White,
                         strokeWidth = 3.dp,
-                        modifier    = Modifier.size(40.dp)
+                        modifier = Modifier.size(40.dp)
                     )
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text       = "Generating your quiz…",
-                color      = TextPrimary,
-                fontSize   = 18.sp,
+                text = "Generating your quiz…",
+                color = TextPrimary,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.SemiBold
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text     = "Analysing note content and creating questions",
-                color    = TextSecondary,
+                text = "Analysing note content and creating questions",
+                color = TextSecondary,
                 fontSize = 14.sp
             )
         }
@@ -368,12 +371,12 @@ private fun QuizPlayingScreen(
     onSubmit: () -> Unit,
     onBack: () -> Unit
 ) {
-    val questions    = state.quiz.questions
+    val questions = state.quiz.questions
     val currentIndex = state.currentIndex
-    val current      = questions.getOrNull(currentIndex) ?: return
-    val total        = questions.size
-    val selectedOpt  = state.userAnswers[currentIndex]
-    val isLastQ      = currentIndex == total - 1
+    val current = questions.getOrNull(currentIndex) ?: return
+    val total = questions.size
+    val selectedOpt = state.userAnswers[currentIndex]
+    val isLastQ = currentIndex == total - 1
     val answeredCount = state.userAnswers.size
 
     var showSubmitDialog by remember { mutableStateOf(false) }
@@ -382,7 +385,7 @@ private fun QuizPlayingScreen(
         AlertDialog(
             onDismissRequest = { showSubmitDialog = false },
             title = { Text("Submit Quiz?", fontWeight = FontWeight.Bold) },
-            text  = {
+            text = {
                 val unanswered = total - answeredCount
                 if (unanswered > 0) {
                     Text("You have $unanswered unanswered question${if (unanswered > 1) "s" else ""}. Unanswered questions will be counted as wrong. Submit anyway?")
@@ -391,13 +394,13 @@ private fun QuizPlayingScreen(
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = { showSubmitDialog = false; onSubmit() },
-                    colors  = ButtonDefaults.buttonColors(containerColor = QuizPurple)
-                ) { Text("Submit", color = Color.White) }
+                StudyOSPrimaryButton(
+                    text = "Submit",
+                    onClick = { showSubmitDialog = false; onSubmit() }
+                )
             },
             dismissButton = {
-                TextButton(onClick = { showSubmitDialog = false }) { Text("Review") }
+                StudyOSTextButton(text = "Review", onClick = { showSubmitDialog = false })
             }
         )
     }
@@ -416,15 +419,15 @@ private fun QuizPlayingScreen(
         ) {
             Column {
                 Row(
-                    modifier              = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment     = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     QuizBackButton(onClick = onBack)
                     Text(
-                        text       = "Question ${currentIndex + 1} of $total",
-                        color      = Color.White.copy(alpha = 0.85f),
-                        fontSize   = 14.sp,
+                        text = "Question ${currentIndex + 1} of $total",
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -432,7 +435,7 @@ private fun QuizPlayingScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Row(
-                    modifier            = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     questions.forEachIndexed { idx, _ ->
@@ -445,8 +448,8 @@ private fun QuizPlayingScreen(
                                 .background(
                                     when {
                                         idx == currentIndex -> Color.White
-                                        answered            -> Color.White.copy(alpha = 0.7f)
-                                        else                -> Color.White.copy(alpha = 0.25f)
+                                        answered -> Color.White.copy(alpha = 0.7f)
+                                        else -> Color.White.copy(alpha = 0.25f)
                                     }
                                 )
                         )
@@ -456,9 +459,9 @@ private fun QuizPlayingScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text       = current.question,
-                    color      = Color.White,
-                    fontSize   = 20.sp,
+                    text = current.question,
+                    color = Color.White,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     lineHeight = 28.sp
                 )
@@ -475,59 +478,42 @@ private fun QuizPlayingScreen(
             val optionLabels = listOf("A", "B", "C", "D")
             current.options.forEachIndexed { i, text ->
                 QuizOptionCard(
-                    label      = optionLabels.getOrElse(i) { "${i + 1}" },
-                    text       = text,
+                    label = optionLabels.getOrElse(i) { "${i + 1}" },
+                    text = text,
                     isSelected = selectedOpt == text,
-                    onClick    = { onAnswer(currentIndex, text) }
+                    onClick = { onAnswer(currentIndex, text) }
                 )
             }
         }
 
         Row(
-            modifier              = Modifier
+            modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             if (currentIndex > 0) {
-                OutlinedButton(
+                StudyOSOutlinedButton(
+                    text = "← Previous",
                     onClick = onPrevious,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(52.dp),
-                    shape   = RoundedCornerShape(14.dp),
-                    colors  = ButtonDefaults.outlinedButtonColors(contentColor = QuizPurple)
-                ) {
-                    Text("← Previous", fontWeight = FontWeight.SemiBold)
-                }
+                    modifier = Modifier.weight(1f)
+                )
             } else {
                 Spacer(modifier = Modifier.weight(1f))
             }
 
             if (isLastQ) {
-                Button(
-                    onClick  = { showSubmitDialog = true },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(52.dp)
-                        .shadow(4.dp, RoundedCornerShape(14.dp)),
-                    shape  = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = QuizPurple)
-                ) {
-                    Text("Submit Quiz", color = Color.White, fontWeight = FontWeight.Bold)
-                }
+                StudyOSPrimaryButton(
+                    text = "Submit Quiz",
+                    onClick = { showSubmitDialog = true },
+                    modifier = Modifier.weight(1f).shadow(4.dp, RoundedCornerShape(24.dp))
+                )
             } else {
-                Button(
-                    onClick  = onNext,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(52.dp)
-                        .shadow(4.dp, RoundedCornerShape(14.dp)),
-                    shape  = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = QuizPurple)
-                ) {
-                    Text("Next →", color = Color.White, fontWeight = FontWeight.Bold)
-                }
+                StudyOSPrimaryButton(
+                    text = "Next →",
+                    onClick = onNext,
+                    modifier = Modifier.weight(1f).shadow(4.dp, RoundedCornerShape(24.dp))
+                )
             }
         }
     }
@@ -562,38 +548,38 @@ private fun QuizOptionCard(
     )
 
     Card(
-        modifier  = Modifier
+        modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape     = RoundedCornerShape(16.dp),
-        colors    = CardDefaults.cardColors(containerColor = bgColor),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = bgColor),
         elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 1.dp)
     ) {
         Row(
-            modifier          = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                modifier         = Modifier
+                modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
                     .background(labelBg),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text       = label,
-                    color      = labelText,
-                    fontSize   = 16.sp,
+                    text = label,
+                    color = labelText,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
             Spacer(modifier = Modifier.width(14.dp))
             Text(
-                text       = text,
-                color      = textColor,
-                fontSize   = 16.sp,
+                text = text,
+                color = textColor,
+                fontSize = 16.sp,
                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                modifier   = Modifier.weight(1f)
+                modifier = Modifier.weight(1f)
             )
         }
     }
@@ -607,20 +593,20 @@ private fun QuizResultScreen(
     onHistory: () -> Unit,
     onFinish: () -> Unit
 ) {
-    val attempt   = state.attempt
+    val attempt = state.attempt
     val questions = state.questions
-    val answers   = state.userAnswers
-    val correct   = attempt.correctAnswers
-    val total     = attempt.totalQuestions
-    val pct       = attempt.scorePercentage
-    val wrong     = total - correct
+    val answers = state.userAnswers
+    val correct = attempt.correctAnswers
+    val total = attempt.totalQuestions
+    val pct = attempt.scorePercentage
+    val wrong = total - correct
 
     val (grade, gradeColor, gradeMsg) = when {
         pct >= 90f -> Triple("A+", CorrectGreen, "Excellent! Outstanding performance!")
-        pct >= 80f -> Triple("A",  CorrectGreen, "Great job! You've mastered this topic.")
-        pct >= 70f -> Triple("B",  QuizPurple,   "Good work! A bit more practice will help.")
-        pct >= 60f -> Triple("C",  Color(0xFFC97B00), "Keep going! You're getting there.")
-        else       -> Triple("D",  WrongRed,     "Keep studying! Review your notes and try again.")
+        pct >= 80f -> Triple("A", CorrectGreen, "Great job! You've mastered this topic.")
+        pct >= 70f -> Triple("B", QuizPurple, "Good work! A bit more practice will help.")
+        pct >= 60f -> Triple("C", Color(0xFFC97B00), "Keep going! You're getting there.")
+        else -> Triple("D", WrongRed, "Keep studying! Review your notes and try again.")
     }
 
     Column(
@@ -638,19 +624,19 @@ private fun QuizResultScreen(
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text       = "Quiz Completed!",
-                    color      = Color.White,
-                    fontSize   = 24.sp,
+                    text = "Quiz Completed!",
+                    color = Color.White,
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text     = attempt.subject,
-                    color    = Color.White.copy(alpha = 0.75f),
+                    text = attempt.subject,
+                    color = Color.White.copy(alpha = 0.75f),
                     fontSize = 14.sp
                 )
                 Spacer(modifier = Modifier.height(20.dp))
                 Box(
-                    modifier         = Modifier
+                    modifier = Modifier
                         .size(100.dp)
                         .clip(CircleShape)
                         .background(Color.White.copy(alpha = 0.15f)),
@@ -658,9 +644,9 @@ private fun QuizResultScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text       = grade,
-                            color      = Color.White,
-                            fontSize   = 36.sp,
+                            text = grade,
+                            color = Color.White,
+                            fontSize = 36.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
                     }
@@ -676,121 +662,105 @@ private fun QuizResultScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Card(
-                modifier  = Modifier.fillMaxWidth(),
-                shape     = RoundedCornerShape(20.dp),
-                colors    = CardDefaults.cardColors(containerColor = Color.White),
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
-                    modifier              = Modifier.padding(24.dp),
-                    horizontalAlignment   = Alignment.CenterHorizontally
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text       = "$correct / $total",
-                        color      = QuizPurple,
-                        fontSize   = 48.sp,
+                        text = "$correct / $total",
+                        color = QuizPurple,
+                        fontSize = 48.sp,
                         fontWeight = FontWeight.ExtraBold
                     )
                     Text(
-                        text     = "Score",
-                        color    = TextSecondary,
+                        text = "Score",
+                        color = TextSecondary,
                         fontSize = 14.sp
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text       = "${pct.toInt()}%",
-                        color      = gradeColor,
-                        fontSize   = 22.sp,
+                        text = "${pct.toInt()}%",
+                        color = gradeColor,
+                        fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text      = gradeMsg,
-                        color     = TextSecondary,
-                        fontSize  = 13.sp,
+                        text = gradeMsg,
+                        color = TextSecondary,
+                        fontSize = 13.sp,
                         textAlign = TextAlign.Center
                     )
                 }
             }
 
             Row(
-                modifier              = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 ResultStatCard(
                     modifier = Modifier.weight(1f),
-                    value    = "$correct",
-                    label    = "Correct",
-                    bg       = CorrectGreenBg,
-                    fg       = CorrectGreen
+                    value = "$correct",
+                    label = "Correct",
+                    bg = CorrectGreenBg,
+                    fg = CorrectGreen
                 )
                 ResultStatCard(
                     modifier = Modifier.weight(1f),
-                    value    = "$wrong",
-                    label    = "Wrong",
-                    bg       = WrongRedBg,
-                    fg       = WrongRed
+                    value = "$wrong",
+                    label = "Wrong",
+                    bg = WrongRedBg,
+                    fg = WrongRed
                 )
             }
 
             Text(
-                text       = "Question Review",
-                color      = TextPrimary,
-                fontSize   = 16.sp,
+                text = "Question Review",
+                color = TextPrimary,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                modifier   = Modifier.padding(top = 4.dp)
+                modifier = Modifier.padding(top = 4.dp)
             )
 
             questions.forEachIndexed { idx, q ->
                 val userAns = answers[idx] ?: ""
                 val correct = userAns.equals(q.correctAnswer, ignoreCase = true)
                 ReviewCard(
-                    index       = idx + 1,
-                    question    = q.question,
-                    userAnswer  = userAns,
+                    index = idx + 1,
+                    question = q.question,
+                    userAnswer = userAns,
                     correctAnswer = q.correctAnswer,
-                    isCorrect   = correct
+                    isCorrect = correct
                 )
             }
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            Button(
-                onClick  = onRetake,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-                    .shadow(4.dp, RoundedCornerShape(14.dp)),
-                shape  = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = QuizPurple)
-            ) {
-                Text("Retake Quiz", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            }
+            StudyOSPrimaryButton(
+                text = "Retake Quiz",
+                onClick = onRetake,
+                modifier = Modifier.fillMaxWidth().shadow(4.dp, RoundedCornerShape(24.dp))
+            )
 
             Row(
-                modifier              = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                OutlinedButton(
-                    onClick  = onNewQuiz,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(50.dp),
-                    shape    = RoundedCornerShape(14.dp),
-                    colors   = ButtonDefaults.outlinedButtonColors(contentColor = QuizPurple)
-                ) {
-                    Text("New Quiz", fontWeight = FontWeight.SemiBold)
-                }
-                OutlinedButton(
-                    onClick  = onHistory,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(50.dp),
-                    shape    = RoundedCornerShape(14.dp),
-                    colors   = ButtonDefaults.outlinedButtonColors(contentColor = QuizPurple)
-                ) {
-                    Text("History", fontWeight = FontWeight.SemiBold)
-                }
+                StudyOSOutlinedButton(
+                    text = "New Quiz",
+                    onClick = onNewQuiz,
+                    modifier = Modifier.weight(1f)
+                )
+                StudyOSOutlinedButton(
+                    text = "History",
+                    onClick = onHistory,
+                    modifier = Modifier.weight(1f)
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -807,13 +777,13 @@ private fun ResultStatCard(
     fg: Color
 ) {
     Card(
-        modifier  = modifier,
-        shape     = RoundedCornerShape(16.dp),
-        colors    = CardDefaults.cardColors(containerColor = bg),
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = bg),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
-            modifier            = Modifier.padding(16.dp),
+            modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(value, color = fg, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold)
@@ -830,20 +800,20 @@ private fun ReviewCard(
     correctAnswer: String,
     isCorrect: Boolean
 ) {
-    val bg     = if (isCorrect) CorrectGreenBg else WrongRedBg
-    val accent = if (isCorrect) CorrectGreen   else WrongRed
-    val icon   = if (isCorrect) "✓" else "✗"
+    val bg = if (isCorrect) CorrectGreenBg else WrongRedBg
+    val accent = if (isCorrect) CorrectGreen else WrongRed
+    val icon = if (isCorrect) "✓" else "✗"
 
     Card(
-        modifier  = Modifier.fillMaxWidth(),
-        shape     = RoundedCornerShape(14.dp),
-        colors    = CardDefaults.cardColors(containerColor = bg),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = bg),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.Top) {
                 Box(
-                    modifier         = Modifier
+                    modifier = Modifier
                         .size(26.dp)
                         .clip(CircleShape)
                         .background(accent),
@@ -853,33 +823,33 @@ private fun ReviewCard(
                 }
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text       = "Q$index: ${question.removePrefix("Fill in the blank:\n")}",
-                    color      = TextPrimary,
-                    fontSize   = 13.sp,
+                    text = "Q$index: ${question.removePrefix("Fill in the blank:\n")}",
+                    color = TextPrimary,
+                    fontSize = 13.sp,
                     lineHeight = 19.sp,
-                    modifier   = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f)
                 )
             }
             if (!isCorrect) {
                 Spacer(modifier = Modifier.height(8.dp))
                 if (userAnswer.isNotBlank()) {
                     Text(
-                        text     = "Your answer: $userAnswer",
-                        color    = WrongRed,
+                        text = "Your answer: $userAnswer",
+                        color = WrongRed,
                         fontSize = 12.sp
                     )
                 } else {
                     Text(
-                        text     = "Not answered",
-                        color    = WrongRed,
+                        text = "Not answered",
+                        color = WrongRed,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
                 Text(
-                    text       = "Correct: $correctAnswer",
-                    color      = CorrectGreen,
-                    fontSize   = 12.sp,
+                    text = "Correct: $correctAnswer",
+                    color = CorrectGreen,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold
                 )
             }
@@ -910,14 +880,14 @@ fun QuizHistoryScreen(
                 QuizBackButton(onClick = onBack)
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text       = "Quiz History",
-                    color      = Color.White,
-                    fontSize   = 26.sp,
+                    text = "Quiz History",
+                    color = Color.White,
+                    fontSize = 26.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text     = "${attempts.size} attempt${if (attempts.size != 1) "s" else ""}",
-                    color    = Color.White.copy(alpha = 0.75f),
+                    text = "${attempts.size} attempt${if (attempts.size != 1) "s" else ""}",
+                    color = Color.White.copy(alpha = 0.75f),
                     fontSize = 14.sp
                 )
             }
@@ -925,29 +895,29 @@ fun QuizHistoryScreen(
 
         if (attempts.isEmpty()) {
             Box(
-                modifier         = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text       = "No quiz attempts yet",
-                        color      = TextSecondary,
-                        fontSize   = 18.sp,
+                        text = "No quiz attempts yet",
+                        color = TextSecondary,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text      = "Complete a quiz to see your history here.",
-                        color     = TextHint,
-                        fontSize  = 14.sp,
+                        text = "Complete a quiz to see your history here.",
+                        color = TextHint,
+                        fontSize = 14.sp,
                         textAlign = TextAlign.Center,
-                        modifier  = Modifier.padding(horizontal = 32.dp)
+                        modifier = Modifier.padding(horizontal = 32.dp)
                     )
                 }
             }
         } else {
             LazyColumn(
-                contentPadding      = PaddingValues(16.dp),
+                contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(attempts, key = { it.id }) { attempt ->
@@ -963,63 +933,63 @@ private fun HistoryAttemptCard(
     attempt: QuizAttemptModel,
     dateFmt: SimpleDateFormat
 ) {
-    val pct      = attempt.scorePercentage
+    val pct = attempt.scorePercentage
     val barColor = when {
         pct >= 80f -> CorrectGreen
         pct >= 60f -> QuizPurple
-        else       -> WrongRed
+        else -> WrongRed
     }
 
     Card(
-        modifier  = Modifier.fillMaxWidth(),
-        shape     = RoundedCornerShape(16.dp),
-        colors    = CardDefaults.cardColors(containerColor = Color.White),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
-                modifier              = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.Top
+                verticalAlignment = Alignment.Top
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text       = attempt.subject.ifBlank { attempt.title },
-                        color      = TextPrimary,
-                        fontSize   = 15.sp,
+                        text = attempt.subject.ifBlank { attempt.title },
+                        color = TextPrimary,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
-                        maxLines   = 1,
-                        overflow   = TextOverflow.Ellipsis
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text     = dateFmt.format(Date(attempt.completedAt)),
-                        color    = TextHint,
+                        text = dateFmt.format(Date(attempt.completedAt)),
+                        color = TextHint,
                         fontSize = 12.sp
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text       = "${attempt.correctAnswers}/${attempt.totalQuestions}",
-                    color      = barColor,
-                    fontSize   = 20.sp,
+                    text = "${attempt.correctAnswers}/${attempt.totalQuestions}",
+                    color = barColor,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.ExtraBold
                 )
             }
             Spacer(modifier = Modifier.height(10.dp))
             LinearProgressIndicator(
-                progress         = { pct / 100f },
-                modifier         = Modifier
+                progress = { pct / 100f },
+                modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp)
                     .clip(RoundedCornerShape(10.dp)),
-                color            = barColor,
-                trackColor       = barColor.copy(alpha = 0.15f)
+                color = barColor,
+                trackColor = barColor.copy(alpha = 0.15f)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text     = "${pct.toInt()}%",
-                color    = barColor,
+                text = "${pct.toInt()}%",
+                color = barColor,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -1038,10 +1008,10 @@ private fun QuizBackButton(onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector        = Icons.AutoMirrored.Filled.ArrowBack,
+            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
             contentDescription = "Back",
-            tint               = Color.White,
-            modifier           = Modifier.size(18.dp)
+            tint = Color.White,
+            modifier = Modifier.size(18.dp)
         )
         Spacer(modifier = Modifier.width(6.dp))
         Text(text = "Back", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)

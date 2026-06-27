@@ -24,10 +24,17 @@ class NoteRepoImpl : NoteRepo {
                     val notes = snapshot?.documents
                         ?.mapNotNull { it.toObject(NoteModel::class.java) }
                         ?: emptyList()
-                    trySend(notes.sortedByDescending { it.timestamp })
+                    trySend(notes.sortedByDescending { it.lastActivityTime() })
                 }
             awaitClose { listener.remove() }
         }
+    }
+
+    private fun NoteModel.lastActivityTime(): Long = when {
+        updatedAt > 0L -> updatedAt
+        timestamp > 0L -> timestamp
+        createdAt > 0L -> createdAt
+        else -> 0L
     }
 
     override suspend fun createNote(title: String, body: String, folder: String): Boolean {
@@ -40,7 +47,9 @@ class NoteRepoImpl : NoteRepo {
         return try {
             docRef.set(note).await()
             true
-        } catch (e: Exception) { false }
+        } catch (e: Exception) {
+            false
+        }
     }
 
     suspend fun createNoteAndReturnId(title: String, body: String, folder: String): String? {
@@ -53,7 +62,9 @@ class NoteRepoImpl : NoteRepo {
         return try {
             docRef.set(note).await()
             docRef.id
-        } catch (e: Exception) { null }
+        } catch (e: Exception) {
+            null
+        }
     }
 
     suspend fun autoSaveNote(note: NoteModel): Boolean {
@@ -63,7 +74,9 @@ class NoteRepoImpl : NoteRepo {
                 .set(note.copy(userId = userId, timestamp = System.currentTimeMillis()))
                 .await()
             true
-        } catch (e: Exception) { false }
+        } catch (e: Exception) {
+            false
+        }
     }
 
     override suspend fun updateNote(note: NoteModel): Boolean {
@@ -71,10 +84,15 @@ class NoteRepoImpl : NoteRepo {
         return try {
             notesCollection.document(note.id).set(note.copy(userId = userId)).await()
             true
-        } catch (e: Exception) { false }
+        } catch (e: Exception) {
+            false
+        }
     }
 
     override suspend fun deleteNote(noteId: String) {
-        try { notesCollection.document(noteId).delete().await() } catch (_: Exception) {}
+        try {
+            notesCollection.document(noteId).delete().await()
+        } catch (_: Exception) {
+        }
     }
 }

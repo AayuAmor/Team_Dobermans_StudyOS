@@ -1,7 +1,9 @@
 package com.teamdobermans.studyos.ui.plan
+
 import com.teamdobermans.studyos.R
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -44,6 +46,8 @@ import com.teamdobermans.studyos.model.NoteModel
 import com.teamdobermans.studyos.model.Priority
 import com.teamdobermans.studyos.model.SubjectModel
 import com.teamdobermans.studyos.model.Task
+import com.teamdobermans.studyos.ui.components.StudyOSPrimaryButton
+import com.teamdobermans.studyos.ui.components.StudyOSTextButton
 import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.viewModel.CalendarUiState
 import com.teamdobermans.studyos.viewModel.CalendarViewModel
@@ -77,6 +81,7 @@ fun PlanBody(viewModel: PlanViewModel) {
     val viewMode = calendarState.viewMode
 
     val currentLocale = LocalConfiguration.current.locales[0]
+    val context = LocalContext.current
     val today = LocalDate.now()
 
     var displayedMonth by remember { mutableStateOf(YearMonth.of(today.year, today.month)) }
@@ -88,14 +93,20 @@ fun PlanBody(viewModel: PlanViewModel) {
     val sectionFormatter = remember(currentLocale) { DateTimeFormatter.ofPattern("EEEE, MMM d", currentLocale) }
     val weekLabelFormatter = remember(currentLocale) { DateTimeFormatter.ofPattern("MMM d", currentLocale) }
 
-    var priorityDropdown        by remember { mutableStateOf(false) }
-    var filterDropdownExpanded  by remember { mutableStateOf(false) }
+    var priorityDropdown by remember { mutableStateOf(false) }
+    var filterDropdownExpanded by remember { mutableStateOf(false) }
     var subjectDropdownExpanded by remember { mutableStateOf(false) }
-    var showDatePicker          by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     val dynamicSubjects = viewModel.dynamicSubjects
     var selectedSubjectState by remember {
-        mutableStateOf(dynamicSubjects.firstOrNull() ?: SubjectModel("sub_fallback", "General Study"))
+        mutableStateOf(dynamicSubjects.firstOrNull() ?: SubjectModel("general", "General"))
+    }
+
+    LaunchedEffect(dynamicSubjects.size) {
+        if (dynamicSubjects.isNotEmpty() && dynamicSubjects.none { it.id == selectedSubjectState.id }) {
+            selectedSubjectState = dynamicSubjects.first()
+        }
     }
 
     val allNotes by viewModel.allNotes.collectAsState()
@@ -125,7 +136,7 @@ fun PlanBody(viewModel: PlanViewModel) {
 
     val pendingCount = filteredTasks.count { !it.done }
 
-        LaunchedEffect(Unit) {
+    LaunchedEffect(Unit) {
         calendarVm.refreshSessions()
     }
 
@@ -135,7 +146,7 @@ fun PlanBody(viewModel: PlanViewModel) {
         viewModel.selectedEndDate = null
     }
 
-        if (viewModel.showNotePicker) {
+    if (viewModel.showNotePicker) {
         val taskId = viewModel.notePickerTaskId ?: ""
         val alreadyLinked = viewModel.getLinkedNoteIds(taskId)
         val availableNotes = allNotes.filter { it.id !in alreadyLinked }
@@ -147,7 +158,7 @@ fun PlanBody(viewModel: PlanViewModel) {
             },
             text = {
                 if (availableNotes.isEmpty()) {
-                    Text("No notes available to attach.", color = Color.Gray, fontSize = 14.sp)
+                    Text("No notes available to attach.", color = TextSecondary, fontSize = 14.sp)
                 } else {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         availableNotes.forEach { note ->
@@ -169,7 +180,7 @@ fun PlanBody(viewModel: PlanViewModel) {
                                         fontSize = 14.sp
                                     )
                                     if (note.body.isNotBlank()) {
-                                        Text(note.body, color = Color.Gray, fontSize = 12.sp, maxLines = 1)
+                                        Text(note.body, color = TextSecondary, fontSize = 12.sp, maxLines = 1)
                                     }
                                 }
                             }
@@ -179,37 +190,36 @@ fun PlanBody(viewModel: PlanViewModel) {
             },
             confirmButton = {},
             dismissButton = {
-                TextButton(onClick = { viewModel.closeNotePicker() }) {
-                    Text("Cancel", color = Color.Gray)
-                }
+                StudyOSTextButton(text = "Cancel", onClick = { viewModel.closeNotePicker() })
             },
             containerColor = Color.White,
             shape = RoundedCornerShape(16.dp)
         )
     }
 
-        if (showDatePicker) {
+    if (showDatePicker) {
         val dateRangePickerState = rememberDateRangePickerState()
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
-                TextButton(
+                StudyOSTextButton(
+                    text = "Select",
                     onClick = {
                         val startMillis = dateRangePickerState.selectedStartDateMillis
-                        val endMillis   = dateRangePickerState.selectedEndDateMillis
+                        val endMillis = dateRangePickerState.selectedEndDateMillis
                         if (startMillis != null) {
                             viewModel.selectedStartDate = Instant.ofEpochMilli(startMillis)
                                 .atZone(ZoneId.systemDefault()).toLocalDate()
-                            viewModel.selectedEndDate   = if (endMillis != null) {
+                            viewModel.selectedEndDate = if (endMillis != null) {
                                 Instant.ofEpochMilli(endMillis).atZone(ZoneId.systemDefault()).toLocalDate()
                             } else null
                         }
                         showDatePicker = false
                     }
-                ) { Text("Select", color = StudyPurple, fontWeight = FontWeight.Bold) }
+                )
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancel", color = Color.Gray) }
+                StudyOSTextButton(text = "Cancel", onClick = { showDatePicker = false })
             },
             colors = DatePickerDefaults.colors(containerColor = Color.White)
         ) {
@@ -224,9 +234,9 @@ fun PlanBody(viewModel: PlanViewModel) {
                 },
                 showModeToggle = false,
                 colors = DatePickerDefaults.colors(
-                    selectedDayContainerColor         = StudyPurple,
+                    selectedDayContainerColor = StudyPurple,
                     dayInSelectionRangeContainerColor = StudyPurpleLight,
-                    todayDateBorderColor              = StudyPurple
+                    todayDateBorderColor = StudyPurple
                 )
             )
         }
@@ -238,7 +248,7 @@ fun PlanBody(viewModel: PlanViewModel) {
             .background(StudyPurpleDeep)
             .imePadding()
     ) {
-                Column(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
@@ -253,8 +263,8 @@ fun PlanBody(viewModel: PlanViewModel) {
                     val selectedFilterLabel = if (viewModel.currentFilterSubjectId == "ALL_FILTER") "All"
                     else dynamicSubjects.find { it.id == viewModel.currentFilterSubjectId }?.name ?: "Unknown"
                     Surface(
-                        shape    = RoundedCornerShape(10.dp),
-                        color    = Color.White.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color.White.copy(alpha = 0.2f),
                         modifier = Modifier.clickable { filterDropdownExpanded = true }
                     ) {
                         Text(
@@ -301,7 +311,7 @@ fun PlanBody(viewModel: PlanViewModel) {
             }
         }
 
-                Column(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(StudyPurpleFaint)
@@ -309,14 +319,14 @@ fun PlanBody(viewModel: PlanViewModel) {
                 .padding(16.dp)
         ) {
 
-                        Card(
+            Card(
                 modifier = Modifier.fillMaxWidth().shadow(4.dp, RoundedCornerShape(16.dp)),
-                shape    = RoundedCornerShape(16.dp),
-                colors   = CardDefaults.cardColors(containerColor = Color.White)
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Row(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
 
-                                        Column(
+                    Column(
                         modifier = Modifier
                             .width(72.dp)
                             .padding(end = 8.dp),
@@ -343,14 +353,14 @@ fun PlanBody(viewModel: PlanViewModel) {
                         )
                     }
 
-                                        Column(modifier = Modifier.weight(1f)) {
+                    Column(modifier = Modifier.weight(1f)) {
 
-                                                Row(
+                        Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                                                        Row(
+                            Row(
                                 modifier = Modifier
                                     .background(StudyPurpleLight, RoundedCornerShape(50.dp))
                                     .padding(2.dp)
@@ -389,7 +399,7 @@ fun PlanBody(viewModel: PlanViewModel) {
                                 }
                             }
 
-                                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 IconButton(
                                     onClick = {
                                         if (viewMode == CalendarViewMode.MONTH)
@@ -410,7 +420,11 @@ fun PlanBody(viewModel: PlanViewModel) {
                                     displayedMonth.format(DateTimeFormatter.ofPattern("MMM yyyy", currentLocale))
                                 } else {
                                     val weekEnd = displayedWeekStart.plusDays(6)
-                                    "${displayedWeekStart.format(weekLabelFormatter)} – ${weekEnd.format(weekLabelFormatter)}"
+                                    "${displayedWeekStart.format(weekLabelFormatter)} – ${
+                                        weekEnd.format(
+                                            weekLabelFormatter
+                                        )
+                                    }"
                                 }
                                 Text(
                                     navLabel,
@@ -439,12 +453,12 @@ fun PlanBody(viewModel: PlanViewModel) {
 
                         Spacer(modifier = Modifier.height(6.dp))
 
-                                                Row(modifier = Modifier.fillMaxWidth()) {
+                        Row(modifier = Modifier.fillMaxWidth()) {
                             dayHeaders.forEach { day ->
                                 Text(
                                     day,
                                     fontSize = 10.sp,
-                                    color = Color.Gray,
+                                    color = TextSecondary,
                                     modifier = Modifier.weight(1f),
                                     textAlign = TextAlign.Center
                                 )
@@ -483,7 +497,7 @@ fun PlanBody(viewModel: PlanViewModel) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-                        Text(
+            Text(
                 selectedDate.format(sectionFormatter),
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
@@ -492,7 +506,7 @@ fun PlanBody(viewModel: PlanViewModel) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-                        tasksForSelectedDate.forEach { task ->
+            tasksForSelectedDate.forEach { task ->
                 TaskCard(
                     task = task,
                     isEditing = task.id == viewModel.editingTaskId,
@@ -506,7 +520,7 @@ fun PlanBody(viewModel: PlanViewModel) {
                 Spacer(modifier = Modifier.height(4.dp))
             }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -537,10 +551,10 @@ fun PlanBody(viewModel: PlanViewModel) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-                        Card(
+            Card(
                 modifier = Modifier.fillMaxWidth().shadow(4.dp, RoundedCornerShape(16.dp)),
-                shape    = RoundedCornerShape(16.dp),
-                colors   = CardDefaults.cardColors(containerColor = Color.White)
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     val isEditing = viewModel.editingTaskId != null
@@ -572,12 +586,12 @@ fun PlanBody(viewModel: PlanViewModel) {
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
-                        placeholder = { Text("Task Title.....", color = Color.Gray) },
+                        placeholder = { Text("Task Title.....", color = TextSecondary) },
                         colors = TextFieldDefaults.colors(
                             unfocusedContainerColor = Color.White,
-                            focusedContainerColor   = Color.White,
+                            focusedContainerColor = Color.White,
                             unfocusedIndicatorColor = StudyPurpleLight,
-                            focusedIndicatorColor   = StudyPurple
+                            focusedIndicatorColor = StudyPurple
                         )
                     )
 
@@ -588,13 +602,13 @@ fun PlanBody(viewModel: PlanViewModel) {
                         onValueChange = { viewModel.taskDescription = it },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
-                        placeholder = { Text("Description / Category Details.....", color = Color.Gray) },
+                        placeholder = { Text("Description / Category Details.....", color = TextSecondary) },
                         maxLines = 3,
                         colors = TextFieldDefaults.colors(
                             unfocusedContainerColor = Color.White,
-                            focusedContainerColor   = Color.White,
+                            focusedContainerColor = Color.White,
                             unfocusedIndicatorColor = StudyPurpleLight,
-                            focusedIndicatorColor   = StudyPurple
+                            focusedIndicatorColor = StudyPurple
                         )
                     )
 
@@ -606,7 +620,6 @@ fun PlanBody(viewModel: PlanViewModel) {
                             onValueChange = {},
                             readOnly = true,
                             modifier = Modifier.weight(1.1f).clickable { showDatePicker = true },
-                            enabled = false,
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true,
                             label = { Text("Due Date / Range", fontSize = 11.sp, color = StudyPurple) },
@@ -619,18 +632,23 @@ fun PlanBody(viewModel: PlanViewModel) {
                                 )
                             },
                             colors = TextFieldDefaults.colors(
-                                disabledContainerColor   = StudyPurpleLight,
-                                disabledTextColor        = TextPrimary,
-                                disabledLabelColor       = StudyPurple,
-                                disabledIndicatorColor   = Color.Transparent,
-                                disabledTrailingIconColor = StudyPurple
+                                focusedContainerColor = StudyPurpleLight,
+                                unfocusedContainerColor = StudyPurpleLight,
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
+                                focusedLabelColor = StudyPurple,
+                                unfocusedLabelColor = StudyPurple,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                focusedTrailingIconColor = StudyPurple,
+                                unfocusedTrailingIconColor = StudyPurple
                             )
                         )
 
                         Box(modifier = Modifier.weight(0.9f).align(Alignment.Bottom)) {
                             Surface(
-                                shape    = RoundedCornerShape(12.dp),
-                                color    = StudyPurpleLight,
+                                shape = RoundedCornerShape(12.dp),
+                                color = StudyPurpleLight,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(52.dp)
@@ -656,7 +674,7 @@ fun PlanBody(viewModel: PlanViewModel) {
                                         Icon(
                                             painter = painterResource(R.drawable.baseline_more_horiz_24),
                                             contentDescription = null,
-                                            tint = Color.Gray,
+                                            tint = TextSecondary,
                                             modifier = Modifier.size(14.dp)
                                         )
                                     }
@@ -680,8 +698,8 @@ fun PlanBody(viewModel: PlanViewModel) {
 
                         Box(modifier = Modifier.weight(0.7f).align(Alignment.Bottom)) {
                             Surface(
-                                shape    = RoundedCornerShape(12.dp),
-                                color    = StudyPurpleLight,
+                                shape = RoundedCornerShape(12.dp),
+                                color = StudyPurpleLight,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(52.dp)
@@ -697,9 +715,9 @@ fun PlanBody(viewModel: PlanViewModel) {
                                             .lowercase()
                                             .replaceFirstChar { it.uppercase() },
                                         color = when (viewModel.selectedPriority) {
-                                            Priority.HIGH   -> Color(0xFFE53935)
+                                            Priority.HIGH -> Color(0xFFE53935)
                                             Priority.MEDIUM -> Color(0xFFFFC107)
-                                            Priority.LOW    -> Color(0xFF4CAF50)
+                                            Priority.LOW -> Color(0xFF4CAF50)
                                         },
                                         fontWeight = FontWeight.Medium,
                                         fontSize = 14.sp
@@ -707,7 +725,7 @@ fun PlanBody(viewModel: PlanViewModel) {
                                     Icon(
                                         painter = painterResource(R.drawable.baseline_more_horiz_24),
                                         contentDescription = null,
-                                        tint = Color.Gray,
+                                        tint = TextSecondary,
                                         modifier = Modifier.size(16.dp)
                                     )
                                 }
@@ -733,25 +751,19 @@ fun PlanBody(viewModel: PlanViewModel) {
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    Button(
-                        onClick  = {
+                    StudyOSPrimaryButton(
+                        text = if (viewModel.editingTaskId != null) "Update Details" else "+ Add Task",
+                        onClick = {
+                            if (viewModel.taskTitle.trim().isEmpty()) {
+                                Toast.makeText(context, "Please enter a title", Toast.LENGTH_SHORT).show()
+                                return@StudyOSPrimaryButton
+                            }
                             viewModel.handleAddOrUpdateTask(selectedSubjectState.id, selectedSubjectState.name)
                         },
-                        enabled  = viewModel.taskTitle.trim().isNotEmpty(),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(48.dp)
-                            .shadow(6.dp, RoundedCornerShape(24.dp)),
-                        shape  = RoundedCornerShape(24.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)
-                    ) {
-                        Text(
-                            if (viewModel.editingTaskId != null) "Update Details" else "+ Add Task",
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 15.sp
-                        )
-                    }
+                            .shadow(6.dp, RoundedCornerShape(24.dp))
+                    )
                 }
             }
 
@@ -812,9 +824,9 @@ private fun MonthGrid(
                                 fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Normal,
                                 color = when {
                                     isSelected -> Color.White
-                                    isPast     -> Color.LightGray
-                                    isToday    -> StudyPurple
-                                    else       -> TextPrimary
+                                    isPast -> TextHint.copy(alpha = 0.65f)
+                                    isToday -> StudyPurple
+                                    else -> TextPrimary
                                 }
                             )
                         }
@@ -823,7 +835,7 @@ private fun MonthGrid(
                                 modifier = Modifier
                                     .size(4.dp)
                                     .clip(CircleShape)
-                                    .background(if (isSelected) StudyPurple else StudyPurple.copy(alpha = 0.5f))
+                                    .background(if (isSelected) StudyPurple else StudyPurpleLight)
                             )
                         } else {
                             Spacer(modifier = Modifier.height(4.dp))
@@ -881,8 +893,8 @@ private fun WeekStrip(
                         fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Normal,
                         color = when {
                             isSelected -> Color.White
-                            isToday    -> StudyPurple
-                            else       -> TextPrimary
+                            isToday -> StudyPurple
+                            else -> TextPrimary
                         }
                     )
                 }
@@ -891,7 +903,7 @@ private fun WeekStrip(
                         modifier = Modifier
                             .size(4.dp)
                             .clip(CircleShape)
-                            .background(if (isSelected) StudyPurple else StudyPurple.copy(alpha = 0.5f))
+                            .background(if (isSelected) StudyPurple else StudyPurpleLight)
                     )
                 } else {
                     Spacer(modifier = Modifier.height(4.dp))
@@ -907,16 +919,19 @@ private fun SessionEventItem(event: CalendarEvent) {
     val timeLabel = when {
         event.startTime != null && event.endTime != null ->
             "${event.startTime.format(timeFormatter)} – ${event.endTime.format(timeFormatter)}"
+
         event.endTime != null ->
             "Ended ${event.endTime.format(timeFormatter)}"
+
         event.startTime != null ->
             event.startTime.format(timeFormatter)
+
         else -> ""
     }
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape  = RoundedCornerShape(12.dp),
-        color  = Color.White,
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White,
         border = BorderStroke(1.dp, StudyPurpleLight)
     ) {
         Row(
@@ -951,7 +966,7 @@ private fun SessionEventItem(event: CalendarEvent) {
                 if (event.durationMinutes != null) {
                     Text(
                         "${event.durationMinutes} min session",
-                        color = Color.Gray,
+                        color = TextSecondary,
                         fontSize = 11.sp
                     )
                 }
@@ -972,8 +987,8 @@ private fun SessionEventItem(event: CalendarEvent) {
 private fun NoSessionsState() {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape  = RoundedCornerShape(12.dp),
-        color  = Color.White,
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White,
         border = BorderStroke(1.dp, StudyPurpleLight)
     ) {
         Column(
@@ -1013,8 +1028,8 @@ private fun TaskCard(
             .fillMaxWidth()
             .padding(vertical = 4.dp)
             .clickable { onTaskClick() },
-        shape  = RoundedCornerShape(14.dp),
-        color  = if (isOverdue) Color(0xFFFFF2F1) else Color.White,
+        shape = RoundedCornerShape(14.dp),
+        color = if (isOverdue) Color(0xFFFFF2F1) else Color.White,
         border = if (isOverdue) BorderStroke(1.dp, Color(0xFFFFCDD2)) else null
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
@@ -1047,7 +1062,7 @@ private fun TaskCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             task.title,
-                            color = if (task.done) Color.Gray else TextPrimary,
+                            color = if (task.done) TextSecondary else TextPrimary,
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
                             textDecoration = if (task.done) TextDecoration.LineThrough else TextDecoration.None
@@ -1067,7 +1082,7 @@ private fun TaskCard(
                     if (task.description.isNotEmpty()) {
                         Text(
                             task.description,
-                            color = Color.Gray,
+                            color = TextSecondary,
                             fontSize = 12.sp,
                             textDecoration = if (task.done) TextDecoration.LineThrough else TextDecoration.None
                         )
@@ -1087,17 +1102,17 @@ private fun TaskCard(
                 Surface(
                     shape = RoundedCornerShape(50.dp),
                     color = when (task.priority) {
-                        Priority.HIGH   -> Color(0xFFFFEBEB)
+                        Priority.HIGH -> Color(0xFFFFEBEB)
                         Priority.MEDIUM -> Color(0xFFFFF8E1)
-                        Priority.LOW    -> Color(0xFFE8F5E9)
+                        Priority.LOW -> Color(0xFFE8F5E9)
                     }
                 ) {
                     Text(
                         task.priority.name.lowercase().replaceFirstChar { it.uppercase() },
                         color = when (task.priority) {
-                            Priority.HIGH   -> Color(0xFFE53935)
+                            Priority.HIGH -> Color(0xFFE53935)
                             Priority.MEDIUM -> Color(0xFFF57F17)
-                            Priority.LOW    -> Color(0xFF2E7D32)
+                            Priority.LOW -> Color(0xFF2E7D32)
                         },
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
@@ -1137,7 +1152,12 @@ private fun TaskCard(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 if (linkedNotes.isEmpty()) {
-                    Text("No notes attached", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(start = 4.dp))
+                    Text(
+                        "No notes attached",
+                        color = TextSecondary,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
                 } else {
                     linkedNotes.forEach { note ->
                         LinkedNoteChip(note = note, showRemove = isEditing, onRemove = { onDetachNote(note.id) })
@@ -1178,7 +1198,7 @@ private fun LinkedNoteChip(
                 Icon(
                     painter = painterResource(R.drawable.ic_clear),
                     contentDescription = "Remove note",
-                    tint = Color.Gray,
+                    tint = TextSecondary,
                     modifier = Modifier.size(16.dp).clickable { onRemove() }
                 )
             }

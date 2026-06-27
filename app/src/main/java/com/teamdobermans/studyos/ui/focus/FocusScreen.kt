@@ -34,6 +34,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.teamdobermans.studyos.model.PomodoroTab
 import com.teamdobermans.studyos.model.Task
+import com.teamdobermans.studyos.ui.components.StudyOSOutlinedButton
+import com.teamdobermans.studyos.ui.components.StudyOSPrimaryButton
+import com.teamdobermans.studyos.ui.navigation.AppRoutes
 import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.viewModel.FocusUiState
 import com.teamdobermans.studyos.viewModel.FocusViewModel
@@ -42,7 +45,7 @@ import com.teamdobermans.studyos.viewModel.PomodoroViewModel
 @Composable
 fun FocusScreen(
     focusViewModel: FocusViewModel,
-    onNavigateBrainGame: () -> Unit = {}
+    onNavigateBrainGame: (String) -> Unit = {}
 ) {
     val pomodoroVm: PomodoroViewModel = viewModel()
     val focusState by focusViewModel.state.collectAsState()
@@ -99,7 +102,7 @@ fun FocusContent(
     onTaskSelect: (Task) -> Unit,
     onClearTask: () -> Unit,
     onSoundTap: (String) -> Unit,
-    onNavigateBrainGame: () -> Unit,
+    onNavigateBrainGame: (String) -> Unit,
     onCompleteSession: () -> Unit
 ) {
     val timerProgress by animateFloatAsState(
@@ -192,7 +195,7 @@ private fun TaskPickerCard(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(3.dp, RoundedCornerShape(14.dp)),
-        shape  = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Row(
@@ -205,52 +208,52 @@ private fun TaskPickerCard(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector        = Icons.Rounded.Task,
+                    imageVector = Icons.Rounded.Task,
                     contentDescription = null,
-                    tint               = StudyPurple,
-                    modifier           = Modifier.size(18.dp)
+                    tint = StudyPurple,
+                    modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
-                        text     = "Studying for",
+                        text = "Studying for",
                         fontSize = 11.sp,
-                        color    = TextSecondary
+                        color = TextSecondary
                     )
                     Text(
-                        text       = selectedTask?.title ?: "Select a task",
-                        fontSize   = 13.sp,
+                        text = selectedTask?.title ?: "Select a task",
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color      = if (selectedTask != null) TextPrimary else TextSecondary
+                        color = if (selectedTask != null) TextPrimary else TextSecondary
                     )
                 }
             }
             if (selectedTask != null) {
                 Icon(
-                    imageVector        = Icons.Rounded.Close,
+                    imageVector = Icons.Rounded.Close,
                     contentDescription = "Clear",
-                    tint               = TextSecondary,
-                    modifier           = Modifier
+                    tint = TextSecondary,
+                    modifier = Modifier
                         .size(18.dp)
                         .clickable { onClear() }
                 )
             } else {
                 Icon(
-                    imageVector        = Icons.Rounded.ExpandMore,
+                    imageVector = Icons.Rounded.ExpandMore,
                     contentDescription = null,
-                    tint               = StudyPurple,
-                    modifier           = Modifier.size(20.dp)
+                    tint = StudyPurple,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
 
         DropdownMenu(
-            expanded         = expanded,
+            expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
             if (tasks.isEmpty()) {
                 DropdownMenuItem(
-                    text    = { Text("No tasks found", color = TextSecondary) },
+                    text = { Text("No tasks found", color = TextSecondary) },
                     onClick = { expanded = false }
                 )
             } else {
@@ -259,14 +262,14 @@ private fun TaskPickerCard(
                         text = {
                             Column {
                                 Text(
-                                    text       = task.title,
+                                    text = task.title,
                                     fontWeight = FontWeight.SemiBold,
-                                    fontSize   = 13.sp
+                                    fontSize = 13.sp
                                 )
                                 Text(
-                                    text     = task.subjectName,
+                                    text = task.subjectName,
                                     fontSize = 11.sp,
-                                    color    = TextSecondary
+                                    color = TextSecondary
                                 )
                             }
                         },
@@ -303,8 +306,8 @@ private fun FocusHeader(
                 Column {
                     Text("Focus", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
                     Text(
-                        text     = "Notifications silenced during focus",
-                        color    = Color.White.copy(alpha = 0.70f),
+                        text = "Notifications silenced during focus",
+                        color = Color.White.copy(alpha = 0.70f),
                         fontSize = 12.sp
                     )
                 }
@@ -313,11 +316,11 @@ private fun FocusHeader(
                     color = Color.White.copy(alpha = 0.20f)
                 ) {
                     Text(
-                        text       = "$sessionsToday / 4",
-                        color      = Color.White,
-                        fontSize   = 13.sp,
+                        text = "$sessionsToday / 4",
+                        color = Color.White,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        modifier   = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )
                 }
             }
@@ -327,21 +330,21 @@ private fun FocusHeader(
                     PomodoroTab.entries.forEach { tab ->
                         val isSelected = tab == selectedTab
                         Surface(
-                            shape    = RoundedCornerShape(50.dp),
-                            color    = if (isSelected) Color.White else Color.Transparent,
+                            shape = RoundedCornerShape(50.dp),
+                            color = if (isSelected) Color.White else Color.Transparent,
                             modifier = Modifier.weight(1f).clickable { onTabSelect(tab) }
                         ) {
                             Text(
                                 text = when (tab) {
-                                    PomodoroTab.FOCUS       -> "Focus"
+                                    PomodoroTab.FOCUS -> "Focus"
                                     PomodoroTab.SHORT_BREAK -> "Short"
-                                    PomodoroTab.LONG_BREAK  -> "Long"
+                                    PomodoroTab.LONG_BREAK -> "Long"
                                 },
-                                modifier   = Modifier.padding(vertical = 8.dp),
-                                color      = if (isSelected) StudyPurple else Color.White,
-                                fontSize   = 12.sp,
+                                modifier = Modifier.padding(vertical = 8.dp),
+                                color = if (isSelected) StudyPurple else Color.White,
+                                fontSize = 12.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                textAlign  = TextAlign.Center
+                                textAlign = TextAlign.Center
                             )
                         }
                     }
@@ -364,7 +367,7 @@ private fun HeroTimerCard(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(6.dp, RoundedCornerShape(20.dp)),
-        shape  = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(
@@ -377,19 +380,19 @@ private fun HeroTimerCard(
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     drawCircle(color = StudyPurpleLight, style = Stroke(width = 16.dp.toPx()))
                     drawArc(
-                        color      = StudyPurple,
+                        color = StudyPurple,
                         startAngle = -90f,
                         sweepAngle = 360f * progress,
-                        useCenter  = false,
-                        style      = Stroke(width = 16.dp.toPx(), cap = StrokeCap.Round)
+                        useCenter = false,
+                        style = Stroke(width = 16.dp.toPx(), cap = StrokeCap.Round)
                     )
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text          = timeLabel,
-                        color         = TextPrimary,
-                        fontSize      = 44.sp,
-                        fontWeight    = FontWeight.Bold,
+                        text = timeLabel,
+                        color = TextPrimary,
+                        fontSize = 44.sp,
+                        fontWeight = FontWeight.Bold,
                         letterSpacing = 2.sp
                     )
                     Text(text = modeLabel, color = TextSecondary, fontSize = 11.sp, fontWeight = FontWeight.Medium)
@@ -400,40 +403,18 @@ private fun HeroTimerCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Button(
-                    onClick  = onToggle,
-                    modifier = Modifier.weight(1f).height(48.dp),
-                    shape    = RoundedCornerShape(24.dp),
-                    colors   = ButtonDefaults.buttonColors(containerColor = StudyPurple)
-                ) {
-                    Icon(
-                        imageVector        = if (isRunning) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                        contentDescription = null,
-                        tint               = Color.White,
-                        modifier           = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text       = if (isRunning) "Pause" else "Start",
-                        color      = Color.White,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-                OutlinedButton(
-                    onClick  = onReset,
-                    modifier = Modifier.weight(1f).height(48.dp),
-                    shape    = RoundedCornerShape(24.dp),
-                    colors   = ButtonDefaults.outlinedButtonColors(contentColor = StudyPurple),
-                    border   = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(width = 1.5.dp)
-                ) {
-                    Icon(
-                        imageVector        = Icons.Rounded.Refresh,
-                        contentDescription = null,
-                        modifier           = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Reset", fontWeight = FontWeight.SemiBold)
-                }
+                StudyOSPrimaryButton(
+                    text = if (isRunning) "Pause" else "Start",
+                    onClick = onToggle,
+                    modifier = Modifier.weight(1f),
+                    leadingIcon = if (isRunning) Icons.Rounded.Pause else Icons.Rounded.PlayArrow
+                )
+                StudyOSOutlinedButton(
+                    text = "Reset",
+                    onClick = onReset,
+                    modifier = Modifier.weight(1f),
+                    leadingIcon = Icons.Rounded.Refresh
+                )
             }
         }
     }
@@ -445,7 +426,7 @@ private fun SessionDotsCard(sessionsToday: Int) {
         modifier = Modifier
             .fillMaxWidth()
             .shadow(3.dp, RoundedCornerShape(14.dp)),
-        shape  = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Row(
@@ -476,24 +457,24 @@ private fun SessionDotsCard(sessionsToday: Int) {
 @Composable
 private fun FocusSoundsSection(activeSound: String?, onSoundTap: (String) -> Unit) {
     val sounds = listOf(
-        Triple("rain",       Icons.Rounded.WaterDrop, "Rain"),
-        Triple("whitenoise", Icons.Rounded.Air,        "White Noise"),
-        Triple("cafe",       Icons.Rounded.LocalCafe,  "Café")
+        Triple("rain", Icons.Rounded.WaterDrop, "Rain"),
+        Triple("whitenoise", Icons.Rounded.Air, "White Noise"),
+        Triple("cafe", Icons.Rounded.LocalCafe, "Café")
     )
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(3.dp, RoundedCornerShape(16.dp)),
-        shape  = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector        = Icons.Rounded.MusicNote,
+                    imageVector = Icons.Rounded.MusicNote,
                     contentDescription = null,
-                    tint               = StudyPurple,
-                    modifier           = Modifier.size(18.dp)
+                    tint = StudyPurple,
+                    modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text("Focus Sounds", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
@@ -506,10 +487,10 @@ private fun FocusSoundsSection(activeSound: String?, onSoundTap: (String) -> Uni
                 sounds.forEach { (id, icon, label) ->
                     SoundChip(
                         modifier = Modifier.weight(1f),
-                        icon     = icon,
-                        label    = label,
+                        icon = icon,
+                        label = label,
                         isActive = activeSound == id,
-                        onClick  = { onSoundTap(id) }
+                        onClick = { onSoundTap(id) }
                     )
                 }
             }
@@ -534,23 +515,23 @@ private fun SoundChip(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
-            imageVector        = icon,
+            imageVector = icon,
             contentDescription = label,
-            tint               = if (isActive) Color.White else StudyPurple,
-            modifier           = Modifier.size(22.dp)
+            tint = if (isActive) Color.White else StudyPurple,
+            modifier = Modifier.size(22.dp)
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text       = label,
-            color      = if (isActive) Color.White else TextPrimary,
-            fontSize   = 11.sp,
+            text = label,
+            color = if (isActive) Color.White else TextPrimary,
+            fontSize = 11.sp,
             fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal
         )
     }
 }
 
 @Composable
-private fun BrainGamesSection(onNavigateBrainGame: () -> Unit) {
+private fun BrainGamesSection(onNavigateBrainGame: (String) -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -559,20 +540,20 @@ private fun BrainGamesSection(onNavigateBrainGame: () -> Unit) {
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector        = Icons.Rounded.SportsEsports,
+                    imageVector = Icons.Rounded.SportsEsports,
                     contentDescription = null,
-                    tint               = StudyPurple,
-                    modifier           = Modifier.size(18.dp)
+                    tint = StudyPurple,
+                    modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text("Brain Games", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
             }
             Text(
-                text       = "View all",
-                color      = StudyPurple,
-                fontSize   = 12.sp,
+                text = "View all",
+                color = StudyPurple,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
-                modifier   = Modifier.clickable { onNavigateBrainGame() }
+                modifier = Modifier.clickable { onNavigateBrainGame(AppRoutes.BrainGame.MODE_HUB) }
             )
         }
         Spacer(modifier = Modifier.height(10.dp))
@@ -581,22 +562,22 @@ private fun BrainGamesSection(onNavigateBrainGame: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             BrainGameCard(
-                modifier   = Modifier.weight(1f),
-                icon       = Icons.Rounded.GridView,
-                iconBg     = Color(0xFFFFE8EE),
-                iconTint   = Color(0xFFE04F7B),
-                title      = "Memory Match",
+                modifier = Modifier.weight(1f),
+                icon = Icons.Rounded.GridView,
+                iconBg = Color(0xFFFFE8EE),
+                iconTint = Color(0xFFE04F7B),
+                title = "Memory Match",
                 difficulty = "Easy",
-                onClick    = onNavigateBrainGame
+                onClick = { onNavigateBrainGame(AppRoutes.BrainGame.MODE_MEMORY_MATCH) }
             )
             BrainGameCard(
-                modifier   = Modifier.weight(1f),
-                icon       = Icons.Rounded.Calculate,
-                iconBg     = Color(0xFFE8EAFF),
-                iconTint   = Color(0xFF4B5BE0),
-                title      = "Math Sprint",
+                modifier = Modifier.weight(1f),
+                icon = Icons.Rounded.Calculate,
+                iconBg = Color(0xFFE8EAFF),
+                iconTint = Color(0xFF4B5BE0),
+                title = "Math Sprint",
                 difficulty = "Medium",
-                onClick    = onNavigateBrainGame
+                onClick = { onNavigateBrainGame(AppRoutes.BrainGame.MODE_MATH_SPRINT) }
             )
         }
     }
@@ -616,7 +597,7 @@ private fun BrainGameCard(
         modifier = modifier
             .shadow(3.dp, RoundedCornerShape(14.dp))
             .clickable { onClick() },
-        shape  = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -630,16 +611,16 @@ private fun BrainGameCard(
                 Icon(imageVector = icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(22.dp))
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = title,      fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+            Text(text = title, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
             Text(text = difficulty, fontSize = 10.sp, color = TextSecondary)
             Spacer(modifier = Modifier.height(8.dp))
             Surface(shape = RoundedCornerShape(20.dp), color = iconBg) {
                 Text(
-                    text       = "Play →",
-                    color      = iconTint,
-                    fontSize   = 10.sp,
+                    text = "Play →",
+                    color = iconTint,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.SemiBold,
-                    modifier   = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                 )
             }
         }

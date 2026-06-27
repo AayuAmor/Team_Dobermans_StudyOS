@@ -19,50 +19,45 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.teamdobermans.studyos.ui.theme.BrandPurple
 import com.teamdobermans.studyos.ui.theme.LightPurpleBg
+import com.teamdobermans.studyos.ui.theme.TextSecondary
 
 data class NavTab(
-    val route:        String,
-    val label:        String,
+    val route: String,
+    val label: String,
     val selectedIcon: ImageVector,
-    val defaultIcon:  ImageVector
+    val defaultIcon: ImageVector
 )
 
 val bottomNavTabs = listOf(
     NavTab(
-        route        = AppRoutes.Home.route,
-        label        = "Home",
+        route = AppRoutes.Home.route,
+        label = "Home",
         selectedIcon = Icons.Rounded.Home,
-        defaultIcon  = Icons.Outlined.Home
+        defaultIcon = Icons.Outlined.Home
     ),
     NavTab(
-        route        = AppRoutes.Study.route,
-        label        = "Study",
+        route = AppRoutes.Study.route,
+        label = "Study",
         selectedIcon = Icons.AutoMirrored.Rounded.MenuBook,
-        defaultIcon  = Icons.AutoMirrored.Outlined.MenuBook
+        defaultIcon = Icons.AutoMirrored.Outlined.MenuBook
     ),
     NavTab(
-        route        = AppRoutes.Focus.route,
-        label        = "Focus",
+        route = AppRoutes.Focus.route,
+        label = "Focus",
         selectedIcon = Icons.Rounded.Timer,
-        defaultIcon  = Icons.Outlined.Timer
+        defaultIcon = Icons.Outlined.Timer
     ),
     NavTab(
-        route        = AppRoutes.Plan.route,
-        label        = "Plan",
+        route = AppRoutes.Plan.route,
+        label = "Plan",
         selectedIcon = Icons.AutoMirrored.Rounded.EventNote,
-        defaultIcon  = Icons.AutoMirrored.Outlined.EventNote
+        defaultIcon = Icons.AutoMirrored.Outlined.EventNote
     ),
     NavTab(
-        route        = AppRoutes.Profile.route,
-        label        = "Profile",
+        route = AppRoutes.Profile.route,
+        label = "Profile",
         selectedIcon = Icons.Rounded.Person,
-        defaultIcon  = Icons.Outlined.Person
-    ),
-    NavTab(
-        route        = AppRoutes.StudyTime.route,
-        label        = "Study Time",
-        selectedIcon = Icons.Rounded.Schedule,
-        defaultIcon  = Icons.Outlined.Schedule
+        defaultIcon = Icons.Outlined.Person
     )
 )
 
@@ -71,7 +66,7 @@ val bottomNavRoutes: Set<String> = bottomNavTabs.map { it.route }.toSet()
 @Composable
 fun StudyOSBottomNav(navController: NavController) {
     val backStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute   = backStackEntry?.destination?.route
+    val currentRoute = backStackEntry?.destination?.route
 
     NavigationBar(
         containerColor = Color.White,
@@ -82,33 +77,33 @@ fun StudyOSBottomNav(navController: NavController) {
             NavigationBarItem(
                 icon = {
                     Icon(
-                        imageVector        = if (isSelected) tab.selectedIcon else tab.defaultIcon,
+                        imageVector = if (isSelected) tab.selectedIcon else tab.defaultIcon,
                         contentDescription = tab.label
                     )
                 },
                 label = {
                     Text(
-                        text       = tab.label,
-                        fontSize   = 10.sp,
+                        text = tab.label,
+                        fontSize = 10.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                     )
                 },
                 selected = isSelected,
-                onClick  = {
+                onClick = {
                     if (currentRoute != tab.route) {
                         navController.navigate(tab.route) {
                             popUpTo(AppRoutes.Home.route) { saveState = true }
                             launchSingleTop = true
-                            restoreState    = true
+                            restoreState = true
                         }
                     }
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor   = BrandPurple,
-                    selectedTextColor   = BrandPurple,
-                    indicatorColor      = LightPurpleBg,
-                    unselectedIconColor = BrandPurple.copy(alpha = 0.45f),
-                    unselectedTextColor = BrandPurple.copy(alpha = 0.45f)
+                    selectedIconColor = BrandPurple,
+                    selectedTextColor = BrandPurple,
+                    indicatorColor = LightPurpleBg,
+                    unselectedIconColor = TextSecondary,
+                    unselectedTextColor = TextSecondary
                 )
             )
         }

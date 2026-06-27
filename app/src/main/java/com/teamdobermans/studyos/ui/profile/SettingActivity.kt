@@ -1,10 +1,10 @@
 package com.teamdobermans.studyos.ui.profile
-import com.teamdobermans.studyos.R
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -17,175 +17,220 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.teamdobermans.studyos.ui.theme.StudyOSTheme
-import com.teamdobermans.studyos.ui.theme.StudyPurple
-import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.teamdobermans.studyos.ui.components.StudyOSTextButton
+import com.teamdobermans.studyos.ui.theme.*
+import com.teamdobermans.studyos.viewModel.SettingsUiState
 import com.teamdobermans.studyos.viewModel.SettingsViewModel
 
 class SettingsActivity : ComponentActivity() {
+    private val settingsViewModel: SettingsViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent { SettingsBody(viewModel = SettingsViewModel()) }
+        setContent { StudyOSTheme { SettingsBody(viewModel = settingsViewModel, onSignOut = { finish() }) } }
     }
 }
 
 @Composable
 fun SettingsBody(
-    viewModel: SettingsViewModel = SettingsViewModel(),
+    viewModel: SettingsViewModel = viewModel(),
     onSignOut: () -> Unit = {},
     onNavigateProfile: () -> Unit = {}
 ) {
     val signedOut by viewModel.signedOut.collectAsState()
+    val state by viewModel.state.collectAsState()
+    var timeDialog by remember { mutableStateOf(false) }
+    var hourInput by remember { mutableStateOf(state.reminderHour.toString()) }
+    var minuteInput by remember { mutableStateOf(state.reminderMinute.toString().padStart(2, '0')) }
 
-    LaunchedEffect(signedOut) {
-        if (signedOut) onSignOut()
+    LaunchedEffect(signedOut) { if (signedOut) onSignOut() }
+    LaunchedEffect(state.reminderHour, state.reminderMinute) {
+        hourInput = state.reminderHour.toString()
+        minuteInput = state.reminderMinute.toString().padStart(2, '0')
     }
 
-    var offlineMode   by remember { mutableStateOf(true) }
-    var weeklySummary by remember { mutableStateOf(true) }
-    var focusSounds   by remember { mutableStateOf(false) }
-    var pinNotes      by remember { mutableStateOf(false) }
-
-    var dailyGoalMin  by remember { mutableStateOf(60) }
-    var goalDialog    by remember { mutableStateOf(false) }
-    var goalInput     by remember { mutableStateOf("") }
-
-    if (goalDialog) {
+    if (timeDialog) {
         AlertDialog(
-            onDismissRequest = { goalDialog = false; goalInput = "" },
-            title = { Text("Daily Study Goal", fontWeight = FontWeight.Bold, color = Color(0xFF1A1A2E)) },
+            onDismissRequest = { timeDialog = false },
+            title = { Text("Reminder time", color = TextPrimary, fontWeight = FontWeight.Bold) },
             text = {
-                OutlinedTextField(
-                    value = goalInput,
-                    onValueChange = { goalInput = it.filter { c -> c.isDigit() }.take(3) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    placeholder = { Text("Minutes per day", color = Color.Gray) },
-                    colors = TextFieldDefaults.colors(
-                        unfocusedContainerColor = Color(0xFFF5F3FF), focusedContainerColor = Color(0xFFF5F3FF),
-                        unfocusedIndicatorColor = Color.Transparent, focusedIndicatorColor = StudyPurple
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = hourInput,
+                        onValueChange = { hourInput = it.filter(Char::isDigit).take(2) },
+                        label = { Text("Hour") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f)
                     )
-                )
+                    OutlinedTextField(
+                        value = minuteInput,
+                        onValueChange = { minuteInput = it.filter(Char::isDigit).take(2) },
+                        label = { Text("Minute") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             },
             confirmButton = {
-                Button(
-                    onClick = { val mins = goalInput.toIntOrNull(); if (mins != null && mins > 0) dailyGoalMin = mins; goalDialog = false; goalInput = "" },
-                    enabled = goalInput.toIntOrNull()?.let { it > 0 } == true,
-                    colors  = ButtonDefaults.buttonColors(containerColor = StudyPurple)
-                ) { Text("Save", color = Color.White, fontWeight = FontWeight.SemiBold) }
+                StudyOSTextButton(text = "Save", onClick = {
+                    viewModel.setReminderTime(hourInput.toIntOrNull() ?: 8, minuteInput.toIntOrNull() ?: 0)
+                    timeDialog = false
+                })
             },
-            dismissButton = {
-                TextButton(onClick = { goalDialog = false; goalInput = "" }) { Text("Cancel", color = Color.Gray) }
-            },
-            containerColor = Color.White,
-            shape = RoundedCornerShape(20.dp)
+            dismissButton = { StudyOSTextButton(text = "Cancel", onClick = { timeDialog = false }) }
         )
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(StudyPurple)) {
+    SettingsContent(
+        state = state,
+        onReminderToggle = viewModel::setRemindersEnabled,
+        onReminderTimeClick = { timeDialog = true },
+        onProfileClick = onNavigateProfile,
+        onSignOut = viewModel::signOut
+    )
+}
 
-        Column(modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Spacer(modifier = Modifier.height(12.dp))
-            Text("Settings", style = TextStyle(color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold))
+@Composable
+private fun SettingsContent(
+    state: SettingsUiState,
+    onReminderToggle: (Boolean) -> Unit,
+    onReminderTimeClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onSignOut: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize().background(StudyPurpleFaint)) {
+        Box(
+            modifier = Modifier.fillMaxWidth()
+                .background(Brush.verticalGradient(listOf(StudyPurpleDeep, StudyPurple)))
+                .statusBarsPadding()
+                .padding(20.dp)
+        ) {
+            Column {
+                Text("Settings", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    "Account, reminders, and study preferences",
+                    color = Color.White.copy(alpha = 0.75f),
+                    fontSize = 13.sp
+                )
+            }
         }
 
         Column(
-            modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(0.dp)).background(StudyPurpleLight)
-                .verticalScroll(rememberScrollState()).padding(16.dp)
+            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("App Preferences", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    SettingsToggleRow("Offline mode",                offlineMode)   { offlineMode   = it }
-                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
-                    SettingsToggleRow("Weekly Summary Notification", weeklySummary) { weeklySummary = it }
-                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
-                    SettingsToggleRow("Focus Sounds",                focusSounds)   { focusSounds   = it }
-                    HorizontalDivider(color = Color.Gray.copy(alpha = 0.1f))
-                    SettingsToggleRow("Pin Notes",                   pinNotes)      { pinNotes      = it }
-                }
+            SettingsSection("Profile / account") {
+                SettingsRow(
+                    title = state.userName,
+                    subtitle = state.userEmail.ifBlank { "Signed in account" },
+                    onClick = onProfileClick
+                )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth().clickable { goalInput = dailyGoalMin.toString(); goalDialog = true },
-                shape    = RoundedCornerShape(16.dp),
-                colors   = CardDefaults.cardColors(containerColor = Color.White)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text("Daily Study Goal", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                        Icon(painter = painterResource(R.drawable.baseline_more_horiz_24), contentDescription = "Edit", tint = Color.Gray, modifier = Modifier.size(18.dp))
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text("$dailyGoalMin min / Day", color = Color(0xFF1A1A2E), fontSize = 14.sp)
-                }
+            SettingsSection("Reminder settings") {
+                SettingsToggleRow(
+                    "Daily study reminders",
+                    "Syncs locally and to Firestore",
+                    state.remindersEnabled,
+                    onReminderToggle
+                )
+                HorizontalDivider(color = StudyPurpleLight)
+                SettingsRow(
+                    title = "Reminder time",
+                    subtitle = "%02d:%02d".format(state.reminderHour, state.reminderMinute),
+                    onClick = onReminderTimeClick
+                )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            SettingsSection("Study preferences") {
+                SettingsInfoRow("Focus sounds", "Managed from the Focus screen")
+                HorizontalDivider(color = StudyPurpleLight)
+                SettingsInfoRow("Offline mode", "Uses cached Firebase/local data where available")
+            }
 
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Export and Data", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                    Spacer(modifier = Modifier.height(12.dp))
+            SettingsSection("Data / export") {
+                SettingsInfoRow("Export notes", "Coming soon")
+                HorizontalDivider(color = StudyPurpleLight)
+                SettingsInfoRow("Cloud sync", "Notes, goals, quizzes, and flashcards sync with Firestore")
+            }
 
-                    Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), color = Color(0xFFDEEEFF)) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp).clickable { },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("Export Notes as PDF", color = Color(0xFF1A62B7), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), color = Color(0xFFEEEBFF)) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp).clickable { viewModel.signOut() },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("Sign Out", color = StudyPurple, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                        }
-                    }
+            SettingsSection("Account actions") {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onSignOut() },
+                    color = StudyPurpleLight
+                ) {
+                    Text(
+                        "Sign Out",
+                        color = StudyPurple,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(16.dp)
+                    )
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
 @Composable
-fun SettingsToggleRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+private fun SettingsSection(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(title, color = StudyPurple, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+            content()
+        }
+    }
+}
+
+@Composable
+private fun SettingsRow(title: String, subtitle: String, onClick: () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable { onClick() }
+        .padding(vertical = 10.dp)) {
+        Text(title, color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+        Text(subtitle, color = TextSecondary, fontSize = 12.sp)
+    }
+}
+
+@Composable
+private fun SettingsInfoRow(title: String, subtitle: String) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
+        Text(title, color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+        Text(subtitle, color = TextSecondary, fontSize = 12.sp)
+    }
+}
+
+@Composable
+fun SettingsToggleRow(label: String, subtitle: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(label, color = Color(0xFF1A1A2E), fontSize = 14.sp)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+            Text(subtitle, color = TextSecondary, fontSize = 12.sp)
+        }
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor   = Color.White,
-                checkedTrackColor   = StudyPurple,
+                checkedThumbColor = Color.White,
+                checkedTrackColor = StudyPurple,
                 uncheckedThumbColor = Color.White,
-                uncheckedTrackColor = Color.Gray.copy(alpha = 0.3f)
+                uncheckedTrackColor = StudyPurpleLight
             )
         )
     }
@@ -194,6 +239,13 @@ fun SettingsToggleRow(label: String, checked: Boolean, onCheckedChange: (Boolean
 @Preview(showBackground = true)
 @Composable
 fun SettingsPreview() {
-    StudyOSTheme { SettingsBody(viewModel = SettingsViewModel()) }
+    StudyOSTheme {
+        SettingsContent(
+            state = SettingsUiState(isLoading = false, userEmail = "learner@example.com"),
+            onReminderToggle = {},
+            onReminderTimeClick = {},
+            onProfileClick = {},
+            onSignOut = {}
+        )
+    }
 }
-

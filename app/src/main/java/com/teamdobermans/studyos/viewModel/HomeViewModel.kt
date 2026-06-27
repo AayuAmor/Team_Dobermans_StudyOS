@@ -2,31 +2,29 @@ package com.teamdobermans.studyos.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import com.teamdobermans.studyos.model.VisionGoalModel
+import com.teamdobermans.studyos.repo.VisionBoardRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 data class HomeUiState(
-    val studyStreak: Int        = 15,
-    val weeklyHours: Float      = 8.5f,
-    val tasksCompleted: Int     = 3,
-    val totalTasks: Int         = 7,
-    val dailyGoalPercent: Float = 0.60f,
-    val lastSubject: String     = "Software Development",
-    val lastNote: String        = "Design Patterns",
-    val flashcardsDueToday: Int = 12,
-    val todayStudyMinutes: Int  = 95,
-    val goals: List<VisionGoalModel> = emptyList() )
+    val studyStreak: Int = 0,
+    val weeklyHours: Float = 0f,
+    val tasksCompleted: Int = 0,
+    val totalTasks: Int = 0,
+    val dailyGoalPercent: Float = 0f,
+    val lastSubject: String = "",
+    val lastNote: String = "",
+    val flashcardsDueToday: Int = 0,
+    val todayStudyMinutes: Int = 0,
+    val goals: List<VisionGoalModel> = emptyList()
+)
 
 class HomeViewModel : ViewModel() {
 
-    private val db   = FirebaseFirestore.getInstance()
-    private val auth = FirebaseAuth.getInstance()
-    private val userId get() = auth.currentUser?.uid ?: ""
+    private val visionBoardRepository = VisionBoardRepository()
 
     private val _state = MutableStateFlow(HomeUiState())
     val state: StateFlow<HomeUiState> = _state.asStateFlow()
@@ -36,23 +34,10 @@ class HomeViewModel : ViewModel() {
     }
 
     private fun listenToVisionGoals() {
-        if (userId.isEmpty()) return
-        db.collection("users").document(userId)
-            .collection("visionBoard")
-            .orderBy("createdAt")
-            .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null) return@addSnapshotListener
-                val goals = snapshot.documents.mapNotNull { doc ->
-                    VisionGoalModel(
-                        id          = doc.id,
-                        userId      = userId,
-                        text        = doc.getString("text")        ?: return@mapNotNull null,
-                        emoji       = doc.getString("emoji")       ?: "🏅",
-                        targetValue = doc.getString("targetValue") ?: "",
-                        subject     = doc.getString("subject")     ?: "General"
-                    )
-                }
+        viewModelScope.launch {
+            visionBoardRepository.observePinnedGoals().collect { goals ->
                 _state.value = _state.value.copy(goals = goals)
             }
+        }
     }
 }

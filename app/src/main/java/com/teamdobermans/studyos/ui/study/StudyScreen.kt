@@ -37,7 +37,7 @@ fun StudyScreen(
     onNavigateFlashcards: () -> Unit = {},
     onNavigateMockTest: () -> Unit = {},
     onNavigateVideoNotes: () -> Unit = {},
-    onNavigateStudyTime: () -> Unit = {}
+    onNavigateFocusTimer: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val subjects = viewModel.filteredSubjects
@@ -52,22 +52,27 @@ fun StudyScreen(
 
         if (state.searchQuery.isBlank()) {
             item {
-                SubjectsSection(subjects = subjects, onNotesTap = onNavigateNotes)
+                SubjectsSection(
+                    subjects = subjects,
+                    isLoading = state.isLoading,
+                    isEmpty = state.isEmpty,
+                    onNotesTap = onNavigateNotes
+                )
             }
             item {
                 RecentNotesSection(
-                    noteTitle  = state.recentNoteTitle,
+                    noteTitle = state.recentNoteTitle,
                     noteFolder = state.recentNoteFolder,
-                    onTap      = onNavigateNotes
+                    onTap = onNavigateNotes
                 )
             }
             item {
                 AiToolsSection(
-                    onVideoNotes  = onNavigateVideoNotes,
-                    onFlashcards  = onNavigateFlashcards,
-                    onQuiz        = onNavigateMockTest,
-                    onNotes       = onNavigateNotes,
-                    onStudyTime   = onNavigateStudyTime
+                    onVideoNotes = onNavigateVideoNotes,
+                    onFlashcards = onNavigateFlashcards,
+                    onQuiz = onNavigateMockTest,
+                    onNotes = onNavigateNotes,
+                    onFocusTimer = onNavigateFocusTimer
                 )
             }
         } else {
@@ -94,13 +99,13 @@ private fun StudyHeader(query: String, onQueryChange: (String) -> Unit) {
     ) {
         Column {
             Text(
-                text  = "Study",
+                text = "Study",
                 color = Color.White,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text  = "Your knowledge hub",
+                text = "Your knowledge hub",
                 color = Color.White.copy(alpha = 0.70f),
                 fontSize = 13.sp
             )
@@ -142,13 +147,13 @@ private fun StudyHeader(query: String, onQueryChange: (String) -> Unit) {
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor   = Color.White.copy(alpha = 0.18f),
+                    focusedContainerColor = Color.White.copy(alpha = 0.18f),
                     unfocusedContainerColor = Color.White.copy(alpha = 0.18f),
-                    focusedIndicatorColor   = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
-                    focusedTextColor        = Color.White,
-                    unfocusedTextColor      = Color.White,
-                    cursorColor             = Color.White
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    cursorColor = Color.White
                 )
             )
         }
@@ -156,7 +161,12 @@ private fun StudyHeader(query: String, onQueryChange: (String) -> Unit) {
 }
 
 @Composable
-private fun SubjectsSection(subjects: List<SubjectUiModel>, onNotesTap: () -> Unit) {
+private fun SubjectsSection(
+    subjects: List<SubjectUiModel>,
+    isLoading: Boolean,
+    isEmpty: Boolean,
+    onNotesTap: () -> Unit
+) {
     Column(modifier = Modifier.padding(top = 20.dp, start = 16.dp, end = 16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -165,7 +175,7 @@ private fun SubjectsSection(subjects: List<SubjectUiModel>, onNotesTap: () -> Un
         ) {
             Text("Subjects", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
             Text(
-                text  = "See all",
+                text = "See all",
                 color = StudyPurple,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -173,9 +183,57 @@ private fun SubjectsSection(subjects: List<SubjectUiModel>, onNotesTap: () -> Un
             )
         }
         Spacer(modifier = Modifier.height(12.dp))
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(subjects) { subject ->
-                SubjectCard(subject = subject, onClick = onNotesTap)
+        when {
+            isLoading -> {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(18.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            color = StudyPurple,
+                            modifier = Modifier.size(22.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("Loading your notes…", color = TextSecondary, fontSize = 13.sp)
+                    }
+                }
+            }
+
+            isEmpty -> {
+                Card(
+                    modifier = Modifier.fillMaxWidth().clickable { onNotesTap() },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
+                    Column(modifier = Modifier.padding(18.dp)) {
+                        Text(
+                            "No study subjects yet",
+                            color = TextPrimary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "Create notes and their folders will appear here automatically.",
+                            color = TextSecondary,
+                            fontSize = 13.sp
+                        )
+                    }
+                }
+            }
+
+            else -> {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(subjects) { subject ->
+                        SubjectCard(subject = subject, onClick = onNotesTap)
+                    }
+                }
             }
         }
     }
@@ -189,7 +247,7 @@ private fun SubjectCard(subject: SubjectUiModel, onClick: () -> Unit) {
             .width(160.dp)
             .shadow(4.dp, RoundedCornerShape(16.dp))
             .clickable { onClick() },
-        shape  = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -209,7 +267,7 @@ private fun SubjectCard(subject: SubjectUiModel, onClick: () -> Unit) {
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text  = subject.name,
+                text = subject.name,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,
@@ -226,12 +284,12 @@ private fun SubjectCard(subject: SubjectUiModel, onClick: () -> Unit) {
                     .fillMaxWidth()
                     .height(5.dp)
                     .clip(RoundedCornerShape(5.dp)),
-                color      = subjectColor,
+                color = subjectColor,
                 trackColor = subjectColor.copy(alpha = 0.15f)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text  = "${(subject.progressPercent * 100).toInt()}% complete",
+                text = if (subject.progressPercent > 0f) "${(subject.progressPercent * 100).toInt()}% complete" else "Progress not started",
                 color = TextSecondary,
                 fontSize = 10.sp
             )
@@ -266,7 +324,7 @@ private fun RecentNotesSection(
         ) {
             Text("Recent Notes", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
             Text(
-                text  = "All notes",
+                text = "All notes",
                 color = StudyPurple,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -280,7 +338,7 @@ private fun RecentNotesSection(
                     .fillMaxWidth()
                     .shadow(3.dp, RoundedCornerShape(14.dp))
                     .clickable { onTap() },
-                shape  = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Row(
@@ -306,7 +364,7 @@ private fun RecentNotesSection(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text  = noteTitle,
+                            text = noteTitle,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = TextPrimary
@@ -333,7 +391,7 @@ private fun RecentNotesSection(
                     .padding(20.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text("No notes yet — tap to create one!", color = TextHint, fontSize = 13.sp)
+                Text("No notes yet — tap to create your first note.", color = TextHint, fontSize = 13.sp)
             }
         }
     }
@@ -345,7 +403,7 @@ private fun AiToolsSection(
     onFlashcards: () -> Unit,
     onQuiz: () -> Unit,
     onNotes: () -> Unit,
-    onStudyTime: () -> Unit
+    onFocusTimer: () -> Unit
 ) {
     Column(modifier = Modifier.padding(top = 20.dp, start = 16.dp, end = 16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -364,22 +422,22 @@ private fun AiToolsSection(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             AiToolCard(
-                modifier  = Modifier.weight(1f),
-                icon      = Icons.Rounded.VideoLibrary,
-                iconBg    = Color(0xFFE8F4FF),
-                iconTint  = Color(0xFF3A82E0),
-                title     = "Video → Notes",
-                subtitle  = "YouTube / Upload",
-                onClick   = onVideoNotes
+                modifier = Modifier.weight(1f),
+                icon = Icons.Rounded.VideoLibrary,
+                iconBg = Color(0xFFE8F4FF),
+                iconTint = Color(0xFF3A82E0),
+                title = "Video → Notes",
+                subtitle = "YouTube / Upload",
+                onClick = onVideoNotes
             )
             AiToolCard(
-                modifier  = Modifier.weight(1f),
-                icon      = Icons.Rounded.Timer,
-                iconBg    = Color(0xFFF0E8FF),
-                iconTint  = StudyPurple,
-                title     = "Study Timer",
-                subtitle  = "Track sessions",
-                onClick   = onStudyTime
+                modifier = Modifier.weight(1f),
+                icon = Icons.Rounded.Timer,
+                iconBg = Color(0xFFF0E8FF),
+                iconTint = StudyPurple,
+                title = "Pomodoro Focus",
+                subtitle = "Track sessions",
+                onClick = onFocusTimer
             )
         }
         Spacer(modifier = Modifier.height(10.dp))
@@ -388,22 +446,22 @@ private fun AiToolsSection(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             AiToolCard(
-                modifier  = Modifier.weight(1f),
-                icon      = Icons.Rounded.Style,
-                iconBg    = Color(0xFFFFF0E0),
-                iconTint  = Color(0xFFE07B39),
-                title     = "Flashcards",
-                subtitle  = "From your notes",
-                onClick   = onFlashcards
+                modifier = Modifier.weight(1f),
+                icon = Icons.Rounded.Style,
+                iconBg = Color(0xFFFFF0E0),
+                iconTint = Color(0xFFE07B39),
+                title = "Flashcards",
+                subtitle = "From your notes",
+                onClick = onFlashcards
             )
             AiToolCard(
-                modifier  = Modifier.weight(1f),
-                icon      = Icons.Rounded.Quiz,
-                iconBg    = Color(0xFFE8FFF4),
-                iconTint  = Color(0xFF1D9E75),
-                title     = "Generate Quiz",
-                subtitle  = "Test yourself",
-                onClick   = onQuiz
+                modifier = Modifier.weight(1f),
+                icon = Icons.Rounded.Quiz,
+                iconBg = Color(0xFFE8FFF4),
+                iconTint = Color(0xFF1D9E75),
+                title = "Generate Quiz",
+                subtitle = "Test yourself",
+                onClick = onQuiz
             )
         }
     }
@@ -423,7 +481,7 @@ private fun AiToolCard(
         modifier = modifier
             .shadow(3.dp, RoundedCornerShape(14.dp))
             .clickable { onClick() },
-        shape  = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -436,7 +494,7 @@ private fun AiToolCard(
             ) {
                 Icon(imageVector = icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(20.dp))
             }
-            Text(text = title,    fontSize = 12.sp, fontWeight = FontWeight.Bold,    color = TextPrimary)
+            Text(text = title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
             Text(text = subtitle, fontSize = 10.sp, color = TextSecondary)
         }
     }
@@ -446,7 +504,7 @@ private fun AiToolCard(
 private fun SearchResultsHeader(query: String, subjects: List<SubjectUiModel>) {
     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
         Text(
-            text  = "Results for \"$query\"",
+            text = "Results for \"$query\"",
             color = StudyPurple,
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold
@@ -466,7 +524,7 @@ private fun SubjectSearchRow(subject: SubjectUiModel, onClick: () -> Unit) {
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp)
             .clickable { onClick() },
-        shape  = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Row(
@@ -482,15 +540,28 @@ private fun SubjectSearchRow(subject: SubjectUiModel, onClick: () -> Unit) {
                     .background(color.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(imageVector = Icons.AutoMirrored.Rounded.MenuBook, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.MenuBook,
+                    contentDescription = null,
+                    tint = color,
+                    modifier = Modifier.size(18.dp)
+                )
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = subject.name, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
-                Text(text = "${subject.notesCount} notes • ${subject.flashcardsCount} cards", fontSize = 11.sp, color = TextSecondary)
+                Text(
+                    text = "${subject.notesCount} notes • ${subject.flashcardsCount} cards",
+                    fontSize = 11.sp,
+                    color = TextSecondary
+                )
             }
-            Icon(imageVector = Icons.Rounded.ChevronRight, contentDescription = null, tint = TextHint, modifier = Modifier.size(18.dp))
+            Icon(
+                imageVector = Icons.Rounded.ChevronRight,
+                contentDescription = null,
+                tint = TextHint,
+                modifier = Modifier.size(18.dp)
+            )
         }
     }
 }
-

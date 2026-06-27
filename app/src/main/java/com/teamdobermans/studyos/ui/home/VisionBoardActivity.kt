@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.ui.platform.LocalContext
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
@@ -32,22 +31,14 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.teamdobermans.studyos.R
 import com.teamdobermans.studyos.model.VisionGoalModel
+import com.teamdobermans.studyos.ui.components.StudyOSPrimaryButton
+import com.teamdobermans.studyos.ui.components.StudyOSTextButton
 import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.viewModel.VisionBoardViewModel
 
 class VisionBoardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val currentUser = FirebaseAuth.getInstance().currentUser
-        val uid = currentUser?.uid ?: "mock_user_id"
-
-        if (currentUser == null) {
-            android.util.Log.w("VisionBoard", "No user found, using mock_user_id for testing")
-            Toast.makeText(this, "Testing with mock user", Toast.LENGTH_SHORT).show()
-        } else {
-            android.util.Log.d("VisionBoard", "User authenticated: $uid")
-        }
 
         enableEdgeToEdge()
         setContent {
@@ -63,39 +54,41 @@ fun VisionBoardBody(
     viewModel: VisionBoardViewModel = viewModel(),
     onBack: () -> Unit = {}
 ) {
-    val subjects     by viewModel.subjects.collectAsState()
-    val goalText        by viewModel.goalText.collectAsState()
-    val selectedEmoji   by viewModel.selectedEmoji.collectAsState()
-    val targetValue     by viewModel.targetValue.collectAsState()
+    val subjects by viewModel.subjects.collectAsState()
+    val goalText by viewModel.goalText.collectAsState()
+    val selectedEmoji by viewModel.selectedEmoji.collectAsState()
+    val targetValue by viewModel.targetValue.collectAsState()
     val selectedSubject by viewModel.selectedSubject.collectAsState()
-    val pinnedGoals     by viewModel.pinnedGoals.collectAsState()
-    val editingGoal     by viewModel.editingGoal.collectAsState()
+    val pinnedGoals by viewModel.pinnedGoals.collectAsState()
+    val editingGoal by viewModel.editingGoal.collectAsState()
+    val isAuthenticated by viewModel.isAuthenticated.collectAsState()
 
     val context = LocalContext.current
 
     VisionBoardContent(
-        goalText            = goalText,
-        selectedEmoji       = selectedEmoji,
-        targetValue         = targetValue,
-        selectedSubject     = selectedSubject,
-        subjects            = subjects,
-        pinnedGoals         = pinnedGoals,
-        editingGoal         = editingGoal,
-        onGoalTextChange    = viewModel::setGoalText,
-        onEmojiSelect       = viewModel::setEmoji,
+        goalText = goalText,
+        selectedEmoji = selectedEmoji,
+        targetValue = targetValue,
+        selectedSubject = selectedSubject,
+        subjects = subjects,
+        pinnedGoals = pinnedGoals,
+        editingGoal = editingGoal,
+        isAuthenticated = isAuthenticated,
+        onGoalTextChange = viewModel::setGoalText,
+        onEmojiSelect = viewModel::setEmoji,
         onTargetValueChange = viewModel::setTargetValue,
-        onSubjectSelect     = viewModel::selectSubject,
-        onAddSubject        = viewModel::addSubject,
-        onPinGoal           = {
+        onSubjectSelect = viewModel::selectSubject,
+        onAddSubject = viewModel::addSubject,
+        onPinGoal = {
             viewModel.pinGoal { success, message ->
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             }
         },
-        onRemoveGoal        = viewModel::removeGoal,
-        onStartEditing      = viewModel::startEditing,
-        onEditGoal          = viewModel::editGoal,
-        onStopEditing       = viewModel::stopEditing,
-        onBack              = onBack
+        onRemoveGoal = viewModel::removeGoal,
+        onStartEditing = viewModel::startEditing,
+        onEditGoal = viewModel::editGoal,
+        onStopEditing = viewModel::stopEditing,
+        onBack = onBack
     )
 }
 
@@ -108,6 +101,7 @@ fun VisionBoardContent(
     subjects: List<String>,
     pinnedGoals: List<VisionGoalModel>,
     editingGoal: VisionGoalModel?,
+    isAuthenticated: Boolean = true,
     onGoalTextChange: (String) -> Unit,
     onEmojiSelect: (String) -> Unit,
     onTargetValueChange: (String) -> Unit,
@@ -120,9 +114,9 @@ fun VisionBoardContent(
     onStopEditing: () -> Unit,
     onBack: () -> Unit
 ) {
-    val context      = LocalContext.current
+    val context = LocalContext.current
     val emojiOptions = listOf("🏅", "⭐", "💪", "🚀", "💵")
-    val canPin       = goalText.trim().isNotEmpty()
+    val canPin = goalText.trim().isNotEmpty()
 
     var subjectDropdown by remember { mutableStateOf(false) }
     var showAddSubjectDialog by remember { mutableStateOf(false) }
@@ -145,29 +139,29 @@ fun VisionBoardContent(
                 )
             },
             confirmButton = {
-                Button(
+                StudyOSPrimaryButton(
+                    text = "Add",
                     onClick = {
-                        if (newSubject.isNotBlank()) {
-                            onAddSubject(newSubject)
-                            onSubjectSelect(newSubject)
-                            showAddSubjectDialog = false
+                        if (newSubject.isBlank()) {
+                            Toast.makeText(context, "Please enter a title", Toast.LENGTH_SHORT).show()
+                            return@StudyOSPrimaryButton
                         }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)
-                ) { Text("Add", color = Color.White) }
+                        onAddSubject(newSubject)
+                        onSubjectSelect(newSubject)
+                        showAddSubjectDialog = false
+                    }
+                )
             },
             dismissButton = {
-                TextButton(onClick = { showAddSubjectDialog = false }) {
-                    Text("Cancel", color = StudyPurple)
-                }
+                StudyOSTextButton(text = "Cancel", onClick = { showAddSubjectDialog = false })
             }
         )
     }
 
     editingGoal?.let { goal ->
-        var editText   by remember(goal.id) { mutableStateOf(goal.text) }
+        var editText by remember(goal.id) { mutableStateOf(goal.text) }
         var editTarget by remember(goal.id) { mutableStateOf(goal.targetValue) }
-        var editEmoji  by remember(goal.id) { mutableStateOf(goal.emoji) }
+        var editEmoji by remember(goal.id) { mutableStateOf(goal.emoji) }
 
         AlertDialog(
             onDismissRequest = onStopEditing,
@@ -177,32 +171,32 @@ fun VisionBoardContent(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedTextField(
-                        value         = editText,
+                        value = editText,
                         onValueChange = { editText = it },
-                        label         = { Text("Goal") },
-                        singleLine    = true,
-                        modifier      = Modifier.fillMaxWidth(),
-                        colors        = OutlinedTextFieldDefaults.colors(
+                        label = { Text("Goal") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = StudyPurple,
-                            cursorColor        = StudyPurple
+                            cursorColor = StudyPurple
                         )
                     )
                     OutlinedTextField(
-                        value         = editTarget,
+                        value = editTarget,
                         onValueChange = { editTarget = it },
-                        label         = { Text("Target value") },
-                        singleLine    = true,
-                        modifier      = Modifier.fillMaxWidth(),
-                        colors        = OutlinedTextFieldDefaults.colors(
+                        label = { Text("Target value") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = StudyPurple,
-                            cursorColor        = StudyPurple
+                            cursorColor = StudyPurple
                         )
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         emojiOptions.forEach { emoji ->
                             Surface(
-                                shape    = RoundedCornerShape(12.dp),
-                                color    = if (emoji == editEmoji)
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (emoji == editEmoji)
                                     StudyPurple.copy(alpha = 0.15f) else StudyPurpleFaint,
                                 modifier = Modifier
                                     .size(44.dp)
@@ -210,7 +204,7 @@ fun VisionBoardContent(
                             ) {
                                 Box(
                                     contentAlignment = Alignment.Center,
-                                    modifier         = Modifier.fillMaxSize()
+                                    modifier = Modifier.fillMaxSize()
                                 ) {
                                     Text(emoji, fontSize = 22.sp)
                                 }
@@ -220,23 +214,25 @@ fun VisionBoardContent(
                 }
             },
             confirmButton = {
-                Button(
+                StudyOSPrimaryButton(
+                    text = "Save",
                     onClick = {
+                        if (editText.isBlank()) {
+                            Toast.makeText(context, "Please enter a title", Toast.LENGTH_SHORT).show()
+                            return@StudyOSPrimaryButton
+                        }
                         onEditGoal(
                             goal.copy(
-                                text        = editText,
+                                text = editText,
                                 targetValue = editTarget,
-                                emoji       = editEmoji
+                                emoji = editEmoji
                             )
                         )
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)
-                ) { Text("Save", color = Color.White) }
+                    }
+                )
             },
             dismissButton = {
-                TextButton(onClick = onStopEditing) {
-                    Text("Cancel", color = StudyPurple)
-                }
+                StudyOSTextButton(text = "Cancel", onClick = onStopEditing)
             }
         )
     }
@@ -255,19 +251,19 @@ fun VisionBoardContent(
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Surface(
-                shape    = RoundedCornerShape(20.dp),
-                color    = Color.White.copy(alpha = 0.25f),
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White.copy(alpha = 0.25f),
                 modifier = Modifier.clickable { onBack() }
             ) {
                 Row(
-                    modifier          = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        painter           = painterResource(R.drawable.baseline_arrow_back_24),
+                        painter = painterResource(R.drawable.baseline_arrow_back_24),
                         contentDescription = "Back",
-                        tint              = Color.White,
-                        modifier          = Modifier.size(18.dp)
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Back", color = Color.White, fontSize = 14.sp)
@@ -280,7 +276,7 @@ fun VisionBoardContent(
             )
             Text(
                 "Goals - Images - Subject targets",
-                color    = Color.White.copy(alpha = 0.75f),
+                color = Color.White.copy(alpha = 0.75f),
                 fontSize = 13.sp
             )
         }
@@ -294,39 +290,60 @@ fun VisionBoardContent(
                 .padding(16.dp)
         ) {
 
+            if (!isAuthenticated) {
+                Card(
+                    modifier = Modifier.fillMaxWidth().shadow(4.dp, RoundedCornerShape(16.dp)),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
+                    Column(modifier = Modifier.padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Sign in required", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Your vision board syncs with Firestore. Please sign in to create, edit, and pin goals.",
+                            color = TextSecondary,
+                            textAlign = TextAlign.Center,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(80.dp))
+                return@Column
+            }
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .shadow(4.dp, RoundedCornerShape(16.dp)),
-                shape  = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         "Add goal",
-                        color      = StudyPurple,
+                        color = StudyPurple,
                         fontWeight = FontWeight.SemiBold,
-                        fontSize   = 14.sp
+                        fontSize = 14.sp
                     )
                     Spacer(modifier = Modifier.height(10.dp))
 
                     OutlinedTextField(
-                        value         = goalText,
+                        value = goalText,
                         onValueChange = onGoalTextChange,
-                        modifier      = Modifier
+                        modifier = Modifier
                             .fillMaxWidth()
                             .shadow(4.dp, RoundedCornerShape(12.dp)),
-                        shape         = RoundedCornerShape(12.dp),
-                        singleLine    = true,
-                        placeholder   = { Text("Your goal or dream...", color = TextHint) },
-                        colors        = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor      = StudyPurple,
-                            unfocusedBorderColor    = StudyPurpleLight,
-                            focusedContainerColor   = Color.White,
+                        shape = RoundedCornerShape(12.dp),
+                        singleLine = true,
+                        placeholder = { Text("Your goal or dream...", color = TextHint) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = StudyPurple,
+                            unfocusedBorderColor = StudyPurpleLight,
+                            focusedContainerColor = Color.White,
                             unfocusedContainerColor = Color.White,
-                            cursorColor             = StudyPurple,
-                            focusedTextColor        = TextPrimary,
-                            unfocusedTextColor      = TextPrimary
+                            cursorColor = StudyPurple,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary
                         )
                     )
 
@@ -335,15 +352,15 @@ fun VisionBoardContent(
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         emojiOptions.forEach { emoji ->
                             Surface(
-                                shape    = RoundedCornerShape(12.dp),
-                                color    = if (emoji == selectedEmoji)
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (emoji == selectedEmoji)
                                     StudyPurple.copy(alpha = 0.15f) else StudyPurpleFaint,
                                 modifier = Modifier
                                     .size(44.dp)
                                     .clickable { onEmojiSelect(emoji) }
                             ) {
                                 Box(
-                                    modifier         = Modifier.fillMaxSize(),
+                                    modifier = Modifier.fillMaxSize(),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(emoji, fontSize = 22.sp, textAlign = TextAlign.Center)
@@ -356,41 +373,41 @@ fun VisionBoardContent(
 
                     Text(
                         "Subject",
-                        color      = StudyPurple,
+                        color = StudyPurple,
                         fontWeight = FontWeight.SemiBold,
-                        fontSize   = 13.sp
+                        fontSize = 13.sp
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Box(modifier = Modifier.fillMaxWidth()) {
                         Surface(
-                            shape    = RoundedCornerShape(10.dp),
-                            color    = StudyPurpleLight,
+                            shape = RoundedCornerShape(10.dp),
+                            color = StudyPurpleLight,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { subjectDropdown = true }
                         ) {
                             Row(
-                                modifier                = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                                verticalAlignment       = Alignment.CenterVertically,
-                                horizontalArrangement   = Arrangement.SpaceBetween
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
                                     selectedSubject,
-                                    color      = StudyPurple,
+                                    color = StudyPurple,
                                     fontWeight = FontWeight.Medium,
-                                    fontSize   = 14.sp
+                                    fontSize = 14.sp
                                 )
                                 Icon(
-                                    painter            = painterResource(R.drawable.baseline_more_horiz_24),
+                                    painter = painterResource(R.drawable.baseline_more_horiz_24),
                                     contentDescription = null,
-                                    tint               = StudyPurple,
-                                    modifier           = Modifier.size(16.dp)
+                                    tint = StudyPurple,
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
                         }
                         DropdownMenu(
-                            expanded          = subjectDropdown,
-                            onDismissRequest  = { subjectDropdown = false }
+                            expanded = subjectDropdown,
+                            onDismissRequest = { subjectDropdown = false }
                         ) {
                             subjects.forEach { subject ->
                                 DropdownMenuItem(
@@ -409,9 +426,15 @@ fun VisionBoardContent(
                                     }
                                 )
                             }
-                            HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
+                            HorizontalDivider(color = TextHint.copy(alpha = 0.2f))
                             DropdownMenuItem(
-                                text    = { Text("Add subject...", color = StudyPurple, fontWeight = FontWeight.SemiBold) },
+                                text = {
+                                    Text(
+                                        "Add subject...",
+                                        color = StudyPurple,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                },
                                 onClick = {
                                     subjectDropdown = false
                                     showAddSubjectDialog = true
@@ -424,46 +447,45 @@ fun VisionBoardContent(
 
                     Text(
                         "Target value",
-                        color      = StudyPurple,
+                        color = StudyPurple,
                         fontWeight = FontWeight.SemiBold,
-                        fontSize   = 13.sp
+                        fontSize = 13.sp
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     OutlinedTextField(
-                        value         = targetValue,
+                        value = targetValue,
                         onValueChange = {
                             onTargetValueChange(
                                 it.filter { c -> c.isDigit() || c == '%' }.take(10)
                             )
                         },
-                        modifier        = Modifier.fillMaxWidth(),
-                        shape           = RoundedCornerShape(10.dp),
-                        singleLine      = true,
-                        placeholder     = { Text("e.g. 100 pages, 90%", color = TextHint) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        singleLine = true,
+                        placeholder = { Text("e.g. 100 pages, 90%", color = TextHint) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        colors          = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor      = StudyPurple,
-                            unfocusedBorderColor    = StudyPurple.copy(alpha = 0.4f),
-                            focusedContainerColor   = Color.White,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = StudyPurple,
+                            unfocusedBorderColor = StudyPurple.copy(alpha = 0.4f),
+                            focusedContainerColor = Color.White,
                             unfocusedContainerColor = Color.White,
-                            cursorColor             = StudyPurple
+                            cursorColor = StudyPurple
                         )
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Button(
-                        onClick  = onPinGoal,
-                        enabled  = canPin,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp)
-                            .shadow(6.dp, RoundedCornerShape(25.dp)),
-                        shape  = RoundedCornerShape(25.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)
-                    ) {
-                        Text("Pin to Board", color = Color.White, fontWeight = FontWeight.SemiBold)
-                    }
+                    StudyOSPrimaryButton(
+                        text = "Pin to Board",
+                        onClick = {
+                            if (!canPin) {
+                                Toast.makeText(context, "Please enter a title", Toast.LENGTH_SHORT).show()
+                                return@StudyOSPrimaryButton
+                            }
+                            onPinGoal()
+                        },
+                        modifier = Modifier.fillMaxWidth().shadow(6.dp, RoundedCornerShape(25.dp))
+                    )
                 }
             }
 
@@ -472,7 +494,7 @@ fun VisionBoardContent(
             if (pinnedGoals.isNotEmpty()) {
                 pinnedGoals.chunked(2).forEach { rowGoals ->
                     Row(
-                        modifier              = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         rowGoals.forEach { goal ->
@@ -480,43 +502,44 @@ fun VisionBoardContent(
                                 modifier = Modifier
                                     .weight(1f)
                                     .shadow(4.dp, RoundedCornerShape(16.dp)),
-                                shape  = RoundedCornerShape(16.dp),
+                                shape = RoundedCornerShape(16.dp),
                                 colors = CardDefaults.cardColors(containerColor = Color.White)
                             ) {
                                 Column(modifier = Modifier.padding(14.dp)) {
                                     Row(
-                                        modifier              = Modifier.fillMaxWidth(),
+                                        modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment     = Alignment.Top
+                                        verticalAlignment = Alignment.Top
                                     ) {
                                         Text(goal.emoji, fontSize = 30.sp)
                                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            Text(
-                                                "✏️",
-                                                fontSize = 14.sp,
-                                                modifier = Modifier.clickable { onStartEditing(goal) }
+                                            Icon(
+                                                painter = painterResource(R.drawable.baseline_more_horiz_24),
+                                                contentDescription = "Edit goal",
+                                                tint = StudyPurple,
+                                                modifier = Modifier.size(18.dp).clickable { onStartEditing(goal) }
                                             )
-                                            Text(
-                                                "✕",
-                                                color    = Color.Gray,
-                                                fontSize = 14.sp,
-                                                modifier = Modifier.clickable { onRemoveGoal(goal) }
+                                            Icon(
+                                                painter = painterResource(R.drawable.baseline_close_24),
+                                                contentDescription = "Delete goal",
+                                                tint = TextSecondary,
+                                                modifier = Modifier.size(18.dp).clickable { onRemoveGoal(goal) }
                                             )
                                         }
                                     }
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Text(
                                         goal.text,
-                                        color      = TextPrimary,
+                                        color = TextPrimary,
                                         fontWeight = FontWeight.SemiBold,
-                                        fontSize   = 13.sp,
+                                        fontSize = 13.sp,
                                         letterSpacing = 0.1.sp
                                     )
                                     if (goal.targetValue.isNotEmpty()) {
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text(
                                             "Target: ${goal.targetValue}",
-                                            color    = Color.Gray,
+                                            color = TextSecondary,
                                             fontSize = 11.sp
                                         )
                                     }
@@ -539,27 +562,28 @@ fun VisionBoardContent(
 fun VisionBoardPreview() {
     StudyOSTheme {
         VisionBoardContent(
-            goalText        = "Score 95% in Finals",
-            selectedEmoji   = "🏅",
-            targetValue     = "95%",
-            selectedSubject = "Math",
-            subjects        = listOf("General", "Biology", "Physics", "Math"),
-            pinnedGoals     = listOf(
-                VisionGoalModel(text = "Finish Physics Lab", emoji = "🚀", targetValue = "100%"),
-                VisionGoalModel(text = "Read Biology Ch 5",  emoji = "⭐")
+            goalText = "Score 95% in Finals",
+            selectedEmoji = "🏅",
+            targetValue = "95%",
+            selectedSubject = "General",
+            subjects = listOf("General", "Exam Prep", "Reading"),
+            isAuthenticated = true,
+            pinnedGoals = listOf(
+                VisionGoalModel(text = "Finish revision plan", emoji = "🚀", targetValue = "100%"),
+                VisionGoalModel(text = "Read chapter notes", emoji = "⭐")
             ),
-            editingGoal         = null,
-            onGoalTextChange    = {},
-            onEmojiSelect       = {},
+            editingGoal = null,
+            onGoalTextChange = {},
+            onEmojiSelect = {},
             onTargetValueChange = {},
-            onSubjectSelect     = {},
-            onAddSubject        = {},
-            onPinGoal           = {},
-            onRemoveGoal        = {},
-            onStartEditing      = {},
-            onEditGoal          = {},
-            onStopEditing       = {},
-            onBack              = {}
+            onSubjectSelect = {},
+            onAddSubject = {},
+            onPinGoal = {},
+            onRemoveGoal = {},
+            onStartEditing = {},
+            onEditGoal = {},
+            onStopEditing = {},
+            onBack = {}
         )
     }
 }

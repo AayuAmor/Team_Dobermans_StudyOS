@@ -3,6 +3,8 @@ package com.teamdobermans.studyos.ui.profile
 import com.teamdobermans.studyos.R
 
 import android.os.Bundle
+import android.util.Patterns
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -20,6 +22,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import com.teamdobermans.studyos.ui.theme.TextSecondary
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -27,6 +31,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.teamdobermans.studyos.ui.components.StudyOSPrimaryButton
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 import com.teamdobermans.studyos.ui.theme.StudyPurple
 import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
@@ -56,18 +61,19 @@ fun ProfileBody(
     viewModel: ProfileViewModel = ProfileViewModel(),
     onBack: () -> Unit = {}
 ) {
-    val profile    by viewModel.profile.collectAsState()
-    val uiState    by viewModel.uiState.collectAsState()
-    val nameError  by viewModel.nameError.collectAsState()
+    val context = LocalContext.current
+    val profile by viewModel.profile.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val nameError by viewModel.nameError.collectAsState()
     val emailError by viewModel.emailError.collectAsState()
 
     val saveResult by viewModel.saveResult.collectAsState()
 
     val displayName = profile.name.ifEmpty { profile.email.substringBefore("@") }
 
-    var editName        by remember(profile.name)  { mutableStateOf(profile.name) }
-    var editEmail       by remember(profile.email) { mutableStateOf(profile.email) }
-    var newPassword     by remember { mutableStateOf("") }
+    var editName by remember(profile.name) { mutableStateOf(profile.name) }
+    var editEmail by remember(profile.email) { mutableStateOf(profile.email) }
+    var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
     val passwordsMatch = newPassword.isNotEmpty() && newPassword == confirmPassword
@@ -157,7 +163,7 @@ fun ProfileBody(
                         fontSize = 16.sp
                     )
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text(profile.email, color = Color.Gray, fontSize = 13.sp)
+                    Text(profile.email, color = TextSecondary, fontSize = 13.sp)
                 }
             }
 
@@ -187,10 +193,10 @@ fun ProfileBody(
                         label = { Text("Display name", fontSize = 12.sp) },
                         colors = TextFieldDefaults.colors(
                             unfocusedContainerColor = Color(0xFFF0EEFF),
-                            focusedContainerColor   = Color(0xFFF0EEFF),
+                            focusedContainerColor = Color(0xFFF0EEFF),
                             unfocusedIndicatorColor = Color.Transparent,
-                            focusedIndicatorColor   = StudyPurple,
-                            errorContainerColor     = Color(0xFFFFF0F0)
+                            focusedIndicatorColor = StudyPurple,
+                            errorContainerColor = Color(0xFFFFF0F0)
                         )
                     )
                     if (nameError != null) {
@@ -214,10 +220,10 @@ fun ProfileBody(
                         label = { Text("Email address", fontSize = 12.sp) },
                         colors = TextFieldDefaults.colors(
                             unfocusedContainerColor = Color(0xFFF0EEFF),
-                            focusedContainerColor   = Color(0xFFF0EEFF),
+                            focusedContainerColor = Color(0xFFF0EEFF),
                             unfocusedIndicatorColor = Color.Transparent,
-                            focusedIndicatorColor   = StudyPurple,
-                            errorContainerColor     = Color(0xFFFFF0F0)
+                            focusedIndicatorColor = StudyPurple,
+                            errorContainerColor = Color(0xFFFFF0F0)
                         )
                     )
                     if (emailError != null) {
@@ -231,23 +237,46 @@ fun ProfileBody(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    Button(
-                        onClick = { viewModel.updateProfile(editName, editEmail) },
-                        enabled = !isLoading,
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)
-                    ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = Color.White,
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text("Save Changes", color = Color.White, fontWeight = FontWeight.SemiBold)
-                        }
-                    }
+                    StudyOSPrimaryButton(
+                        text = if (isLoading) "Saving..." else "Save Changes",
+                        onClick = {
+                            when {
+                                isLoading -> Toast.makeText(
+                                    context,
+                                    "Please wait, this is already processing",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
+                                editName.isBlank() -> Toast.makeText(
+                                    context,
+                                    "Please enter your full name",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
+                                editEmail.isBlank() -> Toast.makeText(
+                                    context,
+                                    "Please enter your email",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
+                                !Patterns.EMAIL_ADDRESS.matcher(editEmail.trim()).matches() -> Toast.makeText(
+                                    context,
+                                    "Please enter a valid email address",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
+                                editName == profile.name && editEmail == profile.email -> Toast.makeText(
+                                    context,
+                                    "No changes to save",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
+                                else -> viewModel.updateProfile(editName.trim(), editEmail.trim())
+                            }
+                        },
+                        isLoading = isLoading,
+                        modifier = Modifier.fillMaxWidth()
+                    )
 
                     if (uiState is ProfileUiState.Success) {
                         Spacer(modifier = Modifier.height(10.dp))
@@ -317,9 +346,9 @@ fun ProfileBody(
                         label = { Text("New password", fontSize = 12.sp) },
                         colors = TextFieldDefaults.colors(
                             unfocusedContainerColor = Color(0xFFF0EEFF),
-                            focusedContainerColor   = Color(0xFFF0EEFF),
+                            focusedContainerColor = Color(0xFFF0EEFF),
                             unfocusedIndicatorColor = Color.Transparent,
-                            focusedIndicatorColor   = StudyPurple
+                            focusedIndicatorColor = StudyPurple
                         )
                     )
                     Spacer(modifier = Modifier.height(10.dp))
@@ -334,9 +363,9 @@ fun ProfileBody(
                         label = { Text("Confirm password", fontSize = 12.sp) },
                         colors = TextFieldDefaults.colors(
                             unfocusedContainerColor = Color(0xFFF0EEFF),
-                            focusedContainerColor   = Color(0xFFF0EEFF),
+                            focusedContainerColor = Color(0xFFF0EEFF),
                             unfocusedIndicatorColor = Color.Transparent,
-                            focusedIndicatorColor   = StudyPurple
+                            focusedIndicatorColor = StudyPurple
                         )
                     )
                     if (confirmPassword.isNotEmpty() && !passwordsMatch) {
@@ -349,15 +378,36 @@ fun ProfileBody(
                         )
                     }
                     Spacer(modifier = Modifier.height(14.dp))
-                    Button(
-                        onClick = { if (passwordsMatch) viewModel.updatePassword(newPassword) },
-                        enabled = passwordsMatch,
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)
-                    ) {
-                        Text("Update password", color = Color.White, fontWeight = FontWeight.SemiBold)
-                    }
+                    StudyOSPrimaryButton(
+                        text = "Update password",
+                        onClick = {
+                            when {
+                                newPassword.isBlank() -> Toast.makeText(
+                                    context,
+                                    "Please enter your password",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
+                                newPassword.length < 6 -> Toast.makeText(
+                                    context,
+                                    "Password must be at least 6 characters",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
+                                confirmPassword.isBlank() -> Toast.makeText(
+                                    context,
+                                    "Please confirm your password",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
+                                !passwordsMatch -> Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT)
+                                    .show()
+
+                                else -> viewModel.updatePassword(newPassword)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
 

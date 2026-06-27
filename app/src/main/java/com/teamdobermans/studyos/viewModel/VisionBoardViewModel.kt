@@ -3,143 +3,150 @@ package com.teamdobermans.studyos.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import com.teamdobermans.studyos.model.VisionGoalModel
+import com.teamdobermans.studyos.repo.NoteRepoImpl
+import com.teamdobermans.studyos.repo.VisionBoardRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
+
 
 class VisionBoardViewModel : ViewModel() {
 
-    private val db     = FirebaseFirestore.getInstance()
-    private val auth   = FirebaseAuth.getInstance()
-    private val userId get() = auth.currentUser?.uid ?: "mock_user_id"
+    private val auth = FirebaseAuth.getInstance()
+    private val noteRepo = NoteRepoImpl()
+    private val visionRepo = VisionBoardRepository()
 
-    private val _goalText        = MutableStateFlow("")
+    private val _goalText = MutableStateFlow("")
     val goalText: StateFlow<String> = _goalText.asStateFlow()
 
-    private val _selectedEmoji   = MutableStateFlow("🏅")
+    private val _selectedEmoji = MutableStateFlow("🏅")
     val selectedEmoji: StateFlow<String> = _selectedEmoji.asStateFlow()
 
-    private val _targetValue     = MutableStateFlow("")
+    private val _targetValue = MutableStateFlow("")
     val targetValue: StateFlow<String> = _targetValue.asStateFlow()
 
     private val _selectedSubject = MutableStateFlow("General")
     val selectedSubject: StateFlow<String> = _selectedSubject.asStateFlow()
 
-    private val _subjects = MutableStateFlow(listOf("General", "Biology", "Physics", "Math"))
+    private val _subjects = MutableStateFlow<List<String>>(emptyList())
     val subjects: StateFlow<List<String>> = _subjects.asStateFlow()
 
-    private val _pinnedGoals     = MutableStateFlow<List<VisionGoalModel>>(emptyList())
+    private val _pinnedGoals = MutableStateFlow<List<VisionGoalModel>>(emptyList())
     val pinnedGoals: StateFlow<List<VisionGoalModel>> = _pinnedGoals.asStateFlow()
 
     private val _editingGoal = MutableStateFlow<VisionGoalModel?>(null)
     val editingGoal: StateFlow<VisionGoalModel?> = _editingGoal.asStateFlow()
 
-    fun setGoalText(text: String)      { _goalText.value = text }
-    fun setEmoji(emoji: String)        { _selectedEmoji.value = emoji }
-    fun setTargetValue(value: String)  { _targetValue.value = value }
-    fun selectSubject(subject: String) { _selectedSubject.value = subject }
+    private val _isAuthenticated = MutableStateFlow(auth.currentUser != null)
+    val isAuthenticated: StateFlow<Boolean> = _isAuthenticated.asStateFlow()
+
+    fun setGoalText(text: String) {
+        _goalText.value = text
+    }
+
+    fun setEmoji(emoji: String) {
+        _selectedEmoji.value = emoji
+    }
+
+    fun setTargetValue(value: String) {
+        _targetValue.value = value
+    }
+
+    fun selectSubject(subject: String) {
+        _selectedSubject.value = subject
+    }
 
     fun addSubject(subject: String) {
-        if (subject.isNotBlank() && !_subjects.value.contains(subject)) {
-            _subjects.value = _subjects.value + subject
+        val clean = subject.trim()
+        if (clean.isNotBlank() && !_subjects.value.any { it.equals(clean, ignoreCase = true) }) {
+            _subjects.value = (_subjects.value + clean).sortedWith(String.CASE_INSENSITIVE_ORDER)
         }
     }
 
-    fun startEditing(goal: VisionGoalModel) { _editingGoal.value = goal }
-    fun stopEditing()                       { _editingGoal.value = null }
+    fun startEditing(goal: VisionGoalModel) {
+        _editingGoal.value = goal
+    }
+
+    fun stopEditing() {
+        _editingGoal.value = null
+    }
 
     init {
         auth.addAuthStateListener { firebaseAuth ->
-            val uid = firebaseAuth.currentUser?.uid ?: "mock_user_id"
-            listenToGoals(uid)
+            val uid = firebaseAuth.currentUser?.uid
+            _isAuthenticated.value = uid != null
+            observeGoals()
         }
-        listenToGoals(userId)
+        observeGoals()
+        observeNoteSubjects()
     }
 
-    private fun listenToGoals(uid: String) {
-        db.collection("users").document(uid).collection("visionBoard")
-            .orderBy("createdAt")
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    android.util.Log.e("VisionBoard", "Listen failed.", error)
-                    return@addSnapshotListener
-                }
-                if (snapshot != null) {
-                    _pinnedGoals.value = snapshot.documents.mapNotNull { doc ->
-                        VisionGoalModel(
-                            id          = doc.id,
-                            userId      = uid,
-                            text        = doc.getString("text")        ?: return@mapNotNull null,
-                            emoji       = doc.getString("emoji")       ?: "🏅",
-                            targetValue = doc.getString("targetValue") ?: "",
-                            subject     = doc.getString("subject")     ?: "General"
-                        )
-                    }
+    private fun observeNoteSubjects() {
+        viewModelScope.launch {
+            noteRepo.getNotes().collect { notes ->
+                val dynamicSubjects = notes
+                    .map { it.folder.trim().ifBlank { "General" } }
+                    .distinctBy { it.lowercase() }
+                    .sortedWith(String.CASE_INSENSITIVE_ORDER)
+                _subjects.value = dynamicSubjects
+                _selectedSubject.value = when {
+                    dynamicSubjects.isEmpty() -> "General"
+                    _selectedSubject.value in dynamicSubjects -> _selectedSubject.value
+                    else -> dynamicSubjects.first()
                 }
             }
+        }
+    }
+
+    private fun observeGoals() {
+        viewModelScope.launch {
+            visionRepo.observePinnedGoals().collect { goals ->
+                _pinnedGoals.value = goals
+            }
+        }
     }
 
     fun pinGoal(onComplete: (Boolean, String) -> Unit = { _, _ -> }) {
         val currentText = _goalText.value.trim()
-        val currentUid = userId
-
+        val currentUid = auth.currentUser?.uid
+        if (currentUid == null) {
+            onComplete(false, "Sign in to sync vision board goals")
+            return
+        }
         if (currentText.isBlank()) {
             onComplete(false, "Goal text is empty")
             return
         }
 
-        val data = hashMapOf(
-            "text"        to currentText,
-            "emoji"       to _selectedEmoji.value,
-            "targetValue" to _targetValue.value.trim(),
-            "subject"     to _selectedSubject.value,
-            "createdAt"   to System.currentTimeMillis()
-        )
-
         viewModelScope.launch {
-            try {
-                db.collection("users").document(currentUid)
-                    .collection("visionBoard").add(data).await()
-
-                _goalText.value    = ""
+            visionRepo.addGoal(
+                text = currentText,
+                emoji = _selectedEmoji.value,
+                targetValue = _targetValue.value.trim(),
+                subject = _selectedSubject.value
+            ).onSuccess {
+                _goalText.value = ""
                 _targetValue.value = ""
-                onComplete(true, "Pinned successfully!")
-            } catch (e: Exception) {
-                android.util.Log.e("VisionBoard", "Error adding goal", e)
-                onComplete(false, "Failed to pin: ${e.message}")
+                onComplete(true, "Pinned successfully")
+            }.onFailure {
+                onComplete(false, "Failed to pin: ${it.message}")
             }
         }
     }
 
     fun editGoal(goal: VisionGoalModel) {
-        if (userId.isEmpty() || goal.id.isEmpty()) return
-        val data = hashMapOf(
-            "text"        to goal.text.trim(),
-            "emoji"       to goal.emoji,
-            "targetValue" to goal.targetValue.trim(),
-            "subject"     to goal.subject
-        )
         viewModelScope.launch {
-            try {
-                db.collection("users").document(userId)
-                    .collection("visionBoard").document(goal.id)
-                    .update(data as Map<String, Any>).await()
-                _editingGoal.value = null
-            } catch (e: Exception) { e.printStackTrace() }
+            visionRepo.updateGoal(goal).onSuccess { _editingGoal.value = null }
         }
     }
 
     fun removeGoal(goal: VisionGoalModel) {
-        if (userId.isEmpty() || goal.id.isEmpty()) return
         viewModelScope.launch {
-            try {
-                db.collection("users").document(userId)
-                    .collection("visionBoard").document(goal.id).delete().await()
-            } catch (e: Exception) { e.printStackTrace() }
+            visionRepo.deleteGoal(goal.id)
         }
     }
+
+
 }

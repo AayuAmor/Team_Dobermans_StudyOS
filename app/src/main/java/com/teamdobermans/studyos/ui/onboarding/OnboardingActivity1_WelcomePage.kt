@@ -1,4 +1,5 @@
 package com.teamdobermans.studyos.ui.onboarding
+
 import com.teamdobermans.studyos.R
 
 import android.content.Context
@@ -27,6 +28,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.teamdobermans.studyos.ui.auth.LoginActivity
+import com.teamdobermans.studyos.ui.components.StudyOSPrimaryButton
+import com.teamdobermans.studyos.ui.components.StudyOSSecondaryButton
 import com.teamdobermans.studyos.ui.theme.StudyOSTheme
 
 class OnboardingActivity1_WelcomePage : ComponentActivity() {
@@ -153,43 +156,17 @@ fun WelcomeScreen(
                 .padding(horizontal = 32.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Button(
+            StudyOSPrimaryButton(
+                text = stringResource(id = R.string.get_started),
                 onClick = onGetStartedClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
-                    contentColor = Color(0xFF5D53B1)
-                ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
-            ) {
-                Text(
-                    text = stringResource(id = R.string.get_started),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+                modifier = Modifier.fillMaxWidth()
+            )
 
-            Button(
+            StudyOSSecondaryButton(
+                text = stringResource(id = R.string.skip_intro),
                 onClick = onSkipIntroClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFEBE2F1),
-                    contentColor = Color(0xFF5D53B1)
-                ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
-            ) {
-                Text(
-                    text = stringResource(id = R.string.skip_intro),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

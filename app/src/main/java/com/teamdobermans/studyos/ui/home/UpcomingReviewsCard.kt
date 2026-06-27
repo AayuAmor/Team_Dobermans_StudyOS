@@ -17,6 +17,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.teamdobermans.studyos.model.NoteModel
+import com.teamdobermans.studyos.ui.components.StudyOSPrimaryButton
 import com.teamdobermans.studyos.ui.theme.StudyPurple
 import com.teamdobermans.studyos.ui.theme.StudyPurpleLight
 import com.teamdobermans.studyos.ui.theme.TextPrimary
@@ -34,43 +35,43 @@ fun UpcomingReviewsCard(
         modifier = modifier
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(14.dp)),
-        shape  = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
 
             Row(
-                modifier              = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
-                        modifier        = Modifier
+                        modifier = Modifier
                             .size(32.dp)
                             .clip(RoundedCornerShape(10.dp))
                             .background(StudyPurpleLight),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector        = Icons.Rounded.EventNote,
+                            imageVector = Icons.Rounded.EventNote,
                             contentDescription = null,
-                            tint               = StudyPurple,
-                            modifier           = Modifier.size(18.dp)
+                            tint = StudyPurple,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text       = "Upcoming Reviews",
-                        fontSize   = 13.sp,
+                        text = "Upcoming Reviews",
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color      = TextPrimary
+                        color = TextPrimary
                     )
                 }
                 Surface(shape = RoundedCornerShape(20.dp), color = StudyPurple) {
                     Text(
-                        text     = "${notes.size}",
-                        color    = Color.White,
+                        text = "${notes.size}",
+                        color = Color.White,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
@@ -86,7 +87,7 @@ fun UpcomingReviewsCard(
                 if (index < displayed.lastIndex) {
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 8.dp),
-                        color    = Color(0xFFF0EEF9)
+                        color = Color(0xFFF0EEF9)
                     )
                 }
             }
@@ -94,25 +95,20 @@ fun UpcomingReviewsCard(
             if (notes.size > 3) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text       = "+ ${notes.size - 3} more",
-                    color      = StudyPurple,
-                    fontSize   = 11.sp,
+                    text = "+ ${notes.size - 3} more",
+                    color = StudyPurple,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold
                 )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Button(
-                onClick  = onNavigateNotes,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(38.dp),
-                shape  = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = StudyPurple)
-            ) {
-                Text("Open Notes", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-            }
+            StudyOSPrimaryButton(
+                text = "Open Notes",
+                onClick = onNavigateNotes,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
@@ -120,24 +116,24 @@ fun UpcomingReviewsCard(
 @Composable
 private fun UpcomingReviewItem(note: NoteModel) {
     val stageLabel = when (note.reviewStage) {
-        0    -> "Day 1 review"
-        1    -> "Day 4 review"
-        2    -> "Day 7 review"
+        0 -> "Day 1 review"
+        1 -> "Day 4 review"
+        2 -> "Day 7 review"
         else -> "Review complete"
     }
     val timeLabel = relativeTimeLabel(note.nextReviewAt)
 
     Row(
-        modifier              = Modifier.fillMaxWidth(),
-        verticalAlignment     = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text     = note.title.ifBlank { "Untitled Note" },
+                text = note.title.ifBlank { "Untitled Note" },
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
-                color    = TextPrimary,
+                color = TextPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -146,11 +142,11 @@ private fun UpcomingReviewItem(note: NoteModel) {
         Spacer(modifier = Modifier.width(8.dp))
         Surface(shape = RoundedCornerShape(8.dp), color = StudyPurpleLight) {
             Text(
-                text       = timeLabel,
-                fontSize   = 10.sp,
-                color      = StudyPurple,
+                text = timeLabel,
+                fontSize = 10.sp,
+                color = StudyPurple,
                 fontWeight = FontWeight.SemiBold,
-                modifier   = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
             )
         }
     }
@@ -162,6 +158,6 @@ private fun relativeTimeLabel(nextReviewAt: Long): String {
     return when {
         days <= 0 -> "Today"
         days == 1 -> "Tomorrow"
-        else      -> "In $days days"
+        else -> "In $days days"
     }
 }
