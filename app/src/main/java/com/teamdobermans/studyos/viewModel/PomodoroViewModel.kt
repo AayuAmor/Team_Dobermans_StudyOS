@@ -3,39 +3,51 @@ package com.teamdobermans.studyos.viewModel
 import android.app.Application
 import android.os.CountDownTimer
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.teamdobermans.studyos.model.PomodoroTab
 import com.teamdobermans.studyos.notification.SessionManager
+import com.teamdobermans.studyos.repo.SettingsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class PomodoroViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _selectedTab   = MutableStateFlow(PomodoroTab.FOCUS)
+    private val settingsRepository = SettingsRepository(application)
+
+    private val _selectedTab = MutableStateFlow(PomodoroTab.FOCUS)
     val selectedTab: StateFlow<PomodoroTab> = _selectedTab.asStateFlow()
 
-    private val _focusMinutes  = MutableStateFlow(25f)
+    private val _focusMinutes = MutableStateFlow(settingsRepository.getCachedFocusDurationMinutes().toFloat())
     val focusMinutes: StateFlow<Float> = _focusMinutes.asStateFlow()
 
-    private val _shortMinutes  = MutableStateFlow(5f)
+    private val _shortMinutes = MutableStateFlow(settingsRepository.getCachedBreakDurationMinutes().toFloat())
     val shortMinutes: StateFlow<Float> = _shortMinutes.asStateFlow()
 
-    private val _longMinutes   = MutableStateFlow(15f)
+    private val _longMinutes = MutableStateFlow(15f)
     val longMinutes: StateFlow<Float> = _longMinutes.asStateFlow()
 
-    private val _isRunning     = MutableStateFlow(false)
+    private val _isRunning = MutableStateFlow(false)
     val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
 
     private val _sessionsToday = MutableStateFlow(0)
     val sessionsToday: StateFlow<Int> = _sessionsToday.asStateFlow()
 
-    private val _timeRemaining = MutableStateFlow(25 * 60L)
+    private val _timeRemaining = MutableStateFlow(settingsRepository.getCachedFocusDurationMinutes() * 60L)
     val timeRemaining: StateFlow<Long> = _timeRemaining.asStateFlow()
 
     private var countDownTimer: CountDownTimer? = null
 
     init {
         SessionManager.endSession(getApplication())
+        viewModelScope.launch {
+            _focusMinutes.value = settingsRepository.getFocusDurationMinutes().toFloat()
+            _shortMinutes.value = settingsRepository.getBreakDurationMinutes().toFloat()
+            if (_selectedTab.value == PomodoroTab.FOCUS || _selectedTab.value == PomodoroTab.SHORT_BREAK) {
+                resetTimer()
+            }
+        }
     }
 
     fun selectTab(tab: PomodoroTab) {
@@ -59,7 +71,9 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         if (_selectedTab.value == PomodoroTab.LONG_BREAK) resetTimer()
     }
 
-    fun toggleTimer() { if (_isRunning.value) pauseTimer() else startTimer() }
+    fun toggleTimer() {
+        if (_isRunning.value) pauseTimer() else startTimer()
+    }
 
     fun resetTimer() {
         pauseTimer()
@@ -70,7 +84,10 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         SessionManager.startSession(getApplication())
         _isRunning.value = true
         countDownTimer = object : CountDownTimer(_timeRemaining.value * 1000L, 1000L) {
-            override fun onTick(ms: Long) { _timeRemaining.value = ms / 1000L }
+            override fun onTick(ms: Long) {
+                _timeRemaining.value = ms / 1000L
+            }
+
             override fun onFinish() {
                 _isRunning.value = false
                 _sessionsToday.value += 1
@@ -87,9 +104,9 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun totalSecondsForTab(): Long = when (_selectedTab.value) {
-        PomodoroTab.FOCUS       -> (_focusMinutes.value * 60).toLong()
+        PomodoroTab.FOCUS -> (_focusMinutes.value * 60).toLong()
         PomodoroTab.SHORT_BREAK -> (_shortMinutes.value * 60).toLong()
-        PomodoroTab.LONG_BREAK  -> (_longMinutes.value * 60).toLong()
+        PomodoroTab.LONG_BREAK -> (_longMinutes.value * 60).toLong()
     }
 
     override fun onCleared() {

@@ -176,15 +176,9 @@ fun StudyOSNavGraph(
             }
 
             composable(AppRoutes.Profile.route) {
-                val vm = viewModel<ProfileViewModel>()
-                val ctx = LocalContext.current
-                ProfileScreenV2(
+                val vm = viewModel<SettingsViewModel>()
+                SettingsBody(
                     viewModel = vm,
-                    onNavigateAnalytics = { navController.navigate(AppRoutes.Analytics.route) },
-                    onNavigateVisionBoard = {
-                        navController.navigate(AppRoutes.VisionBoard.route)
-                    },
-                    onNavigateSettings = { navController.navigate(AppRoutes.Settings.route) },
                     onSignOut = {
                         navController.navigate(AppRoutes.Auth.route) {
                             popUpTo(0) { inclusive = true }
