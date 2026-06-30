@@ -24,4 +24,3 @@ data class Task(
         return compareDate.isAfter(finalDeadline)
     }
 }
-

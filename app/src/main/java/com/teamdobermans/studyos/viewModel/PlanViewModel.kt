@@ -15,21 +15,17 @@ import com.teamdobermans.studyos.repo.TaskRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 class PlanViewModel : ViewModel() {
-    private val repository = TaskRepository
+    private val repository = TaskRepository()
     private val noteRepo = NoteRepoImpl()
 
     val allNotes: StateFlow<List<NoteModel>> = noteRepo.getNotes()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val dynamicSubjects = mutableStateListOf(
-        SubjectModel("sub_gen",     "General Study"),
-        SubjectModel("sub_cs_101",  "Computer Architecture"),
-        SubjectModel("sub_math_3",  "Linear Algebra"),
-        SubjectModel("sub_engcomp", "Advanced Technical Writing")
-    )
+    val dynamicSubjects = mutableStateListOf<SubjectModel>()
 
     val tasks = mutableStateListOf<Task>()
 
@@ -43,7 +39,6 @@ class PlanViewModel : ViewModel() {
     var editingTaskId by mutableStateOf<String?>(null)
         private set
 
-    // ── Note picker state ────────────────────────────────────────────────────
     var showNotePicker by mutableStateOf(false)
         private set
     var notePickerTaskId by mutableStateOf<String?>(null)
@@ -51,11 +46,34 @@ class PlanViewModel : ViewModel() {
 
     init {
         syncFromRepository()
+        observeNoteFolders()
     }
 
     private fun syncFromRepository() {
         tasks.clear()
         tasks.addAll(repository.getAllTasks())
+        rebuildSubjects(allNotes.value)
+    }
+
+    private fun observeNoteFolders() {
+        viewModelScope.launch {
+            allNotes.collect { notes ->
+                rebuildSubjects(notes)
+            }
+        }
+    }
+
+    private fun rebuildSubjects(notes: List<NoteModel>) {
+        val noteFolders = notes.map { it.folder.trim().ifBlank { "General" } }
+        val taskSubjects = tasks.map { it.subjectName.trim().ifBlank { "General" } }
+        val subjects = (noteFolders + taskSubjects)
+            .filter { it.isNotBlank() }
+            .distinctBy { it.lowercase() }
+            .sortedWith(String.CASE_INSENSITIVE_ORDER)
+            .map { name -> SubjectModel(name.toSubjectId(), name) }
+
+        dynamicSubjects.clear()
+        dynamicSubjects.addAll(subjects)
     }
 
     fun handleAddOrUpdateTask(subjectId: String, subjectName: String) {
@@ -113,8 +131,6 @@ class PlanViewModel : ViewModel() {
         resetFormInputs()
     }
 
-    // ── Note ↔ Task relationship ─────────────────────────────────────────────
-
     fun openNotePicker(taskId: String) {
         notePickerTaskId = taskId
         showNotePicker = true
@@ -138,8 +154,6 @@ class PlanViewModel : ViewModel() {
     fun getLinkedNoteIds(taskId: String): List<String> =
         tasks.find { it.id == taskId }?.linkedNoteIds ?: emptyList()
 
-    // ── Private helpers ──────────────────────────────────────────────────────
-
     private fun resetFormInputs() {
         taskTitle = ""
         taskDescription = ""
@@ -147,4 +161,7 @@ class PlanViewModel : ViewModel() {
         selectedStartDate = LocalDate.now()
         selectedEndDate = null
     }
+
+    private fun String.toSubjectId(): String =
+        lowercase().replace(Regex("[^a-z0-9]+"), "_").trim('_').ifBlank { "general" }
 }

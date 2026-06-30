@@ -1,95 +1,58 @@
-
 package com.teamdobermans.studyos.repo
 
-import com.teamdobermans.studyos.model.Priority
 import com.teamdobermans.studyos.model.Task
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import java.time.LocalDate
 
-object TaskRepository {
+class TaskRepository {
 
-    private val remoteTaskStore = mutableListOf(
-        Task(
-            title = "Revise DSA Notes",
-            description = "Graphs, Trees and Sorting Algorithms",
-            startDate = LocalDate.now(),
-            endDate = LocalDate.now(),
-            priority = Priority.HIGH,
-            subjectId = "dsa",
-            subjectName = "Data Structures"
-        ),
-        Task(
-            title = "Complete Mock Test",
-            description = "Practice exam simulation",
-            startDate = LocalDate.now(),
-            endDate = LocalDate.now(),
-            priority = Priority.MEDIUM,
-            subjectId = "mock",
-            subjectName = "Mock Test"
-        ),
-        Task(
-            title = "Focus Session",
-            description = "Complete one Pomodoro cycle",
-            startDate = LocalDate.now(),
-            endDate = LocalDate.now(),
-            priority = Priority.LOW,
-            subjectId = "focus",
-            subjectName = "Focus"
-        )
-    )
+    companion object {
+        private val store = mutableMapOf<String, Task>()
+        private val _flow = MutableStateFlow<List<Task>>(emptyList())
 
-    fun getAllTasks(): List<Task> = remoteTaskStore.toList()
-
-    fun getTodaysTasks(): List<Task> {
-        val today = LocalDate.now()
-        return remoteTaskStore.filter { it.startDate == today || it.endDate == today }
+        private fun emit() {
+            _flow.value = store.values.toList()
+        }
     }
 
-    fun getHighPriorityTasks(): List<Task> =
-        remoteTaskStore.filter { it.priority == Priority.HIGH }
-
-    fun getTasksBySubject(subjectId: String): List<Task> =
-        remoteTaskStore.filter { it.subjectId == subjectId }
+    fun getAllTasks(): List<Task> = store.values.toList()
 
     fun insertTask(task: Task) {
-        remoteTaskStore.add(task)
+        store[task.id] = task
+        emit()
     }
 
     fun updateTask(updatedTask: Task) {
-        val index = remoteTaskStore.indexOfFirst { it.id == updatedTask.id }
-        if (index != -1) remoteTaskStore[index] = updatedTask
+        store[updatedTask.id] = updatedTask
+        emit()
     }
 
-    fun deleteTask(taskId: String) {
-        remoteTaskStore.removeAll { it.id == taskId }
+    fun getTodaysTasks(): List<Task> {
+        val today = LocalDate.now()
+        return store.values.filter { task ->
+            !task.startDate.isAfter(today) && (task.endDate == null || !task.endDate.isBefore(today))
+        }
     }
 
-    fun getTodayTaskCount(): Int = getTodaysTasks().size
+    fun getActiveTasksFlow(): Flow<List<Task>> = _flow
 
-    fun getTotalTaskCount(): Int = remoteTaskStore.size
+    fun linkSessionToTask(taskId: String, sessionId: String) {}
 
-    // ── Notes ↔ Tasks relationship ───────────────────────────────────────────
+    fun getTasksForNote(noteId: String): List<Task> =
+        store.values.filter { noteId in it.linkedNoteIds }
 
     fun attachNoteToTask(taskId: String, noteId: String) {
-        val index = remoteTaskStore.indexOfFirst { it.id == taskId }
-        if (index != -1) {
-            val task = remoteTaskStore[index]
-            if (!task.linkedNoteIds.contains(noteId)) {
-                remoteTaskStore[index] = task.copy(linkedNoteIds = task.linkedNoteIds + noteId)
-            }
+        val task = store[taskId] ?: return
+        if (noteId !in task.linkedNoteIds) {
+            store[taskId] = task.copy(linkedNoteIds = task.linkedNoteIds + noteId)
+            emit()
         }
     }
 
     fun removeNoteFromTask(taskId: String, noteId: String) {
-        val index = remoteTaskStore.indexOfFirst { it.id == taskId }
-        if (index != -1) {
-            val task = remoteTaskStore[index]
-            remoteTaskStore[index] = task.copy(linkedNoteIds = task.linkedNoteIds - noteId)
-        }
+        val task = store[taskId] ?: return
+        store[taskId] = task.copy(linkedNoteIds = task.linkedNoteIds.filter { it != noteId })
+        emit()
     }
-
-    fun getLinkedNoteIds(taskId: String): List<String> =
-        remoteTaskStore.find { it.id == taskId }?.linkedNoteIds ?: emptyList()
-
-    fun getTasksForNote(noteId: String): List<Task> =
-        remoteTaskStore.filter { noteId in it.linkedNoteIds }
 }

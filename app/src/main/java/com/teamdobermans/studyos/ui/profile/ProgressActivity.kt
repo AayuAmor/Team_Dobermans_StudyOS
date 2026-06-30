@@ -27,19 +27,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.teamdobermans.studyos.model.FocusSessionModel
 import com.teamdobermans.studyos.ui.analytics.*
 import com.teamdobermans.studyos.ui.components.AnalyticsHeroRow
 import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.viewModel.AnalyticsViewModel
+import com.teamdobermans.studyos.viewModel.SessionHistoryViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class ProgressActivity : ComponentActivity() {
     private val analyticsViewModel: AnalyticsViewModel by viewModels()
+    private val sessionHistoryViewModel: SessionHistoryViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ProgressBody(analyticsViewModel = analyticsViewModel, onBack = { finish() })
+            ProgressBody(
+                analyticsViewModel = analyticsViewModel,
+                sessionHistoryViewModel = sessionHistoryViewModel,
+                onBack = { finish() }
+            )
         }
     }
 }
@@ -47,14 +57,17 @@ class ProgressActivity : ComponentActivity() {
 @Composable
 fun ProgressBody(
     analyticsViewModel: AnalyticsViewModel = AnalyticsViewModel(),
+    sessionHistoryViewModel: SessionHistoryViewModel = SessionHistoryViewModel(),
     onBack: () -> Unit = {}
 ) {
     val state by analyticsViewModel.state.collectAsState()
+    val sessions by sessionHistoryViewModel.sessions.collectAsState()
+    val isLoadingSessions by sessionHistoryViewModel.isLoading.collectAsState()
 
-    val bestDay    = state.weeklyData.maxByOrNull { it.hours }?.day ?: "Thursday"
-    val strongest  = state.subjectBreakdown.maxByOrNull { it.percent }?.name ?: "Mathematics"
-    val weakest    = state.subjectBreakdown.minByOrNull { it.percent }?.name ?: "Chemistry"
-    val taskPct    = (state.focusScore * 0.85f).toInt().coerceIn(0, 100)
+    val bestDay = state.weeklyData.maxByOrNull { it.hours }?.day ?: "No data"
+    val strongest = state.subjectBreakdown.maxByOrNull { it.percent }?.name ?: "No subject data"
+    val weakest = state.subjectBreakdown.minByOrNull { it.percent }?.name ?: "No subject data"
+    val taskPct = (state.focusScore * 0.85f).toInt().coerceIn(0, 100)
     val quizScores = listOf(0.60f, 0.72f, 0.65f, 0.78f, 0.74f, 0.82f, 0.78f)
 
     Column(
@@ -92,14 +105,14 @@ fun ProgressBody(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            RecentSessionsCard()
+            RecentSessionsCard(sessions = sessions, isLoading = isLoadingSessions)
 
             Spacer(modifier = Modifier.height(14.dp))
 
             QuickInsightsCard(
-                bestDay     = bestDay,
-                strongest   = strongest,
-                weakest     = weakest,
+                bestDay = bestDay,
+                strongest = strongest,
+                weakest = weakest,
                 improvement = "+12%"
             )
 
@@ -127,10 +140,10 @@ private fun ProgressHeader(onBack: () -> Unit) {
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector        = Icons.AutoMirrored.Rounded.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                         contentDescription = "Back",
-                        tint               = Color.White,
-                        modifier           = Modifier.size(18.dp)
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Back", color = Color.White, fontSize = 14.sp)
@@ -149,12 +162,17 @@ private fun TaskCompletionCard(percent: Int) {
         modifier = Modifier
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(16.dp)),
-        shape  = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(imageVector = Icons.Rounded.CheckCircle, contentDescription = null, tint = StudyPurple, modifier = Modifier.size(18.dp))
+                Icon(
+                    imageVector = Icons.Rounded.CheckCircle,
+                    contentDescription = null,
+                    tint = StudyPurple,
+                    modifier = Modifier.size(18.dp)
+                )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text("Task Completion", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
                 Spacer(modifier = Modifier.weight(1f))
@@ -162,9 +180,9 @@ private fun TaskCompletionCard(percent: Int) {
             }
             Spacer(modifier = Modifier.height(12.dp))
             LinearProgressIndicator(
-                progress   = { percent / 100f },
-                modifier   = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(10.dp)),
-                color      = StudyPurple,
+                progress = { percent / 100f },
+                modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(10.dp)),
+                color = StudyPurple,
                 trackColor = StudyPurpleLight
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -173,31 +191,68 @@ private fun TaskCompletionCard(percent: Int) {
     }
 }
 
+private fun formatTimeAgo(completedAt: Long): String {
+    val diff = System.currentTimeMillis() - completedAt
+    return when {
+        diff < 60_000L -> "Just now"
+        diff < 3_600_000L -> "${diff / 60_000}m ago"
+        diff < 86_400_000L -> "${diff / 3_600_000}h ago"
+        diff < 172_800_000L -> "Yesterday"
+        else -> SimpleDateFormat("MMM d", Locale.getDefault()).format(Date(completedAt))
+    }
+}
+
 @Composable
-private fun RecentSessionsCard() {
-    val sessions = listOf(
-        Triple("Mathematics",  "25 min", "2h ago"),
-        Triple("Physics",      "50 min", "5h ago"),
-        Triple("Computer Sci", "25 min", "Yesterday")
-    )
+private fun RecentSessionsCard(
+    sessions: List<FocusSessionModel>,
+    isLoading: Boolean
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(16.dp)),
-        shape  = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(imageVector = Icons.Rounded.Timer, contentDescription = null, tint = StudyPurple, modifier = Modifier.size(18.dp))
+                Icon(
+                    imageVector = Icons.Rounded.Timer,
+                    contentDescription = null,
+                    tint = StudyPurple,
+                    modifier = Modifier.size(18.dp)
+                )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text("Recent Study Sessions", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
             }
             Spacer(modifier = Modifier.height(12.dp))
-            sessions.forEachIndexed { index, (subject, duration, ago) ->
-                SessionRow(subject = subject, duration = duration, timeAgo = ago)
-                if (index < sessions.lastIndex) {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = StudyPurpleFaint)
+            when {
+                isLoading -> {
+                    Box(modifier = Modifier.fillMaxWidth().height(60.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = StudyPurple, modifier = Modifier.size(24.dp))
+                    }
+                }
+
+                sessions.isEmpty() -> {
+                    Text(
+                        text = "No sessions recorded yet. Complete a focus session to see your history here.",
+                        fontSize = 12.sp,
+                        color = TextSecondary
+                    )
+                }
+
+                else -> {
+                    val displaySessions = sessions.take(10)
+                    displaySessions.forEachIndexed { index, session ->
+                        SessionRow(
+                            subject = session.taskTitle.ifBlank { "Focus Session" },
+                            duration = "${session.durationMinutes} min",
+                            timeAgo = formatTimeAgo(session.completedAt)
+                        )
+                        if (index < displaySessions.lastIndex) {
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = StudyPurpleFaint)
+                        }
+                    }
                 }
             }
         }
@@ -214,11 +269,16 @@ private fun SessionRow(subject: String, duration: String, timeAgo: String) {
                 .background(StudyPurpleFaint),
             contentAlignment = Alignment.Center
         ) {
-            Icon(imageVector = Icons.Rounded.Timer, contentDescription = null, tint = StudyPurple, modifier = Modifier.size(18.dp))
+            Icon(
+                imageVector = Icons.Rounded.Timer,
+                contentDescription = null,
+                tint = StudyPurple,
+                modifier = Modifier.size(18.dp)
+            )
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(subject,  fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+            Text(subject, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
             Text(duration, fontSize = 11.sp, color = TextSecondary)
         }
         Text(timeAgo, fontSize = 11.sp, color = TextHint)
@@ -231,23 +291,48 @@ private fun QuickInsightsCard(bestDay: String, strongest: String, weakest: Strin
         modifier = Modifier
             .fillMaxWidth()
             .shadow(4.dp, RoundedCornerShape(16.dp)),
-        shape  = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(imageVector = Icons.Rounded.Lightbulb, contentDescription = null, tint = StudyPurple, modifier = Modifier.size(18.dp))
+                Icon(
+                    imageVector = Icons.Rounded.Lightbulb,
+                    contentDescription = null,
+                    tint = StudyPurple,
+                    modifier = Modifier.size(18.dp)
+                )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text("Quick Insights", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
             }
             Spacer(modifier = Modifier.height(12.dp))
-            InsightRow(icon = Icons.Rounded.CalendarToday, label = "Best Study Day",     value = bestDay,     tint = Color(0xFF3A82E0))
+            InsightRow(
+                icon = Icons.Rounded.CalendarToday,
+                label = "Best Study Day",
+                value = bestDay,
+                tint = Color(0xFF3A82E0)
+            )
             Spacer(modifier = Modifier.height(10.dp))
-            InsightRow(icon = Icons.Rounded.TrendingUp,    label = "Strongest Subject",   value = strongest,   tint = Color(0xFF1D9E75))
+            InsightRow(
+                icon = Icons.Rounded.TrendingUp,
+                label = "Strongest Subject",
+                value = strongest,
+                tint = Color(0xFF1D9E75)
+            )
             Spacer(modifier = Modifier.height(10.dp))
-            InsightRow(icon = Icons.Rounded.TrendingDown,  label = "Weakest Subject",     value = weakest,     tint = Color(0xFFE04F7B))
+            InsightRow(
+                icon = Icons.Rounded.TrendingDown,
+                label = "Weakest Subject",
+                value = weakest,
+                tint = Color(0xFFE04F7B)
+            )
             Spacer(modifier = Modifier.height(10.dp))
-            InsightRow(icon = Icons.Rounded.ShowChart,     label = "Weekly Improvement",  value = improvement, tint = Color(0xFFE07B39))
+            InsightRow(
+                icon = Icons.Rounded.ShowChart,
+                label = "Weekly Improvement",
+                value = improvement,
+                tint = Color(0xFFE07B39)
+            )
         }
     }
 }

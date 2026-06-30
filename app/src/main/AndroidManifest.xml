@@ -1,48 +1,128 @@
-<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<?xml version="1.0" encoding="utf-8" ?>
+<manifest
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:tools="http://schemas.android.com/tools"
+>
 
     <application
-        android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.StudyOS">
-
+    android:allowBackup="true"
+    android:dataExtractionRules="@xml/data_extraction_rules"
+    android:fullBackupContent="@xml/backup_rules"
+    android:icon="@mipmap/ic_launcher"
+    android:label="@string/app_name"
+    android:roundIcon="@mipmap/ic_launcher_round"
+    android:supportsRtl="true"
+    android:theme="@style/Theme.StudyOS"
+  >
         <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.StudyOS">
+      android:name=".ui.home.UpcomingReviewsCard"
+      android:exported="false"
+      android:label="@string/title_activity_upcoming_reviews_card"
+      android:theme="@style/Theme.StudyOS"
+    />
+        <activity
+      android:name=".MainActivity"
+      android:exported="true"
+      android:label="@string/app_name"
+      android:theme="@style/Theme.StudyOS"
+    >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+      android:name=".ui.study.NotesPage"
+      android:exported="false"
+      android:theme="@style/Theme.StudyOS"
+      android:windowSoftInputMode="adjustResize"
+    />
 
-        <activity android:name=".ui.study.NotesPage"                  android:exported="false" android:theme="@style/Theme.StudyOS" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".ui.focus.BrainGameActivityShell"   android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.focus.BrainGameActivity"        android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.profile.SettingsActivity"       android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.plan.PlanActivity"              android:exported="false" android:theme="@style/Theme.StudyOS" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".ui.auth.SignUpActivity"            android:exported="false" android:theme="@style/Theme.StudyOS" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".ui.home.DashboardActivity"         android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.focus.PomodoroActivity"         android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.auth.LoginActivity"             android:exported="false" android:theme="@style/Theme.StudyOS" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".ui.profile.ProfileActivity"        android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.profile.ProgressActivity"      android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.home.VisionBoardActivity"       android:exported="false" android:theme="@style/Theme.StudyOS" android:windowSoftInputMode="adjustResize" />
-        <activity android:name=".ui.study.MockTestActivity"         android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.study.Flashcards"               android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.study.QuizScreen"               android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.study.VideotoNotes"             android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.onboarding.OnboardingActivity1_WelcomePage" android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.onboarding.OnboardingActivity2_StudyActivityOS" android:exported="false" android:theme="@style/Theme.StudyOS" />
-        <activity android:name=".ui.onboarding.OnboardingActivity3_worksOffline" android:exported="false" android:theme="@style/Theme.StudyOS" />
-
+        <activity
+      android:name=".ui.profile.SettingsActivity"
+      android:exported="false"
+      android:theme="@style/Theme.StudyOS"
+    />
+        <activity
+      android:name=".ui.plan.PlanActivity"
+      android:exported="false"
+      android:theme="@style/Theme.StudyOS"
+      android:windowSoftInputMode="adjustResize"
+    />
+        <activity
+      android:name=".ui.auth.SignUpActivity"
+      android:exported="false"
+      android:theme="@style/Theme.StudyOS"
+      android:windowSoftInputMode="adjustResize"
+    />
+        <activity
+      android:name=".ui.home.DashboardActivity"
+      android:exported="true"
+      android:theme="@style/Theme.StudyOS"
+    />
+        <activity
+      android:name=".ui.focus.PomodoroActivity"
+      android:exported="false"
+      android:theme="@style/Theme.StudyOS"
+    />
+        <activity
+      android:name=".ui.auth.LoginActivity"
+      android:exported="false"
+      android:theme="@style/Theme.StudyOS"
+      android:windowSoftInputMode="adjustResize"
+    />
+        <activity
+      android:name=".ui.profile.ProfileActivity"
+      android:exported="false"
+      android:theme="@style/Theme.StudyOS"
+    />
+        <activity
+      android:name=".ui.profile.ProgressActivity"
+      android:exported="false"
+      android:theme="@style/Theme.StudyOS"
+    />
+        <activity
+      android:name=".ui.home.VisionBoardActivity"
+      android:exported="true"
+      android:theme="@style/Theme.StudyOS"
+      android:windowSoftInputMode="adjustResize"
+    />
+        <activity
+      android:name=".ui.study.MockTestActivity"
+      android:exported="false"
+      android:theme="@style/Theme.StudyOS"
+    />
+        <activity
+      android:name=".ui.study.Flashcards"
+      android:exported="false"
+      android:theme="@style/Theme.StudyOS"
+    />
+        <activity
+      android:name=".ui.study.QuizScreen"
+      android:exported="false"
+      android:theme="@style/Theme.StudyOS"
+    />
+        <activity
+      android:name=".ui.study.VideotoNotes"
+      android:exported="false"
+      android:theme="@style/Theme.StudyOS"
+    />
+        <activity
+      android:name=".ui.onboarding.OnboardingActivity1_WelcomePage"
+      android:exported="false"
+      android:theme="@style/Theme.StudyOS"
+    />
+        <activity
+      android:name=".ui.onboarding.OnboardingActivity2_StudyActivityOS"
+      android:exported="false"
+      android:theme="@style/Theme.StudyOS"
+    />
+        <activity
+      android:name=".ui.onboarding.OnboardingActivity3_worksOffline"
+      android:exported="false"
+      android:theme="@style/Theme.StudyOS"
+    />
     </application>
 
 </manifest>

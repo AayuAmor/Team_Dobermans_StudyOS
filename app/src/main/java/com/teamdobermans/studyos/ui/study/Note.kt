@@ -1,58 +1,83 @@
 package com.teamdobermans.studyos.ui.study
-import com.teamdobermans.studyos.R
 
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.*
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.EventNote
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.teamdobermans.studyos.model.NoteModel
-import com.teamdobermans.studyos.model.Task
-import com.teamdobermans.studyos.ui.plan.PlanActivity
+import com.teamdobermans.studyos.repo.ReviewReminderRepository
+import com.teamdobermans.studyos.ui.components.StudyOSDestructiveButton
+import com.teamdobermans.studyos.ui.components.StudyOSOutlinedButton
+import com.teamdobermans.studyos.ui.components.StudyOSPrimaryButton
+import com.teamdobermans.studyos.ui.components.StudyOSTextButton
 import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.viewModel.AutoSaveStatus
 import com.teamdobermans.studyos.viewModel.NoteViewModel
+import com.teamdobermans.studyos.viewModel.ReviewUiState
+import com.teamdobermans.studyos.viewModel.ReviewViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
-private val BrandPurpleLight = Color(0xFF7C6CEF)
-private val BackgroundGray = StudyPurpleFaint
-private val SelectedChipBg = Color(0xFFDED9FF)
+private enum class SourceFilter(val label: String, val key: String?) {
+    ALL("All", null),
+    MANUAL("Manual", "MANUAL"),
+    VIDEO("Video Notes", "VIDEO"),
+    IMPORTED("Imported", "IMPORTED")
+}
+
+private fun wordCount(body: String): Int =
+    body.split(Regex("\\s+")).count { it.isNotBlank() }
+
+private fun isQuizReady(body: String): Boolean = wordCount(body) >= 50
 
 class NotesPage : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             StudyOSTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    NotesScreen(onBackClick = { finish() })
-                }
+                NotesScreen(onBackClick = { finish() })
             }
         }
     }
@@ -62,244 +87,488 @@ class NotesPage : ComponentActivity() {
 fun NotesScreen(
     modifier: Modifier = Modifier,
     viewModel: NoteViewModel? = null,
-    onBackClick: () -> Unit = {}
+    onBackClick: () -> Unit = {},
+    onNavigateVideoNotes: () -> Unit = {}
 ) {
-    val resolvedVm: NoteViewModel = viewModel ?: androidx.lifecycle.viewmodel.compose.viewModel()
-    val allNotes by resolvedVm.notes.collectAsState()
-    val saveResult by resolvedVm.saveResult.collectAsState()
-    val linkedTasks by resolvedVm.linkedTasks.collectAsState()
-    val autoSaveStatus by resolvedVm.autoSaveStatus.collectAsState()
-    val currentEditingNoteId by resolvedVm.currentEditingNoteId.collectAsState()
-    val context = LocalContext.current
+    val resolvedVm: NoteViewModel =
+        viewModel ?: androidx.lifecycle.viewmodel.compose.viewModel()
 
-    LaunchedEffect(saveResult) {
-        saveResult?.let { result ->
-            val message = if (result == "SUCCESS") "Note saved!" else result
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-            resolvedVm.clearSaveResult()
-        }
+    val allNotes by resolvedVm.notes.collectAsState()
+    val autoSaveStatus by resolvedVm.autoSaveStatus.collectAsState()
+
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var sourceFilter by rememberSaveable { mutableStateOf(SourceFilter.ALL) }
+    var selectedNote by remember { mutableStateOf<NoteModel?>(null) }
+    var showEditor by rememberSaveable { mutableStateOf(false) }
+
+    if (showEditor) {
+        NoteEditorScreen(
+            existingNote = selectedNote,
+            autoSaveStatus = autoSaveStatus,
+            onEditorChanged = { noteId, title, body ->
+                resolvedVm.onEditorChanged(noteId, title, body, "")
+            },
+            onSave = { title, body ->
+                if (selectedNote != null) {
+                    resolvedVm.updateNote(
+                        selectedNote!!.copy(
+                            title = title,
+                            body = body,
+                            updatedAt = System.currentTimeMillis()
+                        )
+                    )
+                } else {
+                    resolvedVm.createNote(title, body, "")
+                }
+                resolvedVm.clearEditingNote()
+                showEditor = false
+                selectedNote = null
+            },
+            onDelete = { noteId ->
+                resolvedVm.deleteNote(noteId)
+                resolvedVm.clearEditingNote()
+                showEditor = false
+                selectedNote = null
+            },
+            onBack = {
+                resolvedVm.clearEditingNote()
+                showEditor = false
+                selectedNote = null
+            }
+        )
+        return
     }
 
-    NotesScreenContent(
-        modifier             = modifier,
-        allNotes             = allNotes,
-        linkedTasks          = linkedTasks,
-        onBackClick          = onBackClick,
-        onNoteSelected       = { noteId -> resolvedVm.loadLinkedTasks(noteId) },
-        onNoteDeselected     = { resolvedVm.clearLinkedTasks() },
-        onCreateNote         = { title, body, folder -> resolvedVm.createNote(title, body, folder) },
-        onUpdateNote         = { note -> resolvedVm.updateNote(note) },
-        onDeleteNote         = { id -> resolvedVm.deleteNote(id) },
-        onAutoSave           = { noteId, title, body, folder -> resolvedVm.onEditorChanged(noteId, title, body, folder) },
-        autoSaveStatus       = autoSaveStatus,
-        currentEditingNoteId = currentEditingNoteId,
-        onEditorClosed       = { resolvedVm.clearEditingNote() }
+    val visibleNotes = remember(allNotes, searchQuery, sourceFilter) {
+        var list = allNotes
+        if (searchQuery.isNotBlank()) {
+            list = list.filter { n ->
+                n.title.contains(searchQuery, ignoreCase = true) ||
+                        n.body.contains(searchQuery, ignoreCase = true)
+            }
+        }
+        if (sourceFilter != SourceFilter.ALL) {
+            list = list.filter { n ->
+                n.sourceType.equals(sourceFilter.key, ignoreCase = true)
+            }
+        }
+        list
+    }
+
+    NotesWorkspaceScreen(
+        modifier = modifier,
+        notes = visibleNotes,
+        allNotes = allNotes,
+        searchQuery = searchQuery,
+        sourceFilter = sourceFilter,
+        onSearchChange = { searchQuery = it },
+        onFilterChange = { sourceFilter = it },
+        onBackClick = onBackClick,
+        onNoteClick = { note -> selectedNote = note; showEditor = true },
+        onCreateNote = { selectedNote = null; showEditor = true },
+        onDeleteNote = { id -> resolvedVm.deleteNote(id) },
+        onNavigateVideoNotes = onNavigateVideoNotes
     )
 }
 
 @Composable
-fun NotesScreenContent(
-    modifier: Modifier = Modifier,
+private fun NotesWorkspaceScreen(
+    modifier: Modifier,
+    notes: List<NoteModel>,
     allNotes: List<NoteModel>,
-    linkedTasks: List<Task> = emptyList(),
+    searchQuery: String,
+    sourceFilter: SourceFilter,
+    onSearchChange: (String) -> Unit,
+    onFilterChange: (SourceFilter) -> Unit,
     onBackClick: () -> Unit,
-    onNoteSelected: (String) -> Unit = {},
-    onNoteDeselected: () -> Unit = {},
-    onCreateNote: (String, String, String) -> Unit,
-    onUpdateNote: (NoteModel) -> Unit,
+    onNoteClick: (NoteModel) -> Unit,
+    onCreateNote: () -> Unit,
     onDeleteNote: (String) -> Unit,
-    onAutoSave: (String?, String, String, String) -> Unit = { _, _, _, _ -> },
-    autoSaveStatus: AutoSaveStatus = AutoSaveStatus.IDLE,
-    currentEditingNoteId: String? = null,
-    onEditorClosed: () -> Unit = {}
+    onNavigateVideoNotes: () -> Unit
 ) {
-    val defaultFolders = listOf("Science", "Social", "English")
-    var extraFolders by rememberSaveable { mutableStateOf(listOf<String>()) }
-    val folders = defaultFolders + extraFolders
+    val context = LocalContext.current
 
-    var activeFolder        by rememberSaveable { mutableStateOf("Science") }
-    var searchQuery         by rememberSaveable { mutableStateOf("") }
-    var selectedNote        by remember { mutableStateOf<NoteModel?>(null) }
-    var showEditor          by rememberSaveable { mutableStateOf(false) }
-    var showNewFolderDialog by rememberSaveable { mutableStateOf(false) }
-    var newFolderName       by rememberSaveable { mutableStateOf("") }
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        containerColor = Color(0xFFF8F7FC),
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onCreateNote,
+                containerColor = BrandPurple,
+                shape = CircleShape
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "New Note", tint = Color.White)
+            }
+        }
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
+            contentPadding = PaddingValues(bottom = 96.dp)
+        ) {
+            item {
+                NotesTopBar(onBackClick = onBackClick)
+            }
 
-    if (showNewFolderDialog) {
-        AlertDialog(
-            onDismissRequest = { showNewFolderDialog = false; newFolderName = "" },
-            title = { Text("New Folder", fontWeight = FontWeight.Bold) },
-            text = {
-                OutlinedTextField(
-                    value = newFolderName,
-                    onValueChange = { newFolderName = it },
-                    label = { Text("Folder name") },
-                    placeholder = { Text("e.g. Computer, Math...") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = BrandPurple,
-                        focusedLabelColor  = BrandPurple,
-                        cursorColor        = BrandPurple
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White)
+                        .padding(start = 20.dp, end = 20.dp, bottom = 20.dp)
+                ) {
+                    Text(
+                        text = "Notes",
+                        color = TextPrimary,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.ExtraBold
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Capture, organize, and turn notes into quizzes",
+                        color = TextSecondary,
+                        fontSize = 14.sp
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    NotesSearchBar(query = searchQuery, onQueryChange = onSearchChange)
+                }
+            }
+
+            item {
+                NoteSourceFilterChips(
+                    selected = sourceFilter,
+                    onSelect = onFilterChange,
+                    modifier = Modifier.background(Color.White)
+                )
+                HorizontalDivider(color = Color(0xFFEEEAFF))
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            if (allNotes.isEmpty() && searchQuery.isBlank()) {
+                item {
+                    NotesEmptyState(
+                        onCreateNote = onCreateNote,
+                        onNavigateVideoNotes = onNavigateVideoNotes,
+                        modifier = Modifier.padding(horizontal = 24.dp)
+                    )
+                }
+                return@LazyColumn
+            }
+
+            if (notes.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 56.dp, horizontal = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = if (searchQuery.isNotBlank())
+                                    "No notes match \"$searchQuery\""
+                                else
+                                    "No ${sourceFilter.label.lowercase()} notes yet",
+                                color = TextSecondary,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            if (searchQuery.isBlank()) {
+                                Text(
+                                    text = "Try a different filter or create a new note.",
+                                    color = TextHint,
+                                    fontSize = 14.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    }
+                }
+                return@LazyColumn
+            }
+
+            item {
+                Text(
+                    text = "${notes.size} note${if (notes.size != 1) "s" else ""}",
+                    color = TextHint,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+                )
+            }
+
+            items(notes, key = { it.id }) { note ->
+                ProfessionalNoteCard(
+                    note = note,
+                    onClick = { onNoteClick(note) },
+                    onDelete = { onDeleteNote(note.id) },
+                    onGenerateQuiz = {
+                        context.startActivity(
+                            Intent(context, MockTestActivity::class.java).apply {
+                                putExtra("noteId", note.id)
+                                putExtra("noteTitle", note.title)
+                                putExtra("noteBody", note.body)
+                            }
+                        )
+                    },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 5.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun NotesTopBar(onBackClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .statusBarsPadding()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(onClick = onBackClick)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back",
+                tint = BrandPurple,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text("Back", color = BrandPurple, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+
+@Composable
+private fun NotesSearchBar(query: String, onQueryChange: (String) -> Unit) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = Modifier.fillMaxWidth(),
+        placeholder = { Text("Search notes…", color = TextHint, fontSize = 14.sp) },
+        leadingIcon = {
+            Icon(Icons.Default.Search, contentDescription = null, tint = TextHint, modifier = Modifier.size(20.dp))
+        },
+        trailingIcon = if (query.isNotBlank()) {
+            {
+                IconButton(onClick = { onQueryChange("") }) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Clear",
+                        tint = TextHint
+                    )
+                }
+            }
+        } else null,
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        shape = RoundedCornerShape(12.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = BrandPurple,
+            unfocusedBorderColor = Color(0xFFE0DDEF),
+            cursorColor = BrandPurple,
+            focusedTextColor = TextPrimary,
+            unfocusedTextColor = TextPrimary
+        )
+    )
+}
+
+@Composable
+private fun NoteSourceFilterChips(
+    selected: SourceFilter,
+    onSelect: (SourceFilter) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        SourceFilter.entries.forEach { filter ->
+            val isSelected = selected == filter
+            val bgColor by animateColorAsState(
+                targetValue = if (isSelected) BrandPurple else Color(0xFFF0EEF9),
+                animationSpec = tween(180),
+                label = "chip_bg"
+            )
+            val textColor by animateColorAsState(
+                targetValue = if (isSelected) Color.White else TextSecondary,
+                animationSpec = tween(180),
+                label = "chip_text"
+            )
+            Surface(
+                shape = RoundedCornerShape(50.dp),
+                color = bgColor,
+                modifier = Modifier.clickable { onSelect(filter) }
+            ) {
+                Text(
+                    text = filter.label,
+                    color = textColor,
+                    fontSize = 13.sp,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ProfessionalNoteCard(
+    note: NoteModel,
+    onClick: () -> Unit,
+    onDelete: () -> Unit,
+    onGenerateQuiz: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val dateFmt = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
+    val dateStr = remember(note.updatedAt, note.timestamp) {
+        val ts = if (note.updatedAt > 0L) note.updatedAt else note.timestamp
+        if (ts == 0L) "" else dateFmt.format(Date(ts))
+    }
+    val words = remember(note.body) { wordCount(note.body) }
+    val quizReady = remember(note.body) { isQuizReady(note.body) }
+
+    val (sourceLabel, sourceBg, sourceFg) = when (note.sourceType.uppercase()) {
+        "VIDEO" -> Triple("Video Note", Color(0xFFE8F5E9), Color(0xFF1B7A3E))
+        "IMPORTED" -> Triple("Imported", Color(0xFFFFF8E1), Color(0xFFC97B00))
+        else -> Triple("Manual", StudyPurpleLight, BrandPurple)
+    }
+
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Note", fontWeight = FontWeight.Bold) },
+            text = { Text("Delete \"${note.title.ifBlank { "Untitled" }}\"? This cannot be undone.") },
+            confirmButton = {
+                StudyOSDestructiveButton(
+                    text = "Delete",
+                    onClick = { showDeleteDialog = false; onDelete() }
                 )
             },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val name = newFolderName.trim()
-                        if (name.isNotEmpty() && !folders.contains(name)) {
-                            extraFolders = extraFolders + name
-                            activeFolder = name
-                        }
-                        showNewFolderDialog = false
-                        newFolderName = ""
-                    },
-                    enabled = newFolderName.isNotBlank(),
-                    colors = ButtonDefaults.buttonColors(containerColor = BrandPurple)
-                ) { Text("Create", color = Color.White) }
-            },
             dismissButton = {
-                TextButton(onClick = { showNewFolderDialog = false; newFolderName = "" }) { Text("Cancel") }
+                StudyOSTextButton(text = "Cancel", onClick = { showDeleteDialog = false })
             }
         )
     }
 
-    if (showEditor) {
-        CreateEditNoteScreen(
-            existingNote   = selectedNote,
-            folders        = folders,
-            defaultFolder  = activeFolder,
-            linkedTasks    = linkedTasks,
-            onAutoSave     = onAutoSave,
-            autoSaveStatus = autoSaveStatus,
-            onSave = { title, body, folder ->
-                val autoCreatedId = currentEditingNoteId
-                when {
-                    selectedNote != null -> {
-                        onUpdateNote(selectedNote!!.copy(title = title, body = body, folder = folder))
-                    }
-                    autoCreatedId != null -> {
-                        onUpdateNote(NoteModel(id = autoCreatedId, title = title, body = body, folder = folder))
-                    }
-                    else -> {
-                        onCreateNote(title, body, folder)
-                    }
-                }
-                showEditor = false
-                selectedNote = null
-                onNoteDeselected()
-                onEditorClosed()
-            },
-            onDelete = { noteId ->
-                onDeleteNote(noteId)
-                showEditor = false
-                selectedNote = null
-                onNoteDeselected()
-                onEditorClosed()
-            },
-            onBack = {
-                showEditor = false
-                selectedNote = null
-                onNoteDeselected()
-                onEditorClosed()
-            }
-        )
-    } else {
-        val visibleNotes = if (searchQuery.isNotEmpty()) {
-            allNotes.filter { note ->
-                note.title.contains(searchQuery, ignoreCase = true) ||
-                        note.body.contains(searchQuery, ignoreCase = true)
-            }
-        } else {
-            allNotes.filter { note -> note.folder == activeFolder }
-        }
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(modifier = Modifier.clickable(onClick = onClick).padding(16.dp)) {
 
-        Scaffold(
-            modifier       = modifier.fillMaxSize(),
-            containerColor = BackgroundGray,
-            floatingActionButton = {
-                FloatingActionButton(
-                    onClick        = { selectedNote = null; showEditor = true },
-                    modifier       = Modifier.padding(bottom = 16.dp),
-                    containerColor = BrandPurple,
-                    shape          = CircleShape
-                ) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = "Add Note", tint = Color.White)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(shape = RoundedCornerShape(6.dp), color = sourceBg) {
+                    Text(
+                        text = sourceLabel,
+                        color = sourceFg,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+                if (dateStr.isNotBlank()) {
+                    Text(dateStr, color = TextHint, fontSize = 11.sp)
                 }
             }
-        ) { innerPadding ->
-            Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-                NotesHeader(
-                    searchQuery    = searchQuery,
-                    onSearchChange = { searchQuery = it },
-                    onBackClick    = onBackClick,
-                    onAddClick     = { showNewFolderDialog = true }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = note.title.ifBlank { "Untitled Note" },
+                color = TextPrimary,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            if (note.body.isNotBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = note.body.replace("\n", " "),
+                    color = TextSecondary,
+                    fontSize = 13.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 19.sp
                 )
+            }
 
-                LazyColumn(
-                    modifier       = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    if (searchQuery.isEmpty()) {
-                        item {
-                            FoldersSection(
-                                folders      = folders,
-                                activeFolder = activeFolder,
-                                onFolderClick = { activeFolder = it },
-                                onNewFolder   = { showNewFolderDialog = true }
-                            )
-                        }
-                    } else {
-                        item {
-                            Text(
-                                text = "Results for \"$searchQuery\"",
-                                color = BrandPurple,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
+            Spacer(modifier = Modifier.height(10.dp))
 
-                    items(visibleNotes, key = { it.id }) { note ->
-                        NoteCard(
-                            note    = note,
-                            onClick = {
-                                selectedNote = note
-                                showEditor = true
-                                if (note.id.isNotBlank()) onNoteSelected(note.id)
-                            },
-                            onClose = { onDeleteNote(note.id) }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (words > 0) {
+                    Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFFF0EEF9)) {
+                        Text(
+                            text = "$words words",
+                            color = TextSecondary,
+                            fontSize = 11.sp,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                         )
                     }
+                }
+                QuizReadinessBadge(isReady = quizReady)
+            }
 
-                    if (visibleNotes.isEmpty()) {
-                        item {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(top = 48.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        text = if (searchQuery.isNotEmpty())
-                                            "No notes found for \"$searchQuery\""
-                                        else
-                                            "No notes in $activeFolder yet.",
-                                        color = Color.Gray,
-                                        fontSize = 15.sp
-                                    )
-                                    if (searchQuery.isEmpty()) {
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Text(
-                                            text = "Tap the purple + button to write one!",
-                                            color = Color.Gray,
-                                            fontSize = 13.sp
-                                        )
-                                    }
-                                }
-                            }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (quizReady) {
+                    StudyOSPrimaryButton(
+                        text = "Generate Quiz",
+                        onClick = onGenerateQuiz,
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                    )
+                } else {
+                    Surface(
+                        modifier = Modifier.weight(1f).height(36.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFFF5F5F5)
+                    ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            Text(
+                                "Needs more content",
+                                fontSize = 12.sp,
+                                color = TextHint
+                            )
                         }
                     }
+                }
+                IconButton(
+                    onClick = { showDeleteDialog = true },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        tint = PriorityHigh.copy(alpha = 0.7f),
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
         }
@@ -307,459 +576,563 @@ fun NotesScreenContent(
 }
 
 @Composable
-fun CreateEditNoteScreen(
+fun QuizReadinessBadge(isReady: Boolean, modifier: Modifier = Modifier) {
+    val bg = if (isReady) Color(0xFFE8F5E9) else Color(0xFFF5F5F5)
+    val fg = if (isReady) Color(0xFF1B7A3E) else TextHint
+    val label = if (isReady) "Quiz ready" else "Too short"
+
+    Surface(shape = RoundedCornerShape(6.dp), color = bg, modifier = modifier) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(fg)
+            )
+            Text(label, color = fg, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+@Composable
+private fun NotesEmptyState(
+    onCreateNote: () -> Unit,
+    onNavigateVideoNotes: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(modifier = Modifier.height(48.dp))
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = StudyPurpleLight,
+            modifier = Modifier.size(88.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Text("📝", fontSize = 40.sp)
+            }
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = "No notes yet",
+            color = TextPrimary,
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            text = "Create your first note or generate notes from a video to start building your study workspace.",
+            color = TextSecondary,
+            fontSize = 14.sp,
+            textAlign = TextAlign.Center,
+            lineHeight = 21.sp
+        )
+        Spacer(modifier = Modifier.height(32.dp))
+        StudyOSPrimaryButton(
+            text = "Create Note",
+            onClick = onCreateNote,
+            modifier = Modifier.fillMaxWidth(),
+            leadingIcon = Icons.Default.Add
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        StudyOSOutlinedButton(
+            text = "Generate Video Notes",
+            onClick = onNavigateVideoNotes,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(32.dp))
+    }
+}
+
+@Composable
+fun NoteEditorScreen(
     existingNote: NoteModel? = null,
-    folders: List<String> = listOf("Science", "Social", "English"),
-    defaultFolder: String = "Science",
-    linkedTasks: List<Task> = emptyList(),
-    onAutoSave: (String?, String, String, String) -> Unit = { _, _, _, _ -> },
     autoSaveStatus: AutoSaveStatus = AutoSaveStatus.IDLE,
-    onSave: (title: String, body: String, folder: String) -> Unit,
+    onEditorChanged: (noteId: String?, title: String, body: String) -> Unit = { _, _, _ -> },
+    onSave: (title: String, body: String) -> Unit,
     onDelete: ((noteId: String) -> Unit)? = null,
     onBack: () -> Unit
 ) {
     var title by remember { mutableStateOf(existingNote?.title ?: "") }
     var body by remember { mutableStateOf(existingNote?.body ?: "") }
-    var folder by remember { mutableStateOf(existingNote?.folder ?: defaultFolder) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
+
     val isEditing = existingNote != null
+    val words = remember(body) { wordCount(body) }
+    val quizReady = remember(body) { isQuizReady(body) }
     val context = LocalContext.current
+
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(title, body) {
+        if (title.isNotBlank() || body.isNotBlank()) {
+            onEditorChanged(existingNote?.id, title, body)
+        }
+    }
 
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Note") },
-            text  = { Text("Are you sure you want to delete this note?") },
+            title = { Text("Delete Note", fontWeight = FontWeight.Bold) },
+            text = { Text("Delete \"${existingNote?.title?.ifBlank { "Untitled" }}\"? This cannot be undone.") },
             confirmButton = {
-                TextButton(onClick = {
-                    showDeleteDialog = false
-                    existingNote?.let { onDelete?.invoke(it.id) }
-                }) { Text("Delete", color = Color.Red) }
+                StudyOSDestructiveButton(
+                    text = "Delete",
+                    onClick = { showDeleteDialog = false; existingNote?.let { onDelete?.invoke(it.id) } }
+                )
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
+                StudyOSTextButton(text = "Cancel", onClick = { showDeleteDialog = false })
             }
         )
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(BackgroundGray).imePadding()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .imePadding()
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(StudyPurpleDeep)
+                .background(Color.White)
                 .statusBarsPadding()
-                .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 20.dp)
+                .padding(horizontal = 8.dp, vertical = 6.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(BrandPurpleLight)
-                        .clickable { onBack() }
-                        .padding(horizontal = 14.dp, vertical = 8.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.baseline_arrow_back_24),
-                            contentDescription = "Back",
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Back", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                    }
-                }
-                Text(
-                    text = if (isEditing) "Edit Note" else "New Note",
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            if (autoSaveStatus != AutoSaveStatus.IDLE) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-                    horizontalArrangement = Arrangement.End
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable(onClick = onBack)
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = when (autoSaveStatus) {
-                            AutoSaveStatus.SAVING -> "Saving..."
-                            AutoSaveStatus.SAVED  -> "Saved"
-                            AutoSaveStatus.FAILED -> "Save failed"
-                            AutoSaveStatus.IDLE   -> ""
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = BrandPurple,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Notes", color = BrandPurple, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    val (statusText, statusColor) = when (autoSaveStatus) {
+                        AutoSaveStatus.SAVING -> "Saving…" to TextHint
+                        AutoSaveStatus.SAVED -> "Saved" to Color(0xFF1B7A3E)
+                        AutoSaveStatus.FAILED -> "Failed" to PriorityHigh
+                        else -> "" to Color.Transparent
+                    }
+                    if (statusText.isNotBlank()) {
+                        Text(statusText, color = statusColor, fontSize = 12.sp)
+                    }
+                    StudyOSPrimaryButton(
+                        text = if (isEditing) "Update" else "Save",
+                        onClick = {
+                            when {
+                                title.isBlank() -> Toast.makeText(context, "Please enter a title", Toast.LENGTH_SHORT)
+                                    .show()
+
+                                body.isBlank() -> Toast.makeText(
+                                    context,
+                                    "Please add some content first",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
+                                else -> onSave(title.trim(), body.trim())
+                            }
                         },
-                        color = when (autoSaveStatus) {
-                            AutoSaveStatus.FAILED -> Color(0xFFFFCDD2)
-                            else                  -> Color.White.copy(alpha = 0.7f)
-                        },
-                        fontSize = 11.sp
+                        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 0.dp)
                     )
                 }
             }
+        }
+
+        HorizontalDivider(color = Color(0xFFEEEAFF))
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+        ) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(shape = RoundedCornerShape(6.dp), color = StudyPurpleLight) {
+                Text(
+                    text = when (existingNote?.sourceType?.uppercase()) {
+                        "VIDEO" -> "Video Note"
+                        "IMPORTED" -> "Imported"
+                        else -> "Manual Note"
+                    },
+                    color = BrandPurple,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            EditorTextField(
+                value = title,
+                onChange = { title = it },
+                placeholder = "Untitled Note",
+                textStyle = TextStyle(
+                    color = TextPrimary,
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+            HorizontalDivider(color = Color(0xFFF0EEF9))
+            Spacer(modifier = Modifier.height(14.dp))
+
+            EditorTextField(
+                value = body,
+                onChange = { body = it },
+                placeholder = "Start writing your notes here…\n\nTip: Write definitions, concepts, and explanations — at least 50 words — to unlock quiz generation.",
+                textStyle = TextStyle(
+                    color = TextPrimary,
+                    fontSize = 16.sp,
+                    lineHeight = 26.sp
+                ),
+                minLines = 14
+            )
+
+            if (isEditing && existingNote != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(color = Color(0xFFF0EEF9))
+                Spacer(modifier = Modifier.height(16.dp))
+                NoteReviewSection(existingNote = existingNote)
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
 
         Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White)
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text("Folder", color = BrandPurple, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            HorizontalDivider(color = Color(0xFFEEEAFF))
+            Spacer(modifier = Modifier.height(2.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                folders.forEach { f ->
-                    FolderChip(
-                        label    = f,
-                        isActive = f == folder,
-                        onClick  = {
-                            folder = f
-                            onAutoSave(existingNote?.id, title, body, f)
-                        }
-                    )
-                }
-            }
-
-            OutlinedTextField(
-                value = title,
-                onValueChange = {
-                    title = it
-                    onAutoSave(existingNote?.id, it, body, folder)
-                },
-                label = { Text("Title") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = BrandPurple,
-                    focusedLabelColor  = BrandPurple,
-                    cursorColor        = BrandPurple
-                )
-            )
-
-            OutlinedTextField(
-                value = body,
-                onValueChange = {
-                    body = it
-                    onAutoSave(existingNote?.id, title, it, folder)
-                },
-                label = { Text("Content") },
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                maxLines = Int.MAX_VALUE,
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = BrandPurple,
-                    focusedLabelColor  = BrandPurple,
-                    cursorColor        = BrandPurple
-                )
-            )
-
-            if (isEditing) {
-                LinkedTasksSection(
-                    linkedTasks = linkedTasks,
-                    onOpenTask  = {
-                        context.startActivity(Intent(context, PlanActivity::class.java))
-                    }
-                )
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("$words words", color = TextHint, fontSize = 12.sp)
+                QuizReadinessBadge(isReady = quizReady)
             }
 
-            Button(
-                onClick  = { onSave(title.trim(), body.trim(), folder) },
-                enabled  = title.isNotBlank(),
-                modifier = Modifier.fillMaxWidth().height(52.dp).shadow(6.dp, RoundedCornerShape(12.dp)),
-                colors   = ButtonDefaults.buttonColors(
-                    containerColor         = BrandPurple,
-                    disabledContainerColor = Color.Gray
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(
-                    text = if (isEditing) "Update Note" else "Save Note",
-                    color = Color.White,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
+            if (isEditing && existingNote != null) {
+                if (quizReady) {
+                    StudyOSPrimaryButton(
+                        text = "Generate Quiz",
+                        onClick = {
+                            context.startActivity(
+                                Intent(context, MockTestActivity::class.java).apply {
+                                    putExtra("noteId", existingNote.id)
+                                    putExtra("noteTitle", title.ifBlank { existingNote.title })
+                                    putExtra("noteBody", body.ifBlank { existingNote.body })
+                                }
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        color = StudyPurpleLight
+                    ) {
+                        Text(
+                            text = "This note needs more content before generating a quiz.",
+                            color = TextHint,
+                            fontSize = 13.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                }
             }
 
             if (isEditing && onDelete != null) {
-                Button(
-                    onClick  = { showDeleteDialog = true },
-                    colors   = ButtonDefaults.buttonColors(containerColor = PriorityHigh),
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                    shape    = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Delete Note", color = Color.White, fontWeight = FontWeight.SemiBold)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun LinkedTasksSection(
-    linkedTasks: List<Task>,
-    onOpenTask: (Task) -> Unit
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape    = RoundedCornerShape(12.dp),
-        color    = StudyPurpleLight
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                "Linked Tasks",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = BrandPurple
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            if (linkedTasks.isEmpty()) {
-                Text(
-                    "No tasks linked to this note",
-                    color = Color.Gray,
-                    fontSize = 12.sp
+                StudyOSDestructiveButton(
+                    text = "Delete Note",
+                    onClick = { showDeleteDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    leadingIcon = Icons.Default.Delete
                 )
-            } else {
-                linkedTasks.forEach { task ->
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 3.dp)
-                            .clickable { onOpenTask(task) },
-                        shape = RoundedCornerShape(8.dp),
-                        color = Color.White
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                                Text("•", color = BrandPurple, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    task.title,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = TextPrimary,
-                                    maxLines = 1
-                                )
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(50.dp),
-                                color = when (task.priority) {
-                                    com.teamdobermans.studyos.model.Priority.HIGH   -> Color(0xFFFFEBEB)
-                                    com.teamdobermans.studyos.model.Priority.MEDIUM -> Color(0xFFFFF8E1)
-                                    com.teamdobermans.studyos.model.Priority.LOW    -> Color(0xFFE8F5E9)
-                                }
-                            ) {
-                                Text(
-                                    task.priority.name.lowercase().replaceFirstChar { it.uppercase() },
-                                    color = when (task.priority) {
-                                        com.teamdobermans.studyos.model.Priority.HIGH   -> Color(0xFFE53935)
-                                        com.teamdobermans.studyos.model.Priority.MEDIUM -> Color(0xFFF57F17)
-                                        com.teamdobermans.studyos.model.Priority.LOW    -> Color(0xFF2E7D32)
-                                    },
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                )
-                            }
-                        }
-                    }
-                }
             }
         }
     }
 }
 
 @Composable
-fun NotesHeader(
-    searchQuery: String,
-    onSearchChange: (String) -> Unit,
-    onBackClick: () -> Unit,
-    onAddClick: () -> Unit
+private fun EditorTextField(
+    value: String,
+    onChange: (String) -> Unit,
+    placeholder: String,
+    textStyle: TextStyle,
+    minLines: Int = 1
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(BrandPurple)
-            .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 20.dp)
-    ) {
+    Box(modifier = Modifier.fillMaxWidth()) {
+        if (value.isEmpty()) {
+            Text(
+                text = placeholder,
+                style = textStyle.copy(color = TextHint),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        BasicTextField(
+            value = value,
+            onValueChange = onChange,
+            textStyle = textStyle,
+            cursorBrush = SolidColor(BrandPurple),
+            minLines = minLines,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+@Composable
+private fun NoteReviewSection(existingNote: NoteModel) {
+    val reviewVm: ReviewViewModel = viewModel()
+    val reviewState by reviewVm.reviewState.collectAsState()
+
+    LaunchedEffect(existingNote.id) {
+        reviewVm.loadNote(existingNote.id)
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(BrandPurpleLight)
-                    .clickable { onBackClick() }
-                    .padding(horizontal = 14.dp, vertical = 8.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.baseline_arrow_back_24),
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(16.dp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Rounded.EventNote,
+                    contentDescription = null,
+                    tint = BrandPurple,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "Review Reminders",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextPrimary
+                )
+            }
+
+            when (val s = reviewState) {
+                is ReviewUiState.Loaded -> Switch(
+                    checked = s.reminderEnabled,
+                    onCheckedChange = { reviewVm.toggleReminder() },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = BrandPurple,
+                        checkedTrackColor = StudyPurpleLight
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Back", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                )
+
+                is ReviewUiState.Saving,
+                is ReviewUiState.Loading -> CircularProgressIndicator(
+                    modifier = Modifier.size(22.dp),
+                    strokeWidth = 2.dp,
+                    color = BrandPurple
+                )
+
+                else -> Switch(checked = false, onCheckedChange = {})
+            }
+        }
+
+        val loaded = reviewState as? ReviewUiState.Loaded
+        if (loaded != null) {
+            if (loaded.reminderEnabled) {
+
+                val progress = loaded.reviewStage / 3f
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Progress", fontSize = 11.sp, color = TextHint)
+                        Text(
+                            "${loaded.reviewStage}/3 reviews",
+                            fontSize = 11.sp,
+                            color = BrandPurple,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(6.dp)),
+                        color = BrandPurple,
+                        trackColor = StudyPurpleLight
+                    )
+                }
+
+                ReviewPlanRow(stage = loaded.reviewStage)
+
+                if (loaded.nextReviewAt > 0L) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Rounded.Schedule,
+                            contentDescription = null,
+                            tint = TextHint,
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            "Next review: ${relativeReviewTime(loaded.nextReviewAt)}",
+                            fontSize = 12.sp,
+                            color = TextHint
+                        )
+                    }
+                }
+
+                if (loaded.reviewStage < ReviewReminderRepository.MAX_STAGE) {
+                    StudyOSPrimaryButton(
+                        text = "Mark as Reviewed",
+                        onClick = { reviewVm.markReviewed() },
+                        modifier = Modifier.fillMaxWidth(),
+                        leadingIcon = Icons.Rounded.CheckCircle
+                    )
+                } else {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFFE8F8F0)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.CheckCircle,
+                                contentDescription = null,
+                                tint = Color(0xFF1D9E75),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                "All reviews complete!",
+                                color = Color(0xFF1D9E75),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+
+            } else {
+                Text(
+                    text = "Enable to receive reminders on Day 1, Day 4, and Day 7 to reinforce what you've learned.",
+                    fontSize = 12.sp,
+                    color = TextHint,
+                    lineHeight = 18.sp
+                )
+            }
+        }
+
+        val error = reviewState as? ReviewUiState.Error
+        if (error != null) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                color = Color(0xFFFFF0F0)
+            ) {
+                Row(
+                    modifier = Modifier.padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = error.message,
+                        fontSize = 12.sp,
+                        color = Color(0xFFB00020),
+                        modifier = Modifier.weight(1f)
+                    )
+                    StudyOSTextButton(text = "Dismiss", onClick = { reviewVm.dismissError() })
                 }
             }
-
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.15f))
-                    .clickable { onAddClick() },
-                contentAlignment = Alignment.Center
-            ) {
-                Text("+", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Light)
-            }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Notes", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(16.dp))
-
-        TextField(
-            value = searchQuery,
-            onValueChange = onSearchChange,
-            modifier = Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(26.dp)),
-            placeholder = { Text("Search notes...", color = Color(0xFF9988CC), fontSize = 14.sp) },
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_search),
-                    contentDescription = null,
-                    tint = Color(0xFF9988CC),
-                    modifier = Modifier.size(20.dp)
-                )
-            },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor   = Color.White.copy(alpha = 0.15f),
-                unfocusedContainerColor = Color.White.copy(alpha = 0.15f),
-                focusedIndicatorColor   = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                cursorColor             = Color.White,
-                focusedTextColor        = Color.White,
-                unfocusedTextColor      = Color.White
-            )
-        )
     }
 }
 
 @Composable
-fun FoldersSection(
-    folders: List<String>,
-    activeFolder: String,
-    onFolderClick: (String) -> Unit,
-    onNewFolder: () -> Unit = {}
-) {
-    Column {
-        Text(
-            text = "Folders",
-            color = BrandPurple,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
+private fun ReviewPlanRow(stage: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        ReviewStageChip(label = "Day 1", done = stage > 0)
+        ReviewStageChip(label = "Day 4", done = stage > 1)
+        ReviewStageChip(label = "Day 7", done = stage > 2)
+    }
+}
+
+@Composable
+private fun ReviewStageChip(label: String, done: Boolean) {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = if (done) Color(0xFFE8F8F0) else StudyPurpleLight
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            folders.forEach { folder ->
-                FolderChip(label = folder, isActive = folder == activeFolder, onClick = { onFolderClick(folder) })
-            }
-            FolderChip(label = "+ New Folder", isActive = false, onClick = onNewFolder)
-        }
-    }
-}
-
-@Composable
-fun FolderChip(label: String, isActive: Boolean, onClick: () -> Unit) {
-    val chipModifier = if (isActive) {
-        Modifier.shadow(4.dp, RoundedCornerShape(10.dp))
-    } else {
-        Modifier
-    }
-    Box(
-        modifier = chipModifier
-            .clip(RoundedCornerShape(10.dp))
-            .background(if (isActive) BrandPurple else Color.White)
-            .clickable { onClick() }
-            .padding(horizontal = 24.dp, vertical = 10.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = label,
-            color = if (isActive) Color.White else TextSecondary,
-            fontSize = 15.sp,
-            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium
-        )
-    }
-}
-
-@Composable
-fun NoteCard(note: NoteModel, onClick: () -> Unit, onClose: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable { onClick() },
-        shape    = RoundedCornerShape(16.dp),
-        colors   = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = note.title,
-                    color = BrandPurple,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
-                )
+            if (done) {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_clear),
-                    contentDescription = "Delete",
-                    tint = Color.LightGray,
-                    modifier = Modifier.size(20.dp).clickable { onClose() }
+                    imageVector = Icons.Rounded.CheckCircle,
+                    contentDescription = null,
+                    tint = Color(0xFF1D9E75),
+                    modifier = Modifier.size(11.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(text = note.body, color = Color.DarkGray, fontSize = 15.sp, lineHeight = 22.sp, maxLines = 3)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = note.folder, color = BrandPurple.copy(alpha = 0.6f), fontSize = 12.sp, fontWeight = FontWeight.Medium)
+            Text(
+                text = label,
+                fontSize = 11.sp,
+                color = if (done) Color(0xFF1D9E75) else BrandPurple,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun NotesScreenPreview() {
-    StudyOSTheme {
-        NotesScreenContent(
-            allNotes = listOf(
-                NoteModel(id = "1", title = "Periodic Table", body = "Elements are organized by atomic number.", folder = "Science"),
-                NoteModel(id = "2", title = "Computer", body = "A computer is an electronic device.", folder = "Computer")
-            ),
-            onBackClick  = {},
-            onCreateNote = { _, _, _ -> },
-            onUpdateNote = {},
-            onDeleteNote = {}
-        )
+private fun relativeReviewTime(nextReviewAt: Long): String {
+    val diff = nextReviewAt - System.currentTimeMillis()
+    val days = (diff / (24L * 60 * 60 * 1000)).toInt()
+    return when {
+        days <= 0 -> "Today"
+        days == 1 -> "Tomorrow"
+        else -> "In $days days"
     }
 }

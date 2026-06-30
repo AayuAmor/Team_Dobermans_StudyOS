@@ -2,67 +2,50 @@ package com.teamdobermans.studyos.repo
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ListenerRegistration
 import com.teamdobermans.studyos.model.NoteModel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.tasks.await
 
-class NoteRepoImpl {
+class NoteRepoImpl : NoteRepo {
 
-    private val db = FirebaseFirestore.getInstance()
+    private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
-    private val notesCollection = db.collection("notes")
+    private val notesCollection = firestore.collection("notes")
 
-    fun getNotes(): Flow<List<NoteModel>> = callbackFlow {
-        var notesListener: ListenerRegistration? = null
-
-        val authListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
-            val userId = firebaseAuth.currentUser?.uid
-            notesListener?.remove()
-
-            if (userId == null) {
-                trySend(emptyList())
-                return@AuthStateListener
-            }
-
-            notesListener = notesCollection
-                .whereEqualTo("userId", userId)
-                .addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        trySend(emptyList())
-                        return@addSnapshotListener
-                    }
+    override fun getNotes(): Flow<List<NoteModel>> {
+        val uid = auth.currentUser?.uid ?: return flowOf(emptyList())
+        return callbackFlow {
+            val listener = notesCollection
+                .whereEqualTo("userId", uid)
+                .addSnapshotListener { snapshot, _ ->
                     val notes = snapshot?.documents
                         ?.mapNotNull { it.toObject(NoteModel::class.java) }
-                        ?.sortedByDescending { it.timestamp }
                         ?: emptyList()
-                    trySend(notes)
+                    trySend(notes.sortedByDescending { it.lastActivityTime() })
                 }
-        }
-
-        auth.addAuthStateListener(authListener)
-
-        awaitClose {
-            notesListener?.remove()
-            auth.removeAuthStateListener(authListener)
+            awaitClose { listener.remove() }
         }
     }
 
-    suspend fun createNote(title: String, body: String, folder: String): Boolean {
+    private fun NoteModel.lastActivityTime(): Long = when {
+        updatedAt > 0L -> updatedAt
+        timestamp > 0L -> timestamp
+        createdAt > 0L -> createdAt
+        else -> 0L
+    }
+
+    override suspend fun createNote(title: String, body: String, folder: String): Boolean {
         val userId = auth.currentUser?.uid ?: return false
-        val id = notesCollection.document().id
+        val docRef = notesCollection.document()
         val note = NoteModel(
-            id = id,
-            title = title,
-            body = body,
-            folder = folder,
-            timestamp = System.currentTimeMillis(),
-            userId = userId
+            id = docRef.id, title = title, body = body, folder = folder,
+            timestamp = System.currentTimeMillis(), userId = userId
         )
         return try {
-            notesCollection.document(id).set(note).await()
+            docRef.set(note).await()
             true
         } catch (e: Exception) {
             false
@@ -71,18 +54,14 @@ class NoteRepoImpl {
 
     suspend fun createNoteAndReturnId(title: String, body: String, folder: String): String? {
         val userId = auth.currentUser?.uid ?: return null
-        val id = notesCollection.document().id
+        val docRef = notesCollection.document()
         val note = NoteModel(
-            id = id,
-            title = title,
-            body = body,
-            folder = folder,
-            timestamp = System.currentTimeMillis(),
-            userId = userId
+            id = docRef.id, title = title, body = body, folder = folder,
+            timestamp = System.currentTimeMillis(), userId = userId
         )
         return try {
-            notesCollection.document(id).set(note).await()
-            id
+            docRef.set(note).await()
+            docRef.id
         } catch (e: Exception) {
             null
         }
@@ -90,31 +69,30 @@ class NoteRepoImpl {
 
     suspend fun autoSaveNote(note: NoteModel): Boolean {
         val userId = auth.currentUser?.uid ?: return false
-        val updated = note.copy(userId = userId, timestamp = System.currentTimeMillis())
         return try {
-            notesCollection.document(updated.id).set(updated).await()
+            notesCollection.document(note.id)
+                .set(note.copy(userId = userId, timestamp = System.currentTimeMillis()))
+                .await()
             true
         } catch (e: Exception) {
             false
         }
     }
 
-    suspend fun updateNote(note: NoteModel): Boolean {
+    override suspend fun updateNote(note: NoteModel): Boolean {
         val userId = auth.currentUser?.uid ?: return false
         return try {
-            notesCollection.document(note.id).set(
-                note.copy(userId = userId, timestamp = System.currentTimeMillis())
-            ).await()
+            notesCollection.document(note.id).set(note.copy(userId = userId)).await()
             true
         } catch (e: Exception) {
             false
         }
     }
 
-    suspend fun deleteNote(noteId: String) {
+    override suspend fun deleteNote(noteId: String) {
         try {
             notesCollection.document(noteId).delete().await()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
         }
     }
 }

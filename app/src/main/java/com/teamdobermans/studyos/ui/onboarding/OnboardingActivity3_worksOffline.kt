@@ -1,4 +1,5 @@
 package com.teamdobermans.studyos.ui.onboarding
+
 import com.teamdobermans.studyos.R
 
 import android.content.Context
@@ -43,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.draw.shadow
 import com.teamdobermans.studyos.ui.auth.LoginActivity
+import com.teamdobermans.studyos.ui.components.StudyOSPrimaryButton
 import com.teamdobermans.studyos.ui.auth.SignUpActivity
 import com.teamdobermans.studyos.ui.theme.*
 
@@ -59,7 +61,7 @@ class OnboardingActivity3_worksOffline : ComponentActivity() {
 @Composable
 fun OnboardingBody() {
 
-    val context  = LocalContext.current
+    val context = LocalContext.current
 
     val features = listOf(
         "Study anywhere, anytime",
@@ -174,7 +176,8 @@ fun OnboardingBody() {
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        Button(
+        StudyOSPrimaryButton(
+            text = "Create Account",
             onClick = {
                 context.getSharedPreferences("StudyOSPrefs", Context.MODE_PRIVATE)
                     .edit().putBoolean("onboarding_completed", true).apply()
@@ -182,20 +185,8 @@ fun OnboardingBody() {
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 context.startActivity(intent)
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp)
-                .shadow(8.dp, RoundedCornerShape(14.dp)),
-            shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.White)
-        ) {
-            Text(
-                "Create Account",
-                color = StudyPurpleDeep,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
+            modifier = Modifier.fillMaxWidth().shadow(8.dp, RoundedCornerShape(14.dp))
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -332,24 +323,11 @@ private fun OnboardingBodyPreview() {
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        Button(
+        StudyOSPrimaryButton(
+            text = "Create Account",
             onClick = {},
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.White.copy(alpha = 0.2f)
-            )
-
-        ) {
-            Text(
-                "Create Account",
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
+            modifier = Modifier.fillMaxWidth()
+        )
 
     }
 }

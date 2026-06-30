@@ -1,10 +1,16 @@
 package com.teamdobermans.studyos.viewModel
 
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.teamdobermans.studyos.model.NoteModel
+import com.teamdobermans.studyos.repo.NoteRepo
+import com.teamdobermans.studyos.repo.NoteRepoImpl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+private const val GENERAL_SUBJECT = "General"
 
 data class SubjectUiModel(
     val id: String,
@@ -16,27 +22,71 @@ data class SubjectUiModel(
 )
 
 data class StudyUiState(
-    val searchQuery: String            = "",
+    val searchQuery: String = "",
     val subjects: List<SubjectUiModel> = emptyList(),
-    val recentNoteTitle: String?       = null,
-    val recentNoteFolder: String?      = null
+    val recentNoteTitle: String? = null,
+    val recentNoteFolder: String? = null,
+    val isLoading: Boolean = true,
+    val isEmpty: Boolean = false
 )
 
-class StudyViewModel : ViewModel() {
+class StudyViewModel(
+    private val noteRepo: NoteRepo = NoteRepoImpl()
+) : ViewModel() {
 
-    private val _state = MutableStateFlow(
-        StudyUiState(
-            subjects = listOf(
-                SubjectUiModel("1", "Mathematics",     12, 24, 0.65f, 0xFF5B4FD4),
-                SubjectUiModel("2", "Physics",          8, 18, 0.45f, 0xFFE04F7B),
-                SubjectUiModel("3", "Chemistry",        6, 14, 0.30f, 0xFF3A82E0),
-                SubjectUiModel("4", "Computer Science",15, 30, 0.80f, 0xFF1D9E75)
-            ),
-            recentNoteTitle  = "Design Patterns",
-            recentNoteFolder = "Computer Science"
-        )
+    private val subjectColors = listOf(
+        0xFF5B4FD4,
+        0xFF493FAD,
+        0xFF7B61FF,
+        0xFF1D9E75,
+        0xFF3A82E0,
+        0xFFE07B39
     )
+
+    private val _state = MutableStateFlow(StudyUiState())
     val state: StateFlow<StudyUiState> = _state.asStateFlow()
+
+    init {
+        observeNotes()
+    }
+
+    private fun observeNotes() {
+        viewModelScope.launch {
+            noteRepo.getNotes().collect { notes ->
+                val groupedSubjects = notes
+                    .groupBy { it.folder.trim().ifBlank { GENERAL_SUBJECT } }
+                    .toSortedMap(String.CASE_INSENSITIVE_ORDER)
+                    .entries
+                    .mapIndexed { index, entry ->
+                        SubjectUiModel(
+                            id = entry.key.lowercase().replace(Regex("[^a-z0-9]+"), "_").trim('_')
+                                .ifBlank { "general" },
+                            name = entry.key,
+                            notesCount = entry.value.size,
+                            flashcardsCount = 0,
+                            progressPercent = 0f,
+                            colorArgb = subjectColors[index % subjectColors.size]
+                        )
+                    }
+
+                val recent = notes.maxByOrNull { it.lastActivityTime() }
+                _state.value = _state.value.copy(
+                    subjects = groupedSubjects,
+                    recentNoteTitle = recent?.title?.ifBlank { "Untitled Note" },
+                    recentNoteFolder = recent?.folder?.trim()?.ifBlank { GENERAL_SUBJECT },
+                    isLoading = false,
+                    isEmpty = notes.isEmpty()
+                )
+            }
+        }
+    }
+
+    private fun NoteModel.lastActivityTime(): Long = when {
+        updatedAt > 0L -> updatedAt
+        timestamp > 0L -> timestamp
+        createdAt > 0L -> createdAt
+        else -> 0L
+    }
 
     fun updateSearch(query: String) {
         _state.value = _state.value.copy(searchQuery = query)
@@ -49,4 +99,3 @@ class StudyViewModel : ViewModel() {
             else _state.value.subjects.filter { it.name.contains(q, ignoreCase = true) }
         }
 }
-
