@@ -1,5 +1,6 @@
 package com.teamdobermans.studyos.ui.focus
 
+import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -14,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import java.time.LocalDate
@@ -51,6 +54,7 @@ fun FocusScreen(
     val focusState by focusViewModel.state.collectAsState()
     val tasks by focusViewModel.tasks.collectAsState()
     val selectedTask by focusViewModel.selectedTask.collectAsState()
+    val lastCompletedSessionId by focusViewModel.lastCompletedSessionId.collectAsState()
 
     val selectedTab by pomodoroVm.selectedTab.collectAsState()
     val focusMinutes by pomodoroVm.focusMinutes.collectAsState()
@@ -82,7 +86,10 @@ fun FocusScreen(
         onClearTask = focusViewModel::clearSelectedTask,
         onSoundTap = focusViewModel::toggleSound,
         onNavigateBrainGame = onNavigateBrainGame,
-        onCompleteSession = { focusViewModel.completeSession(focusMinutes) }
+        onCompleteSession = {
+            val sessionId = focusViewModel.completeSession(focusMinutes)
+            sessionId
+        }
     )
 }
 
@@ -103,7 +110,7 @@ fun FocusContent(
     onClearTask: () -> Unit,
     onSoundTap: (String) -> Unit,
     onNavigateBrainGame: (String) -> Unit,
-    onCompleteSession: () -> Unit
+    onCompleteSession: () -> String?
 ) {
     val timerProgress by animateFloatAsState(
         targetValue = if (totalSeconds > 0) timeRemaining.toFloat() / totalSeconds else 1f,
@@ -117,11 +124,16 @@ fun FocusContent(
         PomodoroTab.LONG_BREAK -> "LONG BREAK"
     }
 
-    var lastProcessedSessionCount by remember { mutableIntStateOf(sessionsToday) }
+    var lastProcessedSessionCount by rememberSaveable { mutableIntStateOf(sessionsToday) }
+    var showBreakGamePrompt by rememberSaveable { mutableStateOf(false) }
+    var pendingSessionId by rememberSaveable { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
 
-    LaunchedEffect(sessionsToday) {
-        if (sessionsToday > lastProcessedSessionCount && selectedTab == PomodoroTab.FOCUS) {
-            onCompleteSession()
+    LaunchedEffect(sessionsToday, selectedTab) {
+        if (selectedTab == PomodoroTab.FOCUS && sessionsToday > lastProcessedSessionCount) {
+            val completedSessionId = onCompleteSession()
+            pendingSessionId = completedSessionId
+            showBreakGamePrompt = completedSessionId != null
             lastProcessedSessionCount = sessionsToday
         }
     }
@@ -179,6 +191,56 @@ fun FocusContent(
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+    if (showBreakGamePrompt) {
+        AlertDialog(
+            onDismissRequest = {
+                showBreakGamePrompt = false
+                pendingSessionId = null
+            },
+            title = {
+                Text("Session complete", color = TextPrimary, fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Text(
+                    "Great work. Take a short brain break before your next session.",
+                    color = TextSecondary,
+                    fontSize = 14.sp
+                )
+            },
+            confirmButton = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    StudyOSPrimaryButton(
+                        text = "Play Memory Match",
+                        onClick = {
+                            showBreakGamePrompt = false
+                            onNavigateBrainGame(AppRoutes.BrainGame.route(AppRoutes.BrainGame.MODE_MEMORY_MATCH, pendingSessionId))
+                            pendingSessionId = null
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    StudyOSPrimaryButton(
+                        text = "Play Math Sprint",
+                        onClick = {
+                            showBreakGamePrompt = false
+                            pendingSessionId = null
+                            onNavigateBrainGame(AppRoutes.BrainGame.route(AppRoutes.BrainGame.MODE_MATH_SPRINT, pendingSessionId))
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    StudyOSOutlinedButton(
+                        text = "Skip Break",
+                        onClick = {
+                            showBreakGamePrompt = false
+                            pendingSessionId = null
+                            Toast.makeText(context, "Break skipped", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        )
     }
 }
 
@@ -671,7 +733,7 @@ fun FocusScreenPreview() {
             onClearTask = {},
             onSoundTap = {},
             onNavigateBrainGame = {},
-            onCompleteSession = {}
+            onCompleteSession = { null }
         )
     }
 }

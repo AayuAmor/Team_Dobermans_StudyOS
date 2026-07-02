@@ -15,11 +15,17 @@ sealed class AppRoutes(val route: String) {
     object Notes : AppRoutes("notes")
     object Analytics : AppRoutes("analytics")
     object Flashcards : AppRoutes("flashcards")
-    object BrainGame : AppRoutes("braingame/{mode}") {
+    object BrainGame : AppRoutes("brain_game/{mode}") {
         const val MODE_HUB = "hub"
         const val MODE_MEMORY_MATCH = "memory_match"
         const val MODE_MATH_SPRINT = "math_sprint"
-        fun route(mode: String = MODE_HUB): String = "braingame/$mode"
+        fun route(mode: String = MODE_HUB, sessionId: String? = null): String {
+            return if (sessionId.isNullOrBlank()) {
+                "brain_game/$mode"
+            } else {
+                "brain_game/$mode?sessionId=$sessionId"
+            }
+        }
     }
 
     object VideoNotes : AppRoutes("videonotes")

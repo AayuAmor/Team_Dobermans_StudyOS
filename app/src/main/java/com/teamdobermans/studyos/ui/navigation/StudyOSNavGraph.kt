@@ -213,9 +213,10 @@ fun StudyOSNavGraph(
                 )
             }
 
-            composable(AppRoutes.BrainGame.route) { entry ->
+            composable("${AppRoutes.BrainGame.route}?sessionId={sessionId}") { entry ->
                 val mode = entry.arguments?.getString("mode") ?: AppRoutes.BrainGame.MODE_HUB
-                BrainGameScreen(mode = mode, onBack = { navController.popBackStack() })
+                val sessionId = entry.arguments?.getString("sessionId")
+                BrainGameScreen(mode = mode, sessionId = sessionId, onBack = { navController.popBackStack() })
             }
 
             composable(AppRoutes.VideoNotes.route) {

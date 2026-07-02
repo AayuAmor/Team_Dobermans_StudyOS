@@ -32,6 +32,9 @@ class FocusViewModel : ViewModel() {
     private val _selectedTask = MutableStateFlow<Task?>(null)
     val selectedTask: StateFlow<Task?> = _selectedTask.asStateFlow()
 
+    private val _lastCompletedSessionId = MutableStateFlow<String?>(null)
+    val lastCompletedSessionId: StateFlow<String?> = _lastCompletedSessionId.asStateFlow()
+
     init {
         loadTasks()
     }
@@ -52,23 +55,23 @@ class FocusViewModel : ViewModel() {
         _selectedTask.value = null
     }
 
-    fun completeSession(durationMinutes: Float) {
-        val uid  = auth.currentUser?.uid ?: return
+    fun completeSession(durationMinutes: Float): String? {
+        val uid  = auth.currentUser?.uid ?: return null
         val task = _selectedTask.value
 
-        viewModelScope.launch {
-            val sessionId   = UUID.randomUUID().toString()
-            val completedAt = System.currentTimeMillis()
-            val startedAt   = completedAt - (durationMinutes * 60_000L).toLong()
+        val sessionId = UUID.randomUUID().toString()
+        val completedAt = System.currentTimeMillis()
+        val startedAt = completedAt - (durationMinutes * 60_000L).toLong()
 
+        viewModelScope.launch {
             val session = FocusSessionModel(
-                id              = sessionId,
-                taskId          = task?.id    ?: "",
-                taskTitle       = task?.title ?: "No Task",
+                id = sessionId,
+                taskId = task?.id ?: "",
+                taskTitle = task?.title ?: "No Task",
                 durationMinutes = durationMinutes.toInt(),
-                startedAt       = startedAt,
-                completedAt     = completedAt,
-                userId          = uid
+                startedAt = startedAt,
+                completedAt = completedAt,
+                userId = uid
             )
 
             repo.saveSession(session)
@@ -77,6 +80,9 @@ class FocusViewModel : ViewModel() {
                 taskRepo.linkSessionToTask(task.id, sessionId)
             }
         }
+
+        _lastCompletedSessionId.value = sessionId
+        return sessionId
     }
 
     fun toggleSound(sound: String) {
