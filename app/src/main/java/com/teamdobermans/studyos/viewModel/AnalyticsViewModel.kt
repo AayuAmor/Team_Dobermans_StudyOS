@@ -2,12 +2,14 @@ package com.teamdobermans.studyos.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.teamdobermans.studyos.data.analytics.AnalyticsRepository
 import com.teamdobermans.studyos.model.WeeklyTrendPoint
 import com.teamdobermans.studyos.model.WeeklyTrendType
 import com.teamdobermans.studyos.repo.WeeklyAnalyticsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 // Kept for backward-compatibility with AnalyticsCharts.kt and ProgressActivity
@@ -29,6 +31,9 @@ data class AnalyticsUiState(
     val isEmpty: Boolean = false,
     // Legacy fields for ProgressActivity — populated from real data, no hardcoded values
     val studyStreak: Int = 0,
+    val longestStreak: Int = 0,
+    val totalStudyDays: Int = 0,
+    val lastStudyDate: String? = null,
     val monthlyHours: Float = 0f,
     val quizAccuracy: Float = 0f,
     val focusScore: Int = 0,
@@ -39,15 +44,32 @@ data class AnalyticsUiState(
 class AnalyticsViewModel : ViewModel() {
 
     private val repo = WeeklyAnalyticsRepository()
+    private val analyticsRepo = AnalyticsRepository()
 
     private val _state = MutableStateFlow(AnalyticsUiState())
     val state: StateFlow<AnalyticsUiState> = _state.asStateFlow()
 
-    init { reload() }
+    init {
+        reload()
+        observeStreak()
+    }
 
     fun selectTrendType(type: WeeklyTrendType) {
         _state.value = _state.value.copy(selectedTrendType = type)
         reload()
+    }
+
+    private fun observeStreak() {
+        viewModelScope.launch {
+            analyticsRepo.observeStreak().collect { streak ->
+                _state.value = _state.value.copy(
+                    studyStreak = streak.currentStreak,
+                    longestStreak = streak.longestStreak,
+                    totalStudyDays = streak.totalStudyDays,
+                    lastStudyDate = streak.lastStudyDate
+                )
+            }
+        }
     }
 
     private fun reload() {

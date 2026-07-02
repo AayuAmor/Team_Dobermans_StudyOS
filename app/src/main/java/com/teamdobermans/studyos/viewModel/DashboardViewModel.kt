@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.teamdobermans.studyos.data.analytics.AnalyticsRepository
 import com.teamdobermans.studyos.model.NoteModel
+import com.teamdobermans.studyos.model.StudyStreakModel
 import com.teamdobermans.studyos.model.Task
 import com.teamdobermans.studyos.repo.ReviewReminderRepository
 import com.teamdobermans.studyos.repo.TaskRepository
@@ -14,11 +15,19 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 data class DashboardUiState(
     val userName: String = "Learner",
     val todayTasks: List<Task> = emptyList()
+)
+
+data class StreakUiState(
+    val streak: StudyStreakModel = StudyStreakModel(),
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null
 )
 
 class DashboardViewModel(application: Application) : AndroidViewModel(application) {
@@ -36,8 +45,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     )
     val state: StateFlow<DashboardUiState> = _state.asStateFlow()
 
-    val streakCount: StateFlow<Int> = analytics.getCurrentStreak()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+    private val _streakState = MutableStateFlow(StreakUiState())
+    val streakState: StateFlow<StreakUiState> = _streakState.asStateFlow()
 
     val weeklyStudyHours: StateFlow<Float> = analytics.getWeeklyStudyHours()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0f)
@@ -61,8 +70,35 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     var onSessionComplete: (() -> Unit)? = null
 
+    init {
+        observeStreak()
+        refreshStreak()
+    }
+
     fun loadUserName() {
         _userName.value = resolveUserName()
+    }
+
+    private fun observeStreak() {
+        viewModelScope.launch {
+            analytics.observeStreak().collect { streak ->
+                _streakState.value = _streakState.value.copy(streak = streak, isLoading = false, errorMessage = null)
+            }
+        }
+    }
+
+    fun refreshStreak() {
+        viewModelScope.launch {
+            _streakState.value = _streakState.value.copy(isLoading = true, errorMessage = null)
+            val resetResult = analytics.resetStreakIfMissed()
+            val streakResult = analytics.getStreak()
+            val streak = streakResult.getOrElse { StudyStreakModel() }
+            _streakState.value = _streakState.value.copy(
+                streak = streak,
+                isLoading = false,
+                errorMessage = resetResult.exceptionOrNull()?.message ?: streakResult.exceptionOrNull()?.message
+            )
+        }
     }
 
     private fun resolveUserName(): String {
@@ -74,6 +110,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun refreshDashboard() {
         _state.value = _state.value.copy(todayTasks = taskRepository.getTodaysTasks())
+        refreshStreak()
     }
 
     fun toggleTimer() {

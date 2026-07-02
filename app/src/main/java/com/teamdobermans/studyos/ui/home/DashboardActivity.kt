@@ -115,7 +115,7 @@ fun DashboardBody(
     val context = LocalContext.current
     val userName by viewModel.userName.collectAsState()
 
-    val streakCount by viewModel.streakCount.collectAsState()
+    val streakUiState by viewModel.streakState.collectAsState()
     val weeklyStudyHours by viewModel.weeklyStudyHours.collectAsState()
     val pendingTaskCount by viewModel.pendingTaskCount.collectAsState()
     val timerRunning by viewModel.timerRunning.collectAsState()
@@ -128,10 +128,20 @@ fun DashboardBody(
     val progressLabel =
         if (totalTodayTasks > 0) "$completedTodayTasks of $totalTodayTasks tasks completed today" else "No progress yet"
 
+    val currentStreak = streakUiState.streak.currentStreak
+    val longestStreak = streakUiState.streak.longestStreak
+    val streakSubtitle = when {
+        streakUiState.isLoading -> "Loading streak…"
+        currentStreak > 0 -> "Keep it going today."
+        streakUiState.streak.lastStudyDate != null -> "Complete a session today to restart your streak."
+        else -> "Complete your first study session to begin."
+    }
+
     LaunchedEffect(Unit) {
         viewModel.onSessionComplete = {
             Toast.makeText(context, "Session complete!", Toast.LENGTH_LONG).show()
         }
+        viewModel.refreshStreak()
     }
 
     val minutes = timeLeft / 60
@@ -186,17 +196,30 @@ fun DashboardBody(
                     .clip(RoundedCornerShape(20.dp))
                     .background(Color.White.copy(alpha = 0.18f))
                     .clickable {
-                        Toast.makeText(context, "$streakCount day streak! Keep going", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            if (currentStreak > 0) "$currentStreak day streak. Keep it going today." else "Complete a session today to restart your streak.",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                     .padding(horizontal = 14.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "Study Streak", style = TextStyle(fontSize = 13.sp, color = Color.White))
-                Text(
-                    text = "$streakCount days",
-                    style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(text = "Study Streak", style = TextStyle(fontSize = 13.sp, color = Color.White))
+                    Text(text = streakSubtitle, style = TextStyle(fontSize = 11.sp, color = Color.White.copy(alpha = 0.8f)))
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "$currentStreak days",
+                        style = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    )
+                    Text(
+                        text = "Best $longestStreak",
+                        style = TextStyle(fontSize = 11.sp, color = Color.White.copy(alpha = 0.8f))
+                    )
+                }
             }
         }
 
@@ -522,7 +545,7 @@ fun DashboardBody(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    AnalyticsMiniStat(label = "Streak", value = "${streakCount}d")
+                    AnalyticsMiniStat(label = "Streak", value = "${currentStreak}d")
                     Box(modifier = Modifier.width(1.dp).height(32.dp).background(Color.White.copy(alpha = 0.25f)))
                     AnalyticsMiniStat(label = "This Week", value = "${"%.1f".format(weeklyStudyHours)}h")
                     Box(modifier = Modifier.width(1.dp).height(32.dp).background(Color.White.copy(alpha = 0.25f)))

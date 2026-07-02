@@ -44,6 +44,7 @@ import com.teamdobermans.studyos.ui.theme.*
 import com.teamdobermans.studyos.viewModel.FocusUiState
 import com.teamdobermans.studyos.viewModel.FocusViewModel
 import com.teamdobermans.studyos.viewModel.PomodoroViewModel
+import kotlinx.coroutines.flow.collect
 
 @Composable
 fun FocusScreen(
@@ -71,6 +72,7 @@ fun FocusScreen(
     }
 
     FocusContent(
+        focusViewModel = focusViewModel,
         focusState = focusState,
         tasks = tasks,
         selectedTask = selectedTask,
@@ -95,6 +97,7 @@ fun FocusScreen(
 
 @Composable
 fun FocusContent(
+    focusViewModel: FocusViewModel,
     focusState: FocusUiState,
     tasks: List<Task>,
     selectedTask: Task?,
@@ -128,6 +131,12 @@ fun FocusContent(
     var showBreakGamePrompt by rememberSaveable { mutableStateOf(false) }
     var pendingSessionId by rememberSaveable { mutableStateOf<String?>(null) }
     val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        focusViewModel.toastMessage.collect { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     LaunchedEffect(sessionsToday, selectedTab) {
         if (selectedTab == PomodoroTab.FOCUS && sessionsToday > lastProcessedSessionCount) {
@@ -698,6 +707,7 @@ fun FocusScreenPreview() {
         var sessionsCompleted by remember { mutableIntStateOf(2) }
 
         FocusContent(
+            focusViewModel = FocusViewModel(),
             focusState = FocusUiState(activeSound = "rain"),
             tasks = listOf(
                 Task(
